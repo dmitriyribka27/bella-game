@@ -2,40 +2,121 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#183d43">
-  <meta name="robots" content="noindex,nofollow">
-  <title>Bella — проверка подключения</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#2c5a60">
+  <title>Тихая бухта · город Беллы</title>
   <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100svh; display: grid; place-items: center;
-      padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
-      background: #183d43; color: #fff5e5; font-family: system-ui, sans-serif; }
-    main { width: min(100%, 420px); }
-    small { color: #b9d6cb; letter-spacing: .1em; }
-    h1 { font-size: clamp(32px, 9vw, 48px); line-height: 1.1; }
-    p { line-height: 1.6; }
-    button { width: 100%; min-height: 56px; border: 0; border-radius: 16px;
-      background: #ffd49c; color: #183d43; font: inherit; font-weight: 700;
-      touch-action: manipulation; cursor: pointer; }
-    #result { min-height: 3em; color: #b9d6cb; }
+    :root { color-scheme: light; font-family: ui-rounded, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:#273f40; background:#b6d8d0; }
+    * { box-sizing:border-box; }
+    html,body { margin:0; width:100%; height:100%; overflow:hidden; }
+    button { font:inherit; cursor:pointer; touch-action:manipulation; }
+    #world { position:fixed; inset:0; width:100%; height:100%; touch-action:none; background:linear-gradient(#9fd0cc,#b8d9ca 70%); }
+    .top { position:fixed; z-index:2; top:0; left:0; right:0; padding:calc(env(safe-area-inset-top) + 10px) 14px 8px; display:flex; align-items:center; justify-content:space-between; gap:8px; pointer-events:none; }
+    .brand,.money,.icon { box-shadow:0 3px 18px #315b5a25; border:1px solid #fff9; background:#fff8ebed; }
+    .brand { padding:7px 12px; border-radius:16px; min-width:0; }
+    .brand strong { display:block; font-size:15px; white-space:nowrap; }
+    .brand small { display:block; font-size:10px; opacity:.75; }
+    .topRight { display:flex; gap:7px; pointer-events:auto; }
+    .money { padding:10px; border-radius:14px; font-weight:800; white-space:nowrap; }
+    .icon { width:43px; height:43px; border-radius:14px; border-color:#fff9; font-size:19px; }
+    .hint { position:fixed; z-index:2; top:calc(env(safe-area-inset-top) + 75px); left:50%; transform:translateX(-50%); text-align:center; background:#193e40c8; color:white; border-radius:22px; padding:7px 12px; font-size:11px; white-space:nowrap; pointer-events:none; }
+    .sheet { position:fixed; z-index:3; bottom:0; left:0; right:0; max-height:min(43svh,350px); overflow:auto; padding:11px 15px calc(env(safe-area-inset-bottom) + 12px); background:#fff9ed; border-radius:24px 24px 0 0; box-shadow:0 -8px 35px #22444532; }
+    .grab { width:36px; height:4px; border-radius:4px; background:#c7d7ce; margin:0 auto 8px; }
+    .row { display:flex; gap:10px; align-items:center; }
+    .avatar { width:43px; height:43px; flex:none; border-radius:50%; background:#d8ece4; display:grid; place-items:center; font-size:27px; }
+    h1 { margin:0; font-size:19px; line-height:1.2; }
+    .sub { margin:3px 0 0; color:#587171; font-size:12px; }
+    .stats { display:flex; gap:6px; flex-wrap:wrap; margin:10px 0; }
+    .stat { border-radius:10px; padding:5px 8px; background:#e7efe7; font-size:11px; }
+    .actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+    .action { min-height:42px; padding:8px; border:0; border-radius:12px; background:#dcece3; color:#27484b; font-size:12px; font-weight:700; }
+    .action.primary { background:#f2bc86; }
+    .action:disabled { opacity:.45; }
+    #message { min-height:32px; margin:10px 0 0; color:#496665; font-size:12px; line-height:1.35; }
+    .overlay { position:fixed; inset:0; z-index:5; background:#173a3eb5; display:grid; place-items:center; padding:18px; }
+    .overlay[hidden] { display:none; }
+    .dialog { width:min(100%,380px); max-height:85svh; overflow:auto; border-radius:23px; padding:20px; background:#fff9ed; box-shadow:0 16px 50px #102c2c66; }
+    .dialog h2 { margin:0 0 8px; font-size:21px; }
+    .dialog p { line-height:1.45; font-size:13px; }
+    .dialog button { display:block; width:100%; padding:13px; margin-top:8px; border:0; border-radius:12px; background:#dcece3; color:#27484b; font-weight:700; }
+    .dialog button:first-of-type { background:#f2bc86; }
+    .dialog small { color:#647979; }
+    #file { display:none; }
   </style>
 </head>
 <body>
-  <main>
-    <small>BELLA · ТЕХНИЧЕСКАЯ ПРОВЕРКА · 0.0.1</small>
-    <h1>Начало маленького мира</h1>
-    <p>Это проверочная страница будущей игры. Она нужна, чтобы проверить ссылку и касания на iPhone.</p>
-    <button id="check" type="button">Проверить касание</button>
-    <p id="result" role="status" aria-live="polite">Нажми кнопку — здесь появится результат.</p>
-    <p>Игра, установка на домашний экран и офлайн-режим пока не готовы.</p>
-  </main>
+  <canvas id="world" aria-label="Карта города Тихая бухта"></canvas>
+  <header class="top">
+    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · прототип 0.1</small></div>
+    <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Сохранения и помощь">☰</button></div>
+  </header>
+  <div class="hint">Перетаскивай карту · двумя пальцами меняй масштаб</div>
+  <section class="sheet" id="sheet"><div class="grab"></div><div id="details"></div><p id="message" role="status" aria-live="polite"></p></section>
+  <div class="overlay" id="overlay" hidden><div class="dialog" id="dialog"></div></div>
+  <input id="file" type="file" accept="application/json,.json">
   <script>
-    let taps = 0;
-    document.querySelector('#check').addEventListener('click', () => {
-      taps += 1;
-      document.querySelector('#result').textContent = `Касания работают. Нажатий: ${taps}.`;
-    });
+  (() => {
+    'use strict';
+    const FORMAT=1, DB='quiet-bay-save', KEY='city';
+    const defs=[
+      {id:'kent',name:'Кент',job:'боксёр',color:'#8e9290',roof:'#9c6d61',home:[2.2,3],work:[5.2,3.1],face:'tabby',symbol:'🥊'},
+      {id:'mia',name:'Мия',job:'провидица',color:'#fafaf1',roof:'#8c9bb4',home:[5.1,1.5],work:[8,2.4],face:'mia',symbol:'✦'},
+      {id:'lev',name:'Лев',job:'администратор',color:'#f4eee2',roof:'#9b8167',home:[8.8,3.8],work:[5.4,5.7],face:'lev',symbol:'📋'},
+      {id:'citera',name:'Цитера',job:'курьер',color:'#383b3d',roof:'#b08791',home:[8.6,8.2],work:[5,8],face:'citera',symbol:'✉'},
+      {id:'ryzhiy',name:'Рыжий',job:'пекарь',color:'#d98546',roof:'#d2946a',home:[3.1,8.5],work:[3.7,6.4],face:'ryzhiy',symbol:'🥐'},
+      {id:'bella',name:'Белла',job:'хозяйка города',color:'#fff8f0',roof:'#e8a0ae',home:[5.8,9.4],work:[5.9,7],face:'bella',symbol:'♡'}
+    ];
+    const byId=Object.fromEntries(defs.map(d=>[d.id,d]));
+    const activities={work:'работает',rest:'отдыхает',eat:'ест',play:'играет',walk:'гуляет'};
+    const canvas=document.getElementById('world'), ctx=canvas.getContext('2d');
+    const details=document.getElementById('details'), msg=document.getElementById('message');
+    const overlay=document.getElementById('overlay'), dialog=document.getElementById('dialog');
+    let db, city, selected='bella', view={x:0,y:-120,zoom:1}, pointers=new Map(), gesture=null;
+    let lastFrame=performance.now(), saveTimer=0, dirty=false, time=0;
+    function initial(){return {version:FORMAT,coins:30,paused:false,savedAt:Date.now(),cats:defs.map(d=>({id:d.id,x:d.home[0],y:d.home[1],target:[...d.home],activity:d.id==='bella'?'walk':'work',hunger:80,energy:80,mood:75,xp:0,level:1,phase:0,upgrades:{bed:0,bowl:0,toy:0}}))};}
+    function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+    function valid(s){return s&&s.version===FORMAT&&Number.isFinite(s.coins)&&s.coins>=0&&Array.isArray(s.cats)&&s.cats.length===defs.length&&defs.every(d=>{let c=s.cats.find(x=>x.id===d.id);return c&&[c.x,c.y,c.hunger,c.energy,c.mood,c.xp,c.level].every(Number.isFinite)&&c.upgrades&&['bed','bowl','toy'].every(k=>Number.isInteger(c.upgrades[k])&&c.upgrades[k]>=0&&c.upgrades[k]<=3);});}
+    function sanitize(s){let out=initial();out.coins=clamp(Math.floor(s.coins),0,10000000);out.paused=!!s.paused;out.savedAt=Number.isFinite(s.savedAt)?s.savedAt:Date.now();out.cats=defs.map(d=>{let v=s.cats.find(x=>x.id===d.id),c=out.cats.find(x=>x.id===d.id);return {...c,x:clamp(v.x,.4,10.6),y:clamp(v.y,.4,10.6),target:Array.isArray(v.target)&&v.target.length===2&&v.target.every(Number.isFinite)?v.target.map(z=>clamp(z,.4,10.6)):[...d.home],activity:Object.hasOwn(activities,v.activity)?v.activity:'walk',hunger:clamp(v.hunger,0,100),energy:clamp(v.energy,0,100),mood:clamp(v.mood,0,100),xp:clamp(v.xp,0,1000000),level:clamp(Math.floor(v.level),1,100),phase:clamp(Number(v.phase)||0,0,30),upgrades:{bed:v.upgrades.bed,bowl:v.upgrades.bowl,toy:v.upgrades.toy}};});return out;}
+    async function openDB(){return new Promise((resolve,reject)=>{let r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore('saves');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
+    function read(key){return new Promise((resolve,reject)=>{let t=db.transaction('saves','readonly'),r=t.objectStore('saves').get(key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
+    function write(){if(!db||!city)return Promise.resolve();city.savedAt=Date.now();let snapshot=JSON.parse(JSON.stringify(city));dirty=false;return new Promise((resolve,reject)=>{let t=db.transaction('saves','readwrite'),s=t.objectStore('saves');s.get(KEY).onsuccess=e=>{if(e.target.result)s.put(e.target.result,'previous');s.put(snapshot,KEY);};t.oncomplete=resolve;t.onerror=()=>{dirty=true;reject(t.error);};});}
+    function changed(){dirty=true;renderUI();clearTimeout(saveTimer);saveTimer=setTimeout(()=>write().catch(()=>notice('Не удалось сохранить. Экспортируй копию через ☰.')),900);}
+    function notice(t){msg.textContent=t;}
+    function cat(id){return city.cats.find(c=>c.id===id);}
+    function targetFor(c,a){let d=byId[c.id];if(a==='rest'||a==='eat')return [...d.home];if(a==='work')return [...d.work];if(a==='play')return [5.7,5.1];return [2+Math.random()*7,2+Math.random()*7];}
+    function assign(c,a,announce=true){c.activity=a;c.target=targetFor(c,a);c.phase=0;if(announce){notice(`${byId[c.id].name}: ${activities[a]}. ${a==='work'?'Заработает монеты и опыт после работы.':a==='rest'?'Восстановит бодрость дома.':a==='eat'?'Восполнит сытость дома.':a==='play'?'Поднимет настроение.':'Идёт на прогулку.'}`);changed();}}
+    function auto(c){if(c.id==='bella')return;if(c.hunger<30)assign(c,'eat',false);else if(c.energy<24)assign(c,'rest',false);else if(c.mood<25)assign(c,'play',false);else {let a=Math.random();assign(c,a<.62?'work':a<.83?'walk':'play',false);}dirty=true;}
+    function simulate(dt){if(city.paused)return;time+=dt;for(let c of city.cats){let dx=c.target[0]-c.x,dy=c.target[1]-c.y,dist=Math.hypot(dx,dy);if(dist>.03){let step=Math.min(dist,dt*(c.id==='citera'?.42:.30));c.x+=dx/dist*step;c.y+=dy/dist*step;continue;}c.phase+=dt;if(c.id==='bella'){if(c.phase>7)assign(c,'walk',false);continue;}c.hunger=clamp(c.hunger-dt*.18,0,100);c.energy=clamp(c.energy-dt*(c.activity==='rest'?-1.5:.16),0,100);if(c.activity==='eat'){c.hunger=clamp(c.hunger+dt*(1.7+c.upgrades.bowl*.6),0,100);if(c.phase>9)auto(c);}else if(c.activity==='rest'){if(c.phase>12||c.energy>=95)auto(c);}else if(c.activity==='play'){c.mood=clamp(c.mood+dt*(1.5+c.upgrades.toy*.5),0,100);if(c.phase>10)auto(c);}else if(c.activity==='work'){if(c.phase>11){let reward=5+c.level+Math.floor(c.mood/40);city.coins+=reward;c.xp+=4;c.mood=clamp(c.mood-2,0,100);if(c.xp>=c.level*18){c.xp-=c.level*18;c.level++;notice(`${byId[c.id].name} достиг${['mia','citera'].includes(c.id)?'ла':''} уровня ${c.level}!`);}else if(selected===c.id)notice(`${byId[c.id].name} заработал ${reward} монет и 4 опыта.`);auto(c);renderUI();}}else if(c.phase>8){c.mood=clamp(c.mood+5,0,100);auto(c);}}}
+    function offline(){let elapsed=clamp((Date.now()-city.savedAt)/1000,0,4*3600);if(elapsed<60)return;let blocks=Math.min(24,Math.floor(elapsed/600));let gain=city.paused?0:blocks*city.cats.filter(c=>c.id!=='bella').length*3;city.coins+=gain;notice(gain?`Пока тебя не было, жители принесли ${gain} монет. Начислено не больше чем за 4 часа.`:'Город был на паузе.');dirty=true;}
+    function homeCost(c,k){return {bed:20,bowl:15,toy:18}[k]*(c.upgrades[k]+1);}
+    function improve(k){let c=cat(selected),cost=homeCost(c,k);if(city.coins<cost){notice(`Нужно ещё ${cost-city.coins} монет.`);return;}city.coins-=cost;c.upgrades[k]++;let names={bed:'Кровать',bowl:'Миска',toy:'Игрушки'};notice(`${names[k]} для ${byId[c.id].name}: уровень ${c.upgrades[k]}. ${k==='bed'?'Отдых теперь быстрее.':k==='bowl'?'Еда восполняется быстрее.':'Игра лучше поднимает настроение.'}`);changed();}
+    function renderUI(){if(!city)return;let c=cat(selected),d=byId[selected];document.getElementById('money').textContent=`🪙 ${city.coins}`;document.getElementById('pause').textContent=city.paused?'▶':'Ⅱ';let bella=c.id==='bella';details.innerHTML=`<div class="row"><div class="avatar">${d.symbol}</div><div><h1>${d.name} <span style="font-size:12px;font-weight:400">${bella?'':`· уровень ${c.level}`}</span></h1><p class="sub">${d.job} · ${activities[c.activity]}</p></div></div><div class="stats">${bella?'<span class="stat">Гуляет и навещает друзей</span>':`<span class="stat">🥣 ${Math.round(c.hunger)}%</span><span class="stat">💤 ${Math.round(c.energy)}%</span><span class="stat">♡ ${Math.round(c.mood)}%</span><span class="stat">✦ ${Math.floor(c.xp)}/${c.level*18} опыта</span>`}</div><div class="actions">${bella?'<button class="action primary" data-action="guide">Как играть</button><button class="action" data-action="focus">Показать на карте</button>':`<button class="action primary" data-action="work">Работать · +монеты</button><button class="action" data-action="rest">Отдыхать · +бодрость</button><button class="action" data-action="eat">Кормить · +сытость</button><button class="action" data-action="play">Играть · +настроение</button><button class="action" data-action="walk">Гулять</button><button class="action" data-action="focus">Показать на карте</button><button class="action" data-upgrade="bed" ${c.upgrades.bed>=3?'disabled':''}>🛏 Кровать ${c.upgrades.bed}/3 · ${homeCost(c,'bed')} 🪙</button><button class="action" data-upgrade="bowl" ${c.upgrades.bowl>=3?'disabled':''}>🥣 Миска ${c.upgrades.bowl}/3 · ${homeCost(c,'bowl')} 🪙</button><button class="action" data-upgrade="toy" ${c.upgrades.toy>=3?'disabled':''}>🧶 Игрушки ${c.upgrades.toy}/3 · ${homeCost(c,'toy')} 🪙</button>`}</div>`;}
+    details.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.action==='guide')showGuide();else if(b.dataset.action==='focus'){let c=cat(selected);view.x=-iso(c.x,c.y)[0]*view.zoom;view.y=-iso(c.x,c.y)[1]*view.zoom-30;}else if(b.dataset.action)assign(cat(selected),b.dataset.action);else if(b.dataset.upgrade)improve(b.dataset.upgrade);});
+    function close(){overlay.hidden=true;}
+    function show(html){dialog.innerHTML=html;overlay.hidden=false;}
+    function showGuide(){show(`<h2>Добро пожаловать в бухту</h2><p>Коснись кота или домика, чтобы выбрать жителя. Коты сами работают, едят и отдыхают. Назначай им занятия, помогай с настроением и трать общие монеты на предметы для дома.</p><p>Перетаскивай город одним пальцем и меняй масштаб двумя. Пауза остановит время. Прогресс хранится в Safari на этом устройстве.</p><p>Это первый игровой прототип. Кофейня и поручения появятся на следующем этапе.</p><button data-close>Играть</button>`);}
+    document.getElementById('settings').onclick=()=>show(`<h2>Город и сохранение</h2><p>Игра сохраняется автоматически в Safari. Для переноса на другое устройство экспортируй файл JSON и импортируй его там.</p><button id="export">Экспортировать сохранение</button><button id="import">Импортировать файл</button><button id="restore">Вернуть предыдущую копию</button><button id="help">Как играть</button><button data-close>Закрыть</button><small>Не очищай данные Safari до экспорта. Формат сохранения: ${FORMAT}.</small>`);
+    document.getElementById('pause').onclick=()=>{city.paused=!city.paused;notice(city.paused?'Город на паузе.':'Город снова живёт.');changed();};
+    dialog.onclick=async e=>{let id=e.target.id;if(e.target.hasAttribute('data-close'))close();if(id==='help')showGuide();if(id==='import')document.getElementById('file').click();if(id==='export'){await write().catch(()=>{});let blob=new Blob([JSON.stringify(city,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='tihaya-buhta-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);close();notice('Копия сохранения загружена. Сохрани файл в «Файлы».');}if(id==='restore'){let prev=await read('previous').catch(()=>null);if(!prev||!valid(prev)){notice('Предыдущей исправной копии пока нет.');close();return;}if(confirm('Заменить текущий город предыдущей копией?')){city=sanitize(prev);city.savedAt=Date.now();changed();notice('Предыдущая копия восстановлена.');}close();}};
+    document.getElementById('file').onchange=async e=>{let f=e.target.files[0];e.target.value='';if(!f)return;if(f.size>200000){notice('Файл слишком большой.');close();return;}try{let data=JSON.parse(await f.text());if(!valid(data))throw Error('Неверный формат или версия файла.');if(!confirm('Заменить текущий город содержимым этого файла?'))return;city=sanitize(data);city.savedAt=Date.now();changed();close();notice('Город восстановлен из файла.');}catch(err){close();notice(`Не удалось импортировать: ${err.message}`);}};
+    function iso(x,y){return {0:(x-y)*37,1:(x+y)*19};}
+    function point(x,y){let p=iso(x,y);return [canvas.width/2+view.x+p[0]*view.zoom,canvas.height*.45+view.y+p[1]*view.zoom];}
+    function path(points,fill,stroke,width=1){ctx.beginPath();ctx.moveTo(...points[0]);for(let i=1;i<points.length;i++)ctx.lineTo(...points[i]);ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke();}}
+    function diamond(x,y,w,h,fill,stroke){let [sx,sy]=point(x,y);path([[sx,sy-h/2],[sx+w/2,sy],[sx,sy+h/2],[sx-w/2,sy]],fill,stroke,1);}
+    function ellipse(x,y,rx,ry,color){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();}
+    function drawHouse(d){let [x,y]=point(...d.home),z=view.zoom, w=38*z,h=21*z, rise=31*z;ellipse(x,y+5*z,w*.85,10*z,'#51735b55');path([[x-w,y],[x,y+h],[x,y+h-rise],[x-w,y-rise]],'#d7bda0','#a88e77',z);path([[x,y+h],[x+w,y],[x+w,y-rise],[x,y+h-rise]],'#f0d4ab','#b79c7e',z);path([[x-w,y-rise],[x,y+h-rise],[x+w,y-rise],[x,y-h-rise]],d.roof,'#674e4d',1.5*z);path([[x+7*z,y+6*z],[x+17*z,y+1*z],[x+17*z,y-13*z],[x+7*z,y-8*z]],'#ffd997','#c69465',z);path([[x-18*z,y+7*z],[x-8*z,y+12*z],[x-8*z,y-5*z],[x-18*z,y-10*z]],'#715c52');if(d.id==='bella'){ellipse(x,y-rise-11*z,6*z,4*z,'#f4bdc5');}let c=cat(d.id);if(c&&d.id!=='bella'&&Object.values(c.upgrades).some(Boolean)){ctx.font=`${13*z}px sans-serif`;ctx.textAlign='center';ctx.fillStyle='#fff';ctx.fillText('✦',x,y-rise-27*z);}ctx.font=`bold ${Math.max(9,11*z)}px system-ui`;ctx.textAlign='center';ctx.lineWidth=3*z;ctx.strokeStyle='#335253';ctx.strokeText(d.name,x,y-rise-34*z);ctx.fillStyle='#fff6e9';ctx.fillText(d.name,x,y-rise-34*z);}
+    function drawCat(c){let d=byId[c.id],[x,y]=point(c.x,c.y),z=view.zoom, bob=Math.sin(time*4+c.x*5)*1.5*z;ellipse(x,y+5*z,13*z,5*z,'#314c4c55');y-=13*z+bob;let r=11*z;ellipse(x,y+9*z,10*z,9*z,d.id==='bella'?'#e992a5':d.color);path([[x-r*.9,y-3*z],[x-r*.65,y-18*z],[x-2*z,y-10*z]],d.color,'#625c5a',.7*z);path([[x+r*.9,y-3*z],[x+r*.65,y-18*z],[x+2*z,y-10*z]],d.color,'#625c5a',.7*z);ellipse(x,y,r,10*z,d.color);if(d.face==='lev'){ellipse(x-1*z,y-5*z,9*z,5*z,'#55545b');ellipse(x+7*z,y+3*z,3*z,4*z,'#55545b');}if(d.face==='citera'){ellipse(x,y+3*z,5*z,4*z,'#faf6e9');ellipse(x-1*z,y+5*z,2*z,1.4*z,'#343536');}if(d.face==='ryzhiy'){ctx.strokeStyle='#b66b36';ctx.lineWidth=z;for(let i=-1;i<=1;i++){ctx.beginPath();ctx.moveTo(x+i*3*z,y-8*z);ctx.lineTo(x+i*4*z,y-3*z);ctx.stroke();}}if(d.face==='tabby'){ctx.strokeStyle='#53595a';ctx.lineWidth=1.8*z;for(let i=-1;i<=1;i++){ctx.beginPath();ctx.moveTo(x+i*4*z,y-9*z);ctx.lineTo(x+i*3*z,y-4*z);ctx.stroke();}ctx.beginPath();ctx.moveTo(x+8*z,y+10*z);ctx.lineTo(x+13*z,y+7*z);ctx.lineTo(x+11*z,y+5*z);ctx.stroke();}if(d.face==='bella'){ellipse(x+6*z,y-10*z,5*z,4*z,'#ed829c');ellipse(x+11*z,y-12*z,3*z,3*z,'#ed829c');ellipse(x+7*z,y-6*z,3*z,3*z,'#ed829c');ellipse(x,y+16*z,3*z,3*z,'#fff2dc');}let eye=d.id==='mia'?'#6a9bcc':d.id==='lev'?'#a77832':'#343e3e';ellipse(x-4*z,y,1.5*z,2*z,eye);ellipse(x+4*z,y,1.5*z,2*z,eye);ellipse(x,y+4*z,1.3*z,1*z,'#bc8290');if(selected===c.id){ctx.beginPath();ctx.ellipse(x,y+14*z,15*z,7*z,0,0,Math.PI*2);ctx.strokeStyle='#fff9e7';ctx.lineWidth=2.5*z;ctx.stroke();}ctx.textAlign='center';ctx.font=`bold ${Math.max(10,11*z)}px system-ui`;ctx.lineWidth=3*z;ctx.strokeStyle='#365653';ctx.strokeText(d.name,x,y-21*z);ctx.fillStyle='#fff9ef';ctx.fillText(d.name,x,y-21*z);}
+    function draw(){let w=canvas.width,h=canvas.height;ctx.clearRect(0,0,w,h);let sea=ctx.createLinearGradient(0,0,w,h);sea.addColorStop(0,'#69b8bb');sea.addColorStop(1,'#7fc8bc');ctx.fillStyle=sea;ctx.fillRect(0,0,w,h);let z=view.zoom;for(let i=0;i<14;i++){let [x,y]=point(-2+i*.95,11.8);ellipse(x,y,12*z,2*z,'#c0e9d777');}diamond(5.5,5.5,830*z,420*z,'#648a69','#e9cf9d');for(let i=0;i<11;i++)for(let j=0;j<11;j++){let hue=(i+j)%4===0?'#82a779':'#83a47a';diamond(i+.5,j+.5,74*z,38*z,hue,'#76996f');}for(let i=1;i<11;i++){diamond(i+.2,5.6,64*z,29*z,'#d9be8c');diamond(5.5,i+.2,64*z,29*z,'#d9be8c');}for(let [x,y] of [[1,1],[2,7],[4,2],[9,1],[10,7],[1,10],[7,10],[9,6]]){let [sx,sy]=point(x,y);ellipse(sx,sy,8*z,4*z,'#466e5355');ellipse(sx,sy-13*z,9*z,13*z,'#407b61');ellipse(sx-4*z,sy-18*z,5*z,7*z,'#6c9d6f');}for(let i=0;i<5;i++){let [x,y]=point(1.1+i*2.2,10.75);path([[x-12*z,y-5*z],[x,y+2*z],[x+12*z,y-5*z],[x,y-12*z]],'#b58d64','#8b755e',z);}let items=[...defs.map(d=>({depth:d.home[0]+d.home[1],kind:'house',o:d})),...city.cats.map(c=>({depth:c.x+c.y+.1,kind:'cat',o:c}))].sort((a,b)=>a.depth-b.depth);for(let it of items)it.kind==='house'?drawHouse(it.o):drawCat(it.o);}
+    function resize(){canvas.width=innerWidth;canvas.height=innerHeight;}
+    function pick(x,y){let hits=city.cats.map(c=>({id:c.id,dist:Math.hypot(point(c.x,c.y)[0]-x,point(c.x,c.y)[1]-22*view.zoom-y)})).filter(a=>a.dist<29*view.zoom).sort((a,b)=>a.dist-b.dist);if(hits.length)return hits[0].id;hits=defs.map(d=>({id:d.id,dist:Math.hypot(point(...d.home)[0]-x,point(...d.home)[1]-28*view.zoom-y)})).filter(a=>a.dist<40*view.zoom).sort((a,b)=>a.dist-b.dist);return hits[0]?.id;}
+    canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});gesture={x:e.clientX,y:e.clientY,moved:false};});
+    canvas.addEventListener('pointermove',e=>{let old=pointers.get(e.pointerId);if(!old)return;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});let all=[...pointers.values()];if(all.length===1){view.x+=e.clientX-old.x;view.y+=e.clientY-old.y;if(Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)>8)gesture.moved=true;}else if(all.length===2){let other=all.find(p=>p!==pointers.get(e.pointerId)),oldDist=Math.hypot(old.x-other.x,old.y-other.y),newDist=Math.hypot(e.clientX-other.x,e.clientY-other.y);if(oldDist>10)view.zoom=clamp(view.zoom*newDist/oldDist,.7,2.1);gesture.moved=true;}});
+    function pointerEnd(e){let old=pointers.get(e.pointerId);pointers.delete(e.pointerId);if(old&&gesture&&!gesture.moved&&pointers.size===0){let id=pick(e.clientX,e.clientY);if(id){selected=id;renderUI();notice(`${byId[id].name} выбран${['mia','citera','bella'].includes(id)?'а':''}.`);}}}
+    canvas.addEventListener('pointerup',pointerEnd);canvas.addEventListener('pointercancel',e=>pointers.delete(e.pointerId));
+    function frame(now){let dt=clamp((now-lastFrame)/1000,0,.1);lastFrame=now;simulate(dt);draw();requestAnimationFrame(frame);}
+    async function start(){try{db=await openDB();let saved=await read(KEY);city=valid(saved)?sanitize(saved):initial();if(saved&&!valid(saved))notice('Сохранение повреждено или создано другой версией. Начат новый город.');else if(saved)offline();else notice('Коснись кота или дома. Коты заботятся о себе сами.');await write();}catch(err){city=initial();notice('Хранилище Safari недоступно: игра работает, но сохранение может пропасть.');}resize();renderUI();requestAnimationFrame(frame);setInterval(()=>{if(dirty)write().catch(()=>{});},15000);document.addEventListener('visibilitychange',()=>{if(document.hidden&&dirty)write().catch(()=>{});});}
+    window.addEventListener('resize',resize);start();
+  })();
   </script>
 </body>
 </html>
