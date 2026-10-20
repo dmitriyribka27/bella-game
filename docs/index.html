@@ -200,21 +200,23 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       beach.lineTo(13.9,12.82);
       beach.bezierCurveTo(9.5,14.0,3.9,14.12,-.2,14.03);
       beach.bezierCurveTo(-5.2,14.15,-10.8,13.4,-14.7,12.6);beach.closePath();
-      let sand=new T.Mesh(new T.ShapeGeometry(beach,20),material('#edc68e',.98,{side:T.DoubleSide}));
-      sand.rotation.x=Math.PI/2;sand.position.y=.483;sand.receiveShadow=true;world.add(sand);
+      // A shallow solid layer sits above the island surface so the green ground cannot cover it.
+      let sand=new T.Mesh(new T.ExtrudeGeometry(beach,{depth:.07,steps:1,bevelEnabled:false,curveSegments:20}),
+        [material('#eec48a',1,{side:T.DoubleSide}),material('#d8ad77',1,{side:T.DoubleSide})]);
+      sand.rotation.x=Math.PI/2;sand.position.y=.59;sand.receiveShadow=true;world.add(sand);
       let wetSand=new T.Shape();wetSand.moveTo(-13.9,12.45);
       wetSand.bezierCurveTo(-6.6,13.25,4.8,13.7,13.25,12.58);
       wetSand.lineTo(13.55,13.15);
       wetSand.bezierCurveTo(6.5,14.15,-5.5,14.55,-13.9,12.95);wetSand.closePath();
       let tide=new T.Mesh(new T.ShapeGeometry(wetSand,18),material('#d8b78d',.93,{side:T.DoubleSide,transparent:true,opacity:.8}));
-      tide.rotation.x=Math.PI/2;tide.position.y=.487;world.add(tide);
+      tide.rotation.x=Math.PI/2;tide.position.y=.602;world.add(tide);
       for(let i=0;i<125;i++){let x=-13.8+(i*9.71)%27.6,z=10.2+(i*2.73)%3.35;
-        let dot=sphere(world,.016+(i%4)*.007,x,.505,z,i%3?'#f7dfb3':'#d6a971',6);dot.castShadow=false}
+        let dot=sphere(world,.016+(i%4)*.007,x,.617,z,i%3?'#f7dfb3':'#d6a971',6);dot.castShadow=false}
       for(let i=0;i<17;i++){let x=-12+(i*5.73)%24,z=11.1+(i*1.37)%2.4;
-        let shell=sphere(world,.055,x,.507,z,i%2?'#fff0cf':'#e8a79a',7);shell.scale.set(1,.38,.7);shell.castShadow=false}
+        let shell=sphere(world,.055,x,.617,z,i%2?'#fff0cf':'#e8a79a',7);shell.scale.set(1,.38,.7);shell.castShadow=false}
       // The promenade lies at the back of the beach, leaving the shore open for rest.
-      rounded(world,30.7,.066,.9,0,.51,9.58,material('#e3cbad'),.13,false);
-      for(let i=0;i<38;i++){let x=-12.8+i*.68;sphere(world,.055+(i%3)*.011,x,.49,13.63+(i%3)*.07,i%2?'#c4c8ad':'#e0d4b7',7)}
+      rounded(world,30.7,.066,.9,0,.635,9.58,material('#e3cbad'),.13,false);
+      for(let i=0;i<38;i++){let x=-12.8+i*.68;sphere(world,.055+(i%3)*.011,x,.615,13.63+(i%3)*.07,i%2?'#c4c8ad':'#e0d4b7',7)}
       for(let x of [-11.3,-4.2,3.9,11.1])rounded(world,.72,.045,20.7,x,.49,-.13,material('#d7c6ab'),.09,false);
       for(let z of [-5.5,5.75])rounded(world,29,.05,.76,0,.5,z,material('#d5c2a7'),.09,false);
       rounded(world,29.4,.06,1.58,0,.51,0,material('#decbaa'),.18,false);
@@ -312,6 +314,37 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       let boat=new T.Group();boat.position.set(9,-.48,21.2);world.add(boat);
       let hull=new T.Mesh(new T.CapsuleGeometry(.37,1.25,4,9),material('#49798e',.44));hull.rotation.z=Math.PI/2;hull.scale.set(1.1,.6,1);boat.add(hull);
       rounded(boat,.84,.35,.56,0,.27,0,'#d9ac88',.09);rounded(boat,1.04,.06,.68,0,.48,0,'#695e65',.035);
+      // Two yachts stay at anchor in the bay, with a rope and buoy by each bow.
+      function anchoredYacht(x,z,hasSail){
+        let yacht=new T.Group();yacht.position.set(x,-.49,z);yacht.rotation.y=hasSail?.14:-.2;world.add(yacht);
+        let keel=sphere(yacht,1,0,.1,0,'#395f72',18);keel.scale.set(1.7,.32,.62);
+        let whiteHull=sphere(yacht,1,0,.33,0,'#f6ecda',18);whiteHull.scale.set(1.72,.3,.7);
+        rounded(yacht,2.6,.12,1.02,0,.54,0,'#f5e7d2',.16);
+        rounded(yacht,.98,.58,.83,-.25,.86,0,'#f2e9dc',.15);
+        rounded(yacht,.83,.25,.09,-.25,.97,.46,'#81aeb7',.06,false);
+        for(let a of [-.6,.2,.8])sphere(yacht,.085,a,.46,.62,'#83aab2',9).castShadow=false;
+        for(let side of [-1,1]){
+          cylinder(yacht,.025,.028,.42,1.02,.78,side*.39,'#c6b7a0',6);
+          cylinder(yacht,.025,.028,.42,-1.02,.78,side*.39,'#c6b7a0',6);
+          rounded(yacht,2.16,.03,.03,0,1,side*.39,'#e8dac7',.012,false);
+        }
+        if(hasSail){
+          cylinder(yacht,.052,.07,2.65,.08,1.9,0,'#b89a76',9);
+          let triangle=new T.BufferGeometry();
+          triangle.setAttribute('position',new T.Float32BufferAttribute([.16,3.12,.04,.2,.82,.04,1.46,.85,.04],3));
+          triangle.computeVertexNormals();
+          let sail=new T.Mesh(triangle,material('#fff5e5',.92,{side:T.DoubleSide}));sail.castShadow=true;yacht.add(sail);
+        }else{
+          rounded(yacht,1.28,.13,1.01,-.28,1.25,0,'#e4c7a5',.09);
+          cylinder(yacht,.025,.035,.56,-.45,1.54,0,'#ac9075',6);
+        }
+        let ropeEnd=new T.Vector3(-2.4,-.15,.25);
+        yacht.add(new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(-1.42,.41,0),ropeEnd]),
+          new T.LineBasicMaterial({color:'#d4bd9c'})));
+        let buoy=sphere(yacht,.18,ropeEnd.x,ropeEnd.y,ropeEnd.z,'#e17f6a',10);buoy.castShadow=false;
+        sphere(yacht,.07,ropeEnd.x,ropeEnd.y+.17,ropeEnd.z,'#fff1d5',8).castShadow=false;
+      }
+      anchoredYacht(-8,20.6,true);anchoredYacht(13,22.3,false);
       for(let [x,z] of [[-12,5.75],[-7.3,9.6],[-3,5.75],[3.9,9.6],[10.3,5.75],[13.8,9.6]]){
         cylinder(world,.05,.07,.83,x,.9,z,'#715e53',8);
         let bulb=sphere(world,.09,x,1.35,z,'#ffdaa3',8);bulb.material.emissive=new T.Color('#e89b5b');bulb.material.emissiveIntensity=1.4;
