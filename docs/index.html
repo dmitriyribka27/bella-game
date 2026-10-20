@@ -78,7 +78,7 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       {id:'marina',name:'Лодочная',home:[13.4,13.9],roof:'#7da6b1',wall:'#d6c4a7',floors:1},
       {id:'greenhouse',name:'Оранжерея',home:[.3,6.8],roof:'#8aab94',wall:'#d7e5d2',floors:1},
       {id:'restaurant',name:'Ресторан',home:[7.3,9],roof:'#b16f67',wall:'#f2d3b1',floors:2},
-      {id:'office_west',name:'Офис',home:[11,3.2],roof:'#7d9da2',wall:'#e7ded1',floors:2},
+      {id:'office_west',name:'Офис',home:[10.5,3],roof:'#7d9da2',wall:'#e7ded1',floors:2},
       {id:'office_east',name:'Офис',home:[16.1,4.1],roof:'#9e94ad',wall:'#e9e3d8',floors:3},
       {id:'residence_hill',name:'Жилой дом',home:[4.5,3.7],roof:'#b88470',wall:'#ead8c2',floors:2},
       {id:'residence_east',name:'Жилой дом',home:[14.8,9.1],roof:'#909fa6',wall:'#e9d6c0',floors:3},
@@ -131,7 +131,7 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
     document.getElementById('file').onchange=async e=>{let f=e.target.files[0];e.target.value='';if(!f)return;if(f.size>200000){notice('Файл слишком большой.');close();return;}try{let data=JSON.parse(await f.text());if(!valid(data))throw Error('Неверный формат или версия файла.');if(!confirm('Заменить текущий город содержимым этого файла?'))return;city=sanitize(data);city.savedAt=Date.now();changed();close();notice('Город восстановлен из файла.');}catch(err){close();notice(`Не удалось импортировать: ${err.message}`);}};
 
     let renderer,scene,world,camera,controls,raycaster,pointer,catLabels=new Map(),catMeshes=new Map(),homes=new Map(),coffeeMesh=null,coffeeState='',renderReady=false,needsRender=true;
-    const S=.9;
+    const S=1.35;
     const spot=(x,y)=>[(x-10)*S,(y-7.5)*S];
     const material=(color,roughness=.86,more={})=>new T.MeshStandardMaterial({color,roughness,...more});
     const mats={sand:material('#d8c29d'),grass:material('#89a98e'),wood:material('#ba8b68'),dark:material('#765f57'),stone:material('#b4aea0'),light:material('#ffda96',.3,{emissive:'#cb783d',emissiveIntensity:.8})};
@@ -149,40 +149,77 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
     function mountain(x,z,size=1){let g=new T.Group();g.position.set(x,-.1,z);world.add(g);let m=new T.Mesh(new T.ConeGeometry(1.5*size,2.6*size,5),material('#648382'));m.position.y=1.0*size;m.rotation.y=.4;m.castShadow=true;g.add(m);let snow=new T.Mesh(new T.ConeGeometry(.53*size,.7*size,5),material('#d7dccb'));snow.position.y=2.37*size;snow.rotation.y=.4;g.add(snow)}
     function sceneBase(){scene=new T.Scene();world=new T.Group();world.scale.set(1.58,1,1.58);scene.add(world);scene.background=new T.Color('#203c56');scene.fog=new T.Fog('#2b6676',48,105);
       renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;
-      let water=new T.Mesh(new T.PlaneGeometry(110,110),material('#248a9d',.26,{metalness:.17}));water.rotation.x=-Math.PI/2;water.position.y=-.75;scene.add(water);
-      let under=rounded(world,23,.78,17.1,0,-.34,-.1,material('#5c6360'),.38);under.castShadow=false;
-      rounded(world,22.7,.38,16.8,0,.25,-.1,mats.grass,.32);
-      let sun=new T.DirectionalLight('#ffce9d',2.7);sun.position.set(-9,19,12);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-32,right:32,top:32,bottom:-32,near:.5,far:85});sun.shadow.bias=-.0001;sun.shadow.normalBias=.025;sun.shadow.radius=3;scene.add(sun);
-      scene.add(new T.HemisphereLight('#b6d9e1','#84635b',1.55));scene.add(new T.AmbientLight('#a5cbdc',.24));
-      camera=new T.OrthographicCamera(-10,10,10,-10,.1,120);camera.position.set(23,27,40);
-      controls=new OrbitControls(camera,canvas);controls.enableRotate=false;controls.enableDamping=true;controls.dampingFactor=.1;controls.screenSpacePanning=true;controls.minZoom=.56;controls.maxZoom=3.1;controls.touches.ONE=T.TOUCH.PAN;controls.touches.TWO=T.TOUCH.DOLLY_PAN;controls.target.set(0,0,9.8);controls.update();controls.addEventListener('change',()=>needsRender=true);
-      raycaster=new T.Raycaster();pointer=new T.Vector2();
-      for(let i=0;i<13;i++){let x=-11+i*1.86;mountain(x,-7.8,.72+(i%3)*.17)}
-      for(let j=0;j<14;j++){mountain(-10.9,-6.4+j*.9,.40+(j%3)*.08);mountain(10.8,-6.4+j*.9,.4+(j%4)*.07)}
-      for(let i=0;i<45;i++){let mode=i%3,x=mode===0?-10.2+(i%3)*.4:mode===1?10.1-(i%4)*.28:-9.6+(i*2.59)%19.2,z=mode===2?-6.6+(i%3)*.25:-6.5+(i*1.77)%13.5;fir(x,z,.47+(i%4)*.1)}
-      rounded(world,22.5,.07,.95,0,.49,5.9,mats.sand,.09,false);
-      for(let i=0;i<24;i++){let x=-10.8+i*.94;sphere(world,.075+(i%3)*.02,x,.51,6.62+(i%3)*.06,i%2?'#c4c8ad':'#e0d4b7',7)}
-      for(let x of [-5.7,-1.3,3.4,7.7])rounded(world,.57,.05,13.5,x,.49,-.5,material('#d4c2a9'),.09,false);
-      for(let z of [-3.7,.7,3.8])rounded(world,19.4,.05,.53,0,.5,z,material('#d2c0a6'),.09,false);
-      // Short footpaths lead from each door to the nearest neighborhood street.
-      for(let d of [...defs,...scenicSites,cafeSite]){let [x,z]=spot(...d.home);let near=[-3.7,.7,3.8].reduce((best,v)=>Math.abs(v-z)<Math.abs(best-z)?v:best,-3.7);
-        let length=Math.abs(near-z);if(length>.34)rounded(world,.26,.025,length,x,.515,(near+z)/2,material('#e4d2b2'),.04,false);
+      let water=new T.Mesh(new T.PlaneGeometry(180,180),material('#167e91',.29,{metalness:.14}));water.rotation.x=-Math.PI/2;water.position.y=-.75;scene.add(water);
+      // The coast is a continuous curved island, with its stone sides above the sea.
+      let coast=new T.Shape();coast.moveTo(-16.2,-9.9);
+      coast.bezierCurveTo(-14.7,-12,-9.8,-11.7,-5.4,-12);
+      coast.bezierCurveTo(-1,-12.4,3.5,-11.7,8.2,-12);
+      coast.bezierCurveTo(13,-12.1,16.6,-10.7,17.1,-7.8);
+      coast.bezierCurveTo(17.6,-3,16.8,2.2,16.4,6.5);
+      coast.bezierCurveTo(16.1,9.5,15,11.6,11.4,12);
+      coast.bezierCurveTo(6.5,13,3,12.2,-.4,12.65);
+      coast.bezierCurveTo(-5.4,13.3,-8.8,11.8,-13,12);
+      coast.bezierCurveTo(-16.5,11.4,-17.2,8.8,-17.1,5);
+      coast.bezierCurveTo(-17.3,.4,-16.4,-5,-16.2,-9.9);
+      let shore=new T.Mesh(new T.ExtrudeGeometry(coast,{depth:.86,steps:1,bevelEnabled:true,bevelSegments:2,bevelSize:.13,bevelThickness:.08,curveSegments:6}),[mats.grass,material('#5d7773')]);
+      shore.rotation.x=Math.PI/2;shore.position.y=.44;shore.receiveShadow=true;world.add(shore);
+      const edge=coast.getSpacedPoints(115);
+      for(let i=0;i<edge.length;i+=2){let p=edge[i],a=Math.atan2(p.y,p.x),x=p.x+Math.cos(a)*.38,z=p.y+Math.sin(a)*.38;
+        let foam=rounded(world,.37+(i%4)*.1,.008,.024,x,-.733,z,i%5?'#a3d5d0':'#dcf0dc',.004,false);foam.rotation.y=a;
       }
-      for(let i=0;i<23;i++){let x=-9.3+(i*3.67)%18.6,z=-5.2+(i*2.93)%10.4;if(i%4===0){rounded(world,.38,.025,.24,x,.535,z,material('#e9d9bd'),.07,false);}}
-      rounded(world,3.35,.045,2.5,-.1,.51,1.2,material('#8eb28a'),.3,false);let pond=new T.Mesh(new T.CircleGeometry(.93,24),material('#80bec0',.38));pond.rotation.x=-Math.PI/2;pond.position.set(-.1,.545,1.2);world.add(pond);
-      for(let i=0;i<20;i++){let x=-8.8+(i*6.37)%18,z=-6+(i*3.23)%11.5;if(Math.abs(x)<1.7&&z>-.4&&z<3)continue;groveTree(x,z,.62+(i%4)*.1)}
-      for(let x of [-8.4,-5,1.6,8.2])palm(x,5.6);
-      for(let i=0;i<20;i++){let x=-9+(i*4.93)%18,z=6.8+(i%4)*.41;rounded(world,.27,.012,.025,x,-.735,z,material('#bee2d8',.4),.005,false)}
-      for(let i=0;i<27;i++)rounded(world,2.1,.13,.19,3.6,.55,6.3+i*.18,i%2?'#b88761':'#c49a72',.025);
-      for(let z of [6.3,7.7,9.2,10.8])for(let x of [2.52,4.65])cylinder(world,.08,.12,.75,x,.28,z,'#947057',8);
-      // Foam and reflected sunset color continue well beyond the boardwalk.
-      for(let i=0;i<60;i++){let x=-10.2+(i*4.07)%20.4,z=8.7+(i*2.37)%9.8;let glint=rounded(world,.2+(i%4)*.09,.009,.015,x,-.736,z,i%5?'#9ccac8':'#f4d0a2',.004,false);glint.rotation.y=(i%3)*.17}
-      for(let i=0;i<19;i++){let x=-10.3+i*1.1;rounded(world,.5+(i%3)*.18,.009,.024,x,-.731,8.68+(i%3)*.18,'#d3ead7',.006,false)}
-      let boat=new T.Group();boat.position.set(6,-.48,12.3);world.add(boat);
+      let sun=new T.DirectionalLight('#ffce9d',2.7);sun.position.set(-9,19,12);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-48,right:48,top:48,bottom:-48,near:.5,far:85});sun.shadow.bias=-.0001;sun.shadow.normalBias=.025;sun.shadow.radius=3;scene.add(sun);
+      scene.add(new T.HemisphereLight('#b6d9e1','#84635b',1.55));scene.add(new T.AmbientLight('#a5cbdc',.24));
+      camera=new T.OrthographicCamera(-10,10,10,-10,.1,120);camera.position.set(23,27,46);
+      controls=new OrbitControls(camera,canvas);controls.enableRotate=false;controls.enableDamping=true;controls.dampingFactor=.1;controls.screenSpacePanning=true;controls.minZoom=.34;controls.maxZoom=3.1;controls.touches.ONE=T.TOUCH.PAN;controls.touches.TWO=T.TOUCH.DOLLY_PAN;controls.target.set(0,0,15.5);controls.update();controls.addEventListener('change',()=>needsRender=true);
+      raycaster=new T.Raycaster();pointer=new T.Vector2();
+      // Mountains stay behind the neighborhoods, fully inside the northern shore.
+      for(let i=0;i<10;i++)mountain(-13.7+i*3.05,-10.35+(i%3)*.18,.66+(i%3)*.13);
+      for(let j=0;j<3;j++){mountain(-14.6,-8+j*1.9,.46);mountain(14.5,-8+j*1.9,.46)}
+      for(let i=0;i<48;i++){let side=i%3,x=side===0?-15.1:side===1?15.1:-13.6+(i*4.31)%27.2;
+        let z=side===2?-9.65+(i%3)*.21:-7.9+(i*1.71)%15.4;fir(x,z,.46+(i%4)*.1)}
+      // A promenade on the bay, neighborhood streets and a generous central avenue.
+      rounded(world,32,.08,1.15,0,.49,10.9,mats.sand,.14,false);
+      for(let i=0;i<38;i++){let x=-15.2+i*.82;sphere(world,.075+(i%3)*.02,x,.51,11.86+(i%3)*.04,i%2?'#c4c8ad':'#e0d4b7',7)}
+      for(let x of [-11.3,-4.2,3.9,11.1])rounded(world,.72,.045,20.7,x,.49,-.13,material('#d7c6ab'),.09,false);
+      for(let z of [-5.5,5.75])rounded(world,29,.05,.76,0,.5,z,material('#d5c2a7'),.09,false);
+      rounded(world,29.4,.06,1.58,0,.51,0,material('#decbaa'),.18,false);
+      // A footpath reaches every entrance, including the buildings on the waterfront.
+      for(let d of [...defs,...scenicSites,cafeSite]){let [x,z]=spot(...d.home);let near=[-5.5,0,5.75,10.9].reduce((best,v)=>Math.abs(v-z)<Math.abs(best-z)?v:best,-5.5);
+        let length=Math.abs(near-z);if(length>.35)rounded(world,.33,.025,length,x,.535,(near+z)/2,material('#ead9bc'),.045,false);
+      }
+      for(let x of [-13,-9,-5,-1,3,7,11,14]){
+        for(let z of [-1.27,1.29]){rounded(world,.92,.12,.3,x,.7,z,'#aa795b',.05);
+          rounded(world,.92,.4,.1,x,.91,z+(z>0?.16:-.16),'#ba8965',.04);
+          for(let dx of [-.34,.34])cylinder(world,.045,.05,.33,x+dx,.52,z,'#745f53',6)}
+      }
+      for(let x of [-12,-6,0,6,12]){
+        for(let z of [-1.4,1.43]){cylinder(world,.06,.085,1.26,x,1.09,z,'#6c6156',8);
+          let lamp=sphere(world,.13,x,1.78,z,'#ffdb9f',9);lamp.material.emissive=new T.Color('#e6a25d');lamp.material.emissiveIntensity=1.7;
+          if(x===-12||x===0||x===12){let light=new T.PointLight('#ffce91',1.15,4.4,2);light.position.set(x,1.78,z);world.add(light)}}
+      }
+      rounded(world,3.7,.04,2.1,-.2,.515,2.55,material('#8eaf8b'),.3,false);
+      let pond=new T.Mesh(new T.CircleGeometry(.92,24),material('#80bec0',.38));pond.rotation.x=-Math.PI/2;pond.position.set(-.2,.55,2.55);world.add(pond);
+      for(let i=0;i<28;i++){let x=-12.8+(i*7.17)%25.6,z=-7.5+(i*4.31)%16.2;
+        if(Math.abs(z)<2.3||Math.abs(x)<2&&z>1&&z<4.3)continue;groveTree(x,z,.62+(i%4)*.1)}
+      for(let x of [-12.8,-7.3,2.3,13])palm(x,10.2);
+      // Wooden pier extends out into the surrounding water.
+      for(let i=0;i<31;i++)rounded(world,2.15,.13,.19,5.5,.55,11.25+i*.18,i%2?'#b88761':'#c49a72',.025);
+      for(let z of [11.4,13,14.5,16.45])for(let x of [4.42,6.58])cylinder(world,.08,.12,.83,x,.27,z,'#947057',8);
+      // Sea ripples around the entire island and warmer reflections beside the pier.
+      for(let i=0;i<125;i++){let x=-23+(i*11.77)%46,z=-19+(i*6.91)%44;
+        if(x>-18&&x<18&&z>-13.3&&z<13.3)continue;
+        let glint=rounded(world,.25+(i%5)*.11,.009,.019,x,-.735,z,i%6?'#a6d7d4':'#f3cfaa',.005,false);
+        glint.rotation.y=(i%3)*.17}
+      for(let i=0;i<34;i++){let x=-16+i*.98;rounded(world,.45+(i%3)*.18,.009,.023,x,-.731,13.15+(i%3)*.2,'#d7eadd',.006,false)}
+      let boat=new T.Group();boat.position.set(9,-.48,18.2);world.add(boat);
       let hull=new T.Mesh(new T.CapsuleGeometry(.37,1.25,4,9),material('#49798e',.44));hull.rotation.z=Math.PI/2;hull.scale.set(1.1,.6,1);boat.add(hull);
       rounded(boat,.84,.35,.56,0,.27,0,'#d9ac88',.09);rounded(boat,1.04,.06,.68,0,.48,0,'#695e65',.035);
-      for(let p of [[-5.2,4.4],[-2.1,2.8],[2.2,3.5],[6.1,.3],[8.8,-2.1],[-7.9,-2.8]]){let [x,z]=p;cylinder(world,.05,.07,.83,x,.9,z,'#715e53',8);let bulb=sphere(world,.09,x,1.35,z,'#ffdaa3',8);bulb.material.emissive=new T.Color('#e89b5b');bulb.material.emissiveIntensity=1.4;if(x===-5.2||x===2.2||x===8.8){let l=new T.PointLight('#ffd39b',1.45,3.8,2);l.position.set(x,1.35,z);world.add(l)}}
-      for(let [x,z] of [[-8.8,5.7],[-4,5.7],[0,5.7],[6,5.7],[9,5.7],[-1.9,.6],[1.9,2.8]]){cylinder(world,.055,.07,.84,x,.87,z,'#776c60',8);glow(world,x,1.36,z,.09)}
+      for(let [x,z] of [[-12,5.75],[-7.3,10.8],[-3,5.75],[3.9,10.8],[10.3,5.75],[13.8,10.8]]){
+        cylinder(world,.05,.07,.83,x,.9,z,'#715e53',8);
+        let bulb=sphere(world,.09,x,1.35,z,'#ffdaa3',8);bulb.material.emissive=new T.Color('#e89b5b');bulb.material.emissiveIntensity=1.4;
+        if(x===-12||x===3.9){let light=new T.PointLight('#ffd39b',1.45,3.8,2);light.position.set(x,1.35,z);world.add(light)}
+      }
+      for(let [x,z] of [[-14.7,10.8],[-9,10.8],[-1,10.8],[8,10.8],[14.5,10.8]]){cylinder(world,.055,.07,.84,x,.87,z,'#776c60',8);glow(world,x,1.36,z,.09)}
     }
 
     function addBuilding(d){let p=spot(...d.home),g=new T.Group();g.position.set(p[0],.47,p[1]);g.userData.pick=d.id;world.add(g);let id=d.id;
