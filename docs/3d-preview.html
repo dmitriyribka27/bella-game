@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Тихая бухта — 3D-проба</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#172740;font-family:system-ui,-apple-system,sans-serif;color:#223b3d}#scene{position:fixed;inset:0;touch-action:none}#scene canvas{display:block;width:100%;height:100%}
+.top{position:fixed;left:18px;right:18px;top:calc(env(safe-area-inset-top) + 16px);display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;gap:12px}.badge,.back{background:#fff8ebed;backdrop-filter:blur(14px);border:1px solid #fff9;border-radius:20px;box-shadow:0 8px 26px #0c242940;color:#274549}.badge{padding:11px 15px;max-width:230px}.badge b{display:block;font-size:17px;line-height:1.1}.badge small{font-size:11px;color:#627779}.back{pointer-events:auto;text-decoration:none;padding:12px 15px;font-size:13px;font-weight:700;white-space:nowrap}
+.bottom{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 18px);left:18px;right:18px;background:#fff8edee;border-radius:22px;padding:13px 17px;box-shadow:0 12px 35px #0d2b3e55;min-height:72px;pointer-events:none}.bottom b{display:block;font-size:16px}.bottom span{display:block;color:#6c7d78;font-size:12px;margin-top:2px}#error{display:none;position:fixed;inset:25%;padding:24px;background:#fff8ed;border-radius:20px;z-index:10}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
+</head><body><div id="scene"></div><div class="top"><div class="badge"><b>Тихая бухта · 3D</b><small>Проба объёмного района у моря</small></div><a class="back" href="./index.html">← Игра</a></div><div class="bottom"><b id="title">Побережье Беллы</b><span id="hint">Перетаскивай одним пальцем · двумя меняй масштаб · коснись здания</span></div><div id="error"></div>
+<script type="module">
+import * as T from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
+try{
+const mount=document.getElementById('scene');
+const renderer=new T.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
+renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.35;
+mount.appendChild(renderer.domElement);
+const scene=new T.Scene();scene.background=new T.Color('#222a4c');scene.fog=new T.Fog('#283b55',40,85);
+const camera=new T.OrthographicCamera(-10,10,10,-10,.1,120);camera.position.set(21,26,30);camera.lookAt(0,0,0);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableRotate=false;controls.enableDamping=true;controls.dampingFactor=.1;controls.screenSpacePanning=true;controls.minZoom=.7;controls.maxZoom=2.7;
+controls.touches.ONE=T.TOUCH.PAN;controls.touches.TWO=T.TOUCH.DOLLY_PAN;controls.target.set(0,0,0);controls.update();
+const hemi=new T.HemisphereLight('#d6f2f4','#8d6558',2.2);scene.add(hemi);
+const sun=new T.DirectionalLight('#ffe3bc',3.7);sun.position.set(-8,18,10);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-16;sun.shadow.camera.right=16;sun.shadow.camera.top=16;sun.shadow.camera.bottom=-16;sun.shadow.camera.near=.5;sun.shadow.camera.far=55;sun.shadow.bias=-.0001;sun.shadow.normalBias=.03;sun.shadow.radius=3;scene.add(sun);
+const ambient=new T.AmbientLight('#a4d5e6',.45);scene.add(ambient);
+const mat=(color,roughness=.86,extra={})=>new T.MeshStandardMaterial({color,roughness,...extra});
+const sand=mat('#d4b994'),grass=mat('#82a58b'),grass2=mat('#638d78'),timber=mat('#96684e'),plank=mat('#c29369'),foam=mat('#a1ded4'),stone=mat('#b7afa0');
+const water=new T.Mesh(new T.PlaneGeometry(130,130),mat('#318899',.34,{metalness:.14}));water.rotation.x=-Math.PI/2;water.position.y=-1.05;scene.add(water);
+const box=(parent,w,h,d,x,y,z,color,round=.08,cast=true)=>{let mesh=new T.Mesh(new RoundedBoxGeometry(w,h,d,3,Math.min(round,w/3,h/3,d/3)),typeof color==='string'?mat(color):color);mesh.position.set(x,y,z);mesh.castShadow=cast;mesh.receiveShadow=true;parent.add(mesh);return mesh};
+const ball=(parent,r,x,y,z,color,detail=12)=>{let mesh=new T.Mesh(new T.SphereGeometry(r,detail,9),mat(color));mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh};
+const cyl=(parent,rt,rb,height,x,y,z,color,edges=12)=>{let mesh=new T.Mesh(new T.CylinderGeometry(rt,rb,height,edges),mat(color));mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh};
+const roof=(parent,w,depth,x,y,z,color)=>{let g=new T.ConeGeometry(w*.71,.92,4);let m=new T.Mesh(g,mat(color));m.rotation.y=Math.PI/4;m.scale.z=depth/w;m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m};
+const cylinderRoof=(parent,r,h,x,y,z,color,edges=18)=>{let mesh=new T.Mesh(new T.ConeGeometry(r,h,edges),mat(color));mesh.position.set(x,y,z);mesh.castShadow=true;parent.add(mesh);return mesh};
+const lamp=(parent,x,y,z,r=.1)=>{ball(parent,r,x,y,z,'#ffda91',8);let light=new T.PointLight('#ffd99d',2.2,3.8,2);light.position.set(x,y,z);parent.add(light)};
+const readable=(text,bg='#806158')=>{let canvas=document.createElement('canvas');canvas.width=256;canvas.height=70;let c=canvas.getContext('2d');c.fillStyle=bg;c.beginPath();c.roundRect(0,0,256,70,15);c.fill();c.fillStyle='#fff2db';c.font='bold 39px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText(text,128,37);let tex=new T.CanvasTexture(canvas);tex.colorSpace=T.SRGBColorSpace;let m=new T.Mesh(new T.PlaneGeometry(1.55,.43),new T.MeshBasicMaterial({map:tex,transparent:true,side:T.DoubleSide}));return m};
+const label=(g,text,x,y,z,bg)=>{let l=readable(text,bg);l.position.set(x,y,z);g.add(l)};
+const windowMat=mat('#ffd898',.32,{emissive:'#d88743',emissiveIntensity:.85});
+const pane=(g,x,y,z,w=.38,h=.48)=>box(g,w,h,.035,x,y,z,windowMat,.055,false);
+const foundation=box(scene,19,.72,13,0,-.47,-1.05,mat('#56545c'),.36);
+const coast=box(scene,18.8,.4,12.8,0,.1,-1.05,grass,.35);
+for(let i=0;i<22;i++){let x=-8.6+i*.82;let z=5.1+Math.sin(i*2.4)*.09;ball(scene,.12+(i%3)*.055,x,.24,z,i%3?'#d5ccab':'#aca89a',8)}
+// Shore, stone path and wooden promenade.
+box(scene,18.8,.08,1.65,0,.33,4.18,sand,.2);
+for(let i=0;i<20;i++)box(scene,.015,.012,1.55,-8.7+i*.92,.38,4.18,mat('#efdbb5'),.004,false);
+box(scene,11,.14,.68,0,.38,.15,mat('#d5c3a3'),.22,false);
+box(scene,.74,.14,8.6,-3.1,.38,-1.9,mat('#d5c3a3'),.16,false);
+for(let i=0;i<12;i++){let x=-8.5+i*1.5;let refl=box(scene,.35,.015,.04,x,-1.018,7.1+(i%3)*.38,foam,.014,false);refl.rotation.y=.28}
+const pier=new T.Group();scene.add(pier);for(let i=0;i<13;i++)box(pier,2.2,.14,.24,4,.45,4.9+i*.24,i%2?plank:mat('#bd8961'),.025);for(let i of [0,3,6,9,12])for(let x of [2.9,5.1])cyl(pier,.1,.13,.88,x,.18,4.9+i*.24,timber,8);
+// Cafe on a wooden deck.
+let cafe=new T.Group();scene.add(cafe);cafe.position.set(-.1,.4,2.5);cafe.userData.label='Кофейня Рыжего · будущая главная цель города';
+cyl(cafe,2.05,2.08,.28,0,.13,0,plank,20);
+for(let i=0;i<16;i++){let a=i*Math.PI*2/16;cyl(cafe,.033,.033,.18,Math.cos(a)*1.93,.28,Math.sin(a)*1.93,mat('#795946'),7)}
+cyl(cafe,1.05,1.05,1.25,0,.95,0,mat('#b68568'),18);
+for(let i=0;i<14;i++){let a=i*Math.PI*2/14;box(cafe,.06,1.0,.06,Math.cos(a)*.99,.94,Math.sin(a)*.99,mat('#dfad82'),.018)}
+cyl(cafe,1.22,1.13,.15,0,1.62,0,mat('#e0ae82'),18);
+cylinderRoof(cafe,1.72,.88,0,2.15,0,mat('#6d6671'),22);
+for(let i=0;i<12;i++){let a=i*Math.PI*2/12;let slat=box(cafe,.045,.032,1.4,Math.cos(a)*.73,2.25,Math.sin(a)*.73,mat('#baa6a0'),.01);slat.rotation.y=-a;slat.rotation.z=-.18}
+for(let i=0;i<10;i++){let a=i*Math.PI*2/10;lamp(cafe,Math.cos(a)*1.45,1.77,Math.sin(a)*1.45,.055)}
+for(let x of [-1.35,1.35]){cyl(cafe,.15,.18,.63,x,.47,1.05,mat('#bd8e71'));cyl(cafe,.23,.21,.07,x,.83,1.05,plank)}
+label(cafe,'КОФЕ',0,1.1,1.09,'#765850');
+// Bookshop.
+let books=new T.Group();scene.add(books);books.position.set(-5.2,.43,-1.3);books.userData.label='Книги · тихий уголок с витриной';
+box(books,2.6,2.05,2.25,0,1.04,0,mat('#e5c5a5'),.17);
+roof(books,3.45,2.75,0,2.46,0,mat('#b1786d'));
+for(let j=0;j<5;j++)box(books,.15,1.03,.04,-.78+j*.31,1.16,1.15,mat(['#73998e','#c79470','#8499a8','#bb8c91','#ccb375'][j]),.02,false);
+box(books,1.9,.23,.62,0,1.9,1.21,mat('#d7957d'),.08);
+pane(books,.85,1.07,1.15,.42,.74);label(books,'КНИГИ',0,1.69,1.56);
+// Hotel.
+let hotel=new T.Group();scene.add(hotel);hotel.position.set(5,.43,-2.1);hotel.userData.label='Отель · окна и балконы смотрят на море';
+box(hotel,2.9,3.55,2.36,0,1.78,0,mat('#ecd0ac'),.18);roof(hotel,3.55,2.8,0,4.0,0,mat('#aa756c'));
+for(let f=0;f<3;f++){for(let x of [-.67,.67])pane(hotel,x,.76+f*1.03,1.21,.44,.59);box(hotel,2.5,.08,.47,0,.45+f*1.03,1.35,mat('#bb907e'),.05);for(let xx of [-.94,0,.94])box(hotel,.043,.28,.043,xx,.58+f*1.03,1.54,mat('#806a61'),.015)}
+label(hotel,'ОТЕЛЬ',0,2.14,1.57,'#775957');box(hotel,.62,.98,.04,0,.53,1.23,mat('#916f65'),.055);
+// Post.
+let post=new T.Group();scene.add(post);post.position.set(-4.6,.43,-5.35);post.userData.label='Почта Цитеры · здесь ждут письма';
+box(post,2.4,1.86,2,0,.95,0,mat('#e8d4b4'),.16);roof(post,3,2.4,0,2.22,0,mat('#7caaa9'));
+box(post,.52,.95,.06,-.55,.52,1.03,mat('#8d766a'),.06);pane(post,.56,.98,1.03,.43,.53);label(post,'ПОЧТА',0,1.58,1.29,'#547c79');
+box(post,.42,.68,.5,1.55,.38,1.05,mat('#c97871'),.08);
+// Trees and potted coastal plants.
+const tree=(x,z,r=1)=>{let g=new T.Group();scene.add(g);g.position.set(x,.34,z);cyl(g,.10,.15,1.05,0,.5,0,mat('#755f50'),9);ball(g,.69*r,-.22,1.23,0, '#608d71');ball(g,.65*r,.27,1.42,.09,'#80a77d');ball(g,.45*r,-.03,1.75,-.18,'#9ab687');return g};
+for(let [x,z,r] of [[-8,-5,1],[-7.7,-3.4,.9],[-7.9,-.2,.75],[-2,-5.9,.8],[.9,-5.2,.8],[2.5,-5.9,1],[8,-4.9,1],[8.05,-1,.75],[7.6,2,.9],[-7,2.4,.7],[-5.9,3.1,.6]])tree(x,z,r);
+const palm=(x,z)=>{let g=new T.Group();scene.add(g);g.position.set(x,.32,z);let trunk=cyl(g,.11,.18,2.1,0,1.08,0,mat('#987861'),10);trunk.rotation.z=.11;for(let i=0;i<9;i++){let a=i*Math.PI*2/9;let leaf=new T.Mesh(new T.SphereGeometry(.88,10,6),mat(i%2?'#457e69':'#5c9771'));leaf.scale.set(1,.13,.32);leaf.rotation.y=a;leaf.position.set(Math.cos(a)*.66,2.16,Math.sin(a)*.66);leaf.castShadow=true;g.add(leaf)}};palm(-7,4.1);palm(7.6,4.25);
+for(let i=0;i<18;i++){let x=-7.6+(i*5.3)%15.2,z=-5.3+(i*2.7)%9.6;if(Math.abs(x)<1.8&&z>1)continue;ball(scene,.07,x,.39,z,i%3?'#edb9aa':'#f4d69d',8)}
+// Harbor boat.
+let boat=new T.Group();scene.add(boat);boat.position.set(6.55,-.71,7.4);
+const hull=new T.Mesh(new T.CapsuleGeometry(.46,1.1,5,10),mat('#52798c',.5));hull.rotation.z=Math.PI/2;hull.scale.set(1.15,.65,1.1);boat.add(hull);
+box(boat,.85,.45,.7,0,.4,0,mat('#cfaa8d'),.1);box(boat,.9,.08,.73,0,.7,0,mat('#685d65'),.06);lamp(boat,-.3,.78,.26,.045);
+// Interactive labels.
+const raycaster=new T.Raycaster(),pointer=new T.Vector2();let down=null;
+renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY}});
+renderer.domElement.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down.x,e.clientY-down.y)>9)return;pointer.set(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1);raycaster.setFromCamera(pointer,camera);let hit=raycaster.intersectObjects([cafe,books,hotel,post],true)[0];if(hit){let object=hit.object;while(object&&!object.userData.label)object=object.parent;if(object)document.getElementById('title').textContent=object.userData.label}down=null});
+function size(){let w=innerWidth,h=innerHeight,span=18;camera.left=-span*w/h/2;camera.right=span*w/h/2;camera.top=span/2;camera.bottom=-span/2;camera.updateProjectionMatrix();renderer.setSize(w,h);render()}
+function render(){renderer.render(scene,camera)}
+let needs=true;controls.addEventListener('change',()=>{needs=true});
+function loop(){controls.update();if(needs){render();needs=false}requestAnimationFrame(loop)}
+addEventListener('resize',size);size();loop();
+}catch(e){let box=document.getElementById('error');box.style.display='block';box.textContent='Не удалось открыть 3D-сцену: '+e.message}
+</script></body></html>
