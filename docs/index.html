@@ -70,6 +70,7 @@ import {BEACH_ART} from "./beach-art.js?v=1";
 import {SITE_ART} from "./site-art.js?v=1";
 import {PROMENADE_PALM} from "./promenade-art.js?v=1";
 import {BOOKSHOP_ART} from "./bookshop-art.js?v=2";
+import {createEnvironment} from "./environment.js?v=1";
 import {OrbitControls} from "three/addons/controls/OrbitControls.js";
 import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js";
 (()=>{"use strict";
@@ -155,7 +156,7 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
     dialog.onclick=async e=>{let t=e.target,c=city.coffee;if(t.dataset.book!==undefined){bookAction(Number(t.dataset.book));return;}if(t.hasAttribute('data-book-refresh')){showBookshop();return;}if(t.dataset.quest){if(t.dataset.answer!=='yes'){dialog.querySelector('p').textContent='Этот вариант не подходит. Попробуй ещё раз.';return;}c[t.dataset.quest]=true;cat(t.dataset.quest==='recipe'?'ryzhiy':'citera').xp+=6;close();notice(t.dataset.quest==='recipe'?'Рыжий придумал первую булочку.':'Цитера устроила книжный уголок в кофейне.');changed();return;}if(t.dataset.style){c.style=t.dataset.style;close();notice('Белла выбрала оформление кофейни. Цвет крыши появится после открытия.');changed();return;}if(t.dataset.order!==undefined){if(Number(t.dataset.order)!==c.orders%3){dialog.querySelector('p').textContent='Это другой заказ. Гость подождёт, попробуй ещё раз.';return;}c.orders++;city.coins+=8;cat('ryzhiy').xp+=3;close();notice(`Заказ выполнен! +8 монет. Всего заказов: ${c.orders}.`);changed();return;}let id=t.id;if(e.target.hasAttribute('data-close'))close();if(id==='help')showGuide();if(id==='import')document.getElementById('file').click();if(id==='export'){await write().catch(()=>{});let blob=new Blob([JSON.stringify(city,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='tihaya-buhta-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);close();notice('Копия сохранения загружена. Сохрани файл в «Файлы».');}if(id==='restore'){let prev=await read('previous').catch(()=>null);if(!prev||!valid(prev)){notice('Предыдущей исправной копии пока нет.');close();return;}if(confirm('Заменить текущий город предыдущей копией?')){city=sanitize(prev);city.savedAt=Date.now();changed();notice('Предыдущая копия восстановлена.');}close();}};
     document.getElementById('file').onchange=async e=>{let f=e.target.files[0];e.target.value='';if(!f)return;if(f.size>200000){notice('Файл слишком большой.');close();return;}try{let data=JSON.parse(await f.text());if(!valid(data))throw Error('Неверный формат или версия файла.');if(!confirm('Заменить текущий город содержимым этого файла?'))return;city=sanitize(data);city.savedAt=Date.now();changed();close();notice('Город восстановлен из файла.');}catch(err){close();notice(`Не удалось импортировать: ${err.message}`);}};
 
-    let renderer,scene,world,camera,controls,raycaster,pointer,catLabels=new Map(),catMeshes=new Map(),homes=new Map(),coffeeMesh=null,coffeeState='',renderReady=false,needsRender=true,waveTexture=null,tideFoam=null;
+    let environment,renderer,scene,world,camera,controls,raycaster,pointer,catLabels=new Map(),catMeshes=new Map(),homes=new Map(),coffeeMesh=null,coffeeState='',renderReady=false,needsRender=true,waveTexture=null,tideFoam=null;
     const S=1.35;
     const spot=(x,y)=>[(x-10)*S,(y-7.5)*S];
     const material=(color,roughness=.86,more={})=>new T.MeshStandardMaterial({color,roughness,...more});
@@ -168,7 +169,7 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
     function plaque(parent,text,y,z,color='#765d54'){let c=document.createElement('canvas');c.width=256;c.height=72;let q=c.getContext('2d');q.fillStyle=color;q.beginPath();q.roundRect(0,0,256,72,13);q.fill();q.fillStyle='#fff5e2';q.textAlign='center';q.textBaseline='middle';q.font='bold 34px system-ui';q.fillText(text,128,38);let tex=new T.CanvasTexture(c);tex.colorSpace=T.SRGBColorSpace;let m=new T.Mesh(new T.PlaneGeometry(1.52,.43),new T.MeshBasicMaterial({map:tex,transparent:true,side:T.DoubleSide}));m.position.set(0,y,z);parent.add(m);}
     const glass=material('#ffdbab',.3,{emissive:'#d98644',emissiveIntensity:.7});
     function window3(parent,x,y,z,w=.36,h=.46){rounded(parent,w,h,.05,x,y,z,glass,.045,false);rounded(parent,w+.07,.05,.075,x,y-h*.51,z+.02,'#f4e5cc',.018,false);}
-    function groveTree(x,z,size=1){let g=new T.Group();g.position.set(x,.45,z);world.add(g);cylinder(g,.09,.13,.86*size,0,.42*size,0,'#806c59',8);sphere(g,.51*size,-.18*size,.95*size,0,'#6d9879');sphere(g,.52*size,.2*size,1.1*size,.08,'#84ac82');sphere(g,.31*size,0,1.38*size,-.06,'#a5bd90');return g;}
+
     function fir(x,z,size=1){let g=new T.Group();g.position.set(x,.43,z);world.add(g);cylinder(g,.09,.13,.9*size,0,.45*size,0,'#7e6957',7);for(let j=0;j<3;j++){let m=new T.Mesh(new T.ConeGeometry((.54-j*.11)*size,.9*size,7),material(j%2?'#497a67':'#547f6c'));m.position.y=(.79+j*.36)*size;m.castShadow=true;g.add(m)}return g;}
     let palmTexture=null;
     function palm(x,z,height=3.05){
@@ -177,23 +178,7 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       tree.center.set(.5,0);tree.position.set(x,.59,z);tree.scale.set(height*PROMENADE_PALM.aspect/world.scale.x,height,1);
       world.add(tree);
     }
-    function pavingTexture(){
-      let c=document.createElement('canvas');c.width=256;c.height=128;let q=c.getContext('2d');
-      q.fillStyle='#c6ac89';q.fillRect(0,0,256,128);
-      for(let row=0;row<2;row++)for(let col=-1;col<3;col++){
-        let x=col*128-(row?64:0)+2,y=row*64+2;
-        q.fillStyle=(row+col)%3===0?'#edd9bc':(row+col)%3===1?'#e7d2b1':'#f1dfc4';
-        q.beginPath();q.roundRect(x,y,124,60,3);q.fill();
-        q.fillStyle='rgba(255,249,227,.28)';q.fillRect(x+4,y+3,111,2);
-        q.fillStyle='rgba(126,95,67,.12)';q.fillRect(x+4,y+55,111,2);
-      }
-      for(let i=0;i<100;i++){
-        let x=(i*127.23)%256,y=(i*71.61)%128;
-        q.fillStyle=i%3?'rgba(255,249,225,.19)':'rgba(127,98,68,.09)';q.fillRect(x,y,1.4,1.4)
-      }
-      let tex=new T.CanvasTexture(c);tex.colorSpace=T.SRGBColorSpace;
-      tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(13,1);tex.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);return tex;
-    }
+
     function mountain(x,z,size=1){let g=new T.Group();g.position.set(x,-.1,z);world.add(g);let m=new T.Mesh(new T.ConeGeometry(1.5*size,2.6*size,5),material('#648382'));m.position.y=1.0*size;m.rotation.y=.4;m.castShadow=true;g.add(m);let snow=new T.Mesh(new T.ConeGeometry(.53*size,.7*size,5),material('#d7dccb'));snow.position.y=2.37*size;snow.rotation.y=.4;g.add(snow)}
     const beachTextureCache=new Map();
     const siteTextureCache=new Map();
@@ -301,6 +286,7 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
     }
     function sceneBase(){scene=new T.Scene();world=new T.Group();world.scale.set(1.58,1,1.58);scene.add(world);scene.background=new T.Color('#167987');scene.fog=new T.Fog('#4b9294',65,145);
       renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.16;
+      environment=createEnvironment(world,renderer,()=>{needsRender=true});mats.grass=environment.grassMaterial;
       // A repeating, slowly drifting water texture gives the whole bay visible wavelets.
       let waves=document.createElement('canvas');waves.width=512;waves.height=512;
       let wavePaint=waves.getContext('2d');wavePaint.fillStyle='#137f8e';wavePaint.fillRect(0,0,512,512);
@@ -406,59 +392,14 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
         let dot=sphere(world,.016+(i%4)*.007,x,.617,z,i%3?'#f7dfb3':'#d6a971',6);dot.castShadow=false}
       for(let i=0;i<17;i++){let x=-12+(i*5.73)%24,z=11.1+(i*1.37)%2.4;
         let shell=sphere(world,.055,x,.617,z,i%2?'#fff0cf':'#e8a79a',7);shell.scale.set(1,.38,.7);shell.castShadow=false}
-      // A broad paved promenade separates the city from the soft sand.
-      rounded(world,30.65,.12,1.7,0,.632,9.48,material('#d5b998'),.14,false);
-      let promenade=new T.Mesh(new T.PlaneGeometry(30.38,1.51),
-        new T.MeshStandardMaterial({map:pavingTexture(),roughness:.91,side:T.DoubleSide}));
-      promenade.rotation.x=-Math.PI/2;promenade.position.set(0,.702,9.48);
-      promenade.receiveShadow=true;world.add(promenade);
-      for(let z of [8.62,10.34])rounded(world,30.55,.035,.095,0,.715,z,'#f3dfbd',.022,false);
-      // Short terraces interrupt the tree line for benches and a clear walking route.
-      for(let x of [-11.35,-4.15,1.1,10.2]){
-        rounded(world,1.95,.045,.58,x,.637,8.3,'#e8d3b2',.1,false);
-        rounded(world,1.18,.13,.32,x,.85,8.23,'#a77859',.045);
-        rounded(world,1.18,.4,.1,x,1.04,8.01,'#b88964',.035);
-        for(let dx of [-.46,.46])cylinder(world,.045,.055,.34,x+dx,.66,8.23,'#796453',7);
-      }
-      for(let x of [-13.45,-8.1,-2.3,5.8,12.25]){
-        let lantern=new T.Group();lantern.position.set(x,.7,8.6);world.add(lantern);
-        cylinder(lantern,.07,.095,1.36,0,.69,0,'#88684f',9);
-        cylinder(lantern,.16,.12,.28,0,1.54,0,material('#ffe1ad',.38,{emissive:'#e89454',emissiveIntensity:1.35}),7).castShadow=false;
-        cylinder(lantern,.19,.18,.065,0,1.72,0,'#80624e',8);
-        if(x===-8.1||x===12.25){let light=new T.PointLight('#ffd5a0',.65,3.4,2);light.position.set(0,1.55,0);lantern.add(light)}
-      }
+      // Softly worn sandstone slabs, bronze lamps and detailed wooden seating.
+      environment.promenade();
       for(let i=0;i<18;i++){let x=-12.8+i*1.42;sphere(world,.033+(i%3)*.008,x,.625,12.8+(i%3)*.15,i%2?'#eee1c0':'#f9e8c9',7)}
-      for(let x of [-11.3,-4.2,3.9,11.1])rounded(world,.72,.045,20.7,x,.49,-.13,material('#d7c6ab'),.09,false);
-      for(let z of [-5.5,5.75])rounded(world,29,.05,.76,0,.5,z,material('#d5c2a7'),.09,false);
-      rounded(world,29.4,.06,1.58,0,.51,0,material('#decbaa'),.18,false);
-      // A footpath reaches every entrance, including the buildings on the waterfront.
-      for(let d of [...defs,...scenicSites,cafeSite]){let [x,z]=spot(...d.home);let near=d.id==='residence_far'?9.58:[-5.5,0,5.75,9.58].reduce((best,v)=>Math.abs(v-z)<Math.abs(best-z)?v:best,-5.5);
-        let length=Math.abs(near-z);if(length>.35)rounded(world,.33,.025,length,x,.535,(near+z)/2,material('#ead9bc'),.045,false);
-      }
-      // Stone entries connect the two new gardens to the beach promenade.
-      let [marinaX,marinaZ]=spot(13.4,13.9),[cottageX,cottageZ]=spot(19.5,12.8);
-      for(let [x,z,length] of [[marinaX,marinaZ,2],[cottageX,cottageZ,5]])
-        for(let i=1;i<=length;i++){
-          let step=new T.Mesh(new T.CircleGeometry(.24+(i%2)*.035,9),
-            material(i%2?'#e8d9b7':'#ddc9a9'));
-          step.rotation.x=-Math.PI/2;step.scale.y=.73;
-          step.position.set(x+(i%2?.08:-.08),.558,z+(9.58-z)*i/(length+1));
-          step.receiveShadow=true;world.add(step);
-        }
-      for(let x of [-13,-9,-5,-1,3,7,11,14]){
-        for(let z of [-1.27,1.29]){rounded(world,.92,.12,.3,x,.7,z,'#aa795b',.05);
-          rounded(world,.92,.4,.1,x,.91,z+(z>0?.16:-.16),'#ba8965',.04);
-          for(let dx of [-.34,.34])cylinder(world,.045,.05,.33,x+dx,.52,z,'#745f53',6)}
-      }
-      for(let x of [-12,-6,0,6,12]){
-        for(let z of [-1.4,1.43]){cylinder(world,.06,.085,1.26,x,1.09,z,'#6c6156',8);
-          let lamp=sphere(world,.13,x,1.78,z,'#ffdb9f',9);lamp.material.emissive=new T.Color('#e6a25d');lamp.material.emissiveIntensity=1.7;
-          if(x===-12||x===0||x===12){let light=new T.PointLight('#ffce91',1.15,4.4,2);light.position.set(x,1.78,z);world.add(light)}}
-      }
+      environment.paths([...defs,...scenicSites,cafeSite],spot);
+      environment.avenueFurniture();
       rounded(world,3.7,.04,2.1,-.2,.515,2.55,material('#8eaf8b'),.3,false);
       let pond=new T.Mesh(new T.CircleGeometry(.92,24),material('#80bec0',.38));pond.rotation.x=-Math.PI/2;pond.position.set(-.2,.55,2.55);world.add(pond);
-      for(let i=0;i<28;i++){let x=-12.8+(i*7.17)%25.6,z=-7.5+(i*4.31)%16.2;
-        if(Math.abs(z)<2.3||Math.abs(x)<2&&z>1&&z<4.3)continue;groveTree(x,z,.62+(i%4)*.1)}
+      environment.trees();
       for(let [x,z,h] of [[-12.6,8.35,3.05],[-9.15,8.35,2.86],[-6.1,8.35,2.99],[-.55,8.32,2.9],[4.15,10.45,2.87],[8.15,8.36,2.94],[15.05,8.34,2.96]])palm(x,z,h);
       // Approved beach artwork: alternating scalloped parasols, cushioned loungers and wicker lamps.
       for(let [kind,x,z] of [
@@ -553,12 +494,9 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
         sphere(yacht,.07,ropeEnd.x,ropeEnd.y+.17,ropeEnd.z,'#fff1d5',8).castShadow=false;
       }
       anchoredYacht(-8,20.6,true);anchoredYacht(13,22.3,false);
-      for(let [x,z] of [[-12,5.75],[-7.3,9.6],[-3,5.75],[3.9,9.6],[10.3,5.75],[13.8,9.6]]){
-        cylinder(world,.05,.07,.83,x,.9,z,'#715e53',8);
-        let bulb=sphere(world,.09,x,1.35,z,'#ffdaa3',8);bulb.material.emissive=new T.Color('#e89b5b');bulb.material.emissiveIntensity=1.4;
-        if(x===-12||x===3.9){let light=new T.PointLight('#ffd39b',1.45,3.8,2);light.position.set(x,1.35,z);world.add(light)}
-      }
-      for(let [x,z] of [[-14.7,9.6],[-9,9.6],[-1,9.6],[8,9.6],[14.5,9.6]]){cylinder(world,.055,.07,.84,x,.87,z,'#776c60',8);glow(world,x,1.36,z,.09)}
+      for(let [x,z] of [[-12,5.75],[-7.3,9.6],[-3,5.75],[3.9,9.6],[10.3,5.75],[13.8,9.6]])
+        environment.lantern(x,z,1.94,z>8?.72:.54,x===-12||x===10.3);
+
     }
 
     function addBuilding(d){let p=spot(...d.home),g=new T.Group();g.position.set(p[0],.47,p[1]);g.userData.pick=d.id;world.add(g);let id=d.id;
