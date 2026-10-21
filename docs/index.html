@@ -69,7 +69,7 @@ import {CAT_ART} from "./cats-art.js?v=1";
 import {BEACH_ART} from "./beach-art.js?v=1";
 import {SITE_ART} from "./site-art.js?v=1";
 import {PROMENADE_PALM} from "./promenade-art.js?v=1";
-import {BOOKSHOP_ART} from "./bookshop-art.js?v=1";
+import {BOOKSHOP_ART} from "./bookshop-art.js?v=2";
 import {OrbitControls} from "three/addons/controls/OrbitControls.js";
 import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js";
 (()=>{"use strict";
@@ -608,6 +608,10 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
 
     function addHome(d){let [x,z]=spot(...d.home),g=new T.Group();g.position.set(x,.47,z);g.userData.pick=d.id;world.add(g);homes.set(d.id,g);
       if(d.id==='citera'){
+        if(beachShadowTexture){
+          let shadow=new T.Mesh(new T.PlaneGeometry(2.9,1.6),new T.MeshBasicMaterial({map:beachShadowTexture,transparent:true,opacity:.28,depthWrite:false}));
+          shadow.rotation.x=-Math.PI/2;shadow.position.set(.12,.04,.25);g.add(shadow);
+        }
         bookshopFigure(g);
         let warm=new T.PointLight('#ffd29c',.54,3,2);warm.position.set(0,1.32,1.15);g.add(warm);
         return;
