@@ -160,8 +160,9 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       let vertices=[],uv=[],indices=[];
       for(let i=0;i<=samples;i++){
         let x=-14.7+29.4*i/samples,z=shorelineZ(x);
+        let tip=.08+.92*Math.min(1,i/8,(samples-i)/8);
         for(let j=0;j<rows.length;j++){
-          let r=rows[j],zz=z+r[0];
+          let r=rows[j],zz=z+r[0]*(r[0]>0?tip:1);
           vertices.push(x,r[1]+.013*Math.sin(x*1.7+j),zz);
           uv.push(x,zz);
           if(i<samples&&j<rows.length-1){
@@ -183,6 +184,29 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
         }
       }
       return coastlineSamples[x<0?0:coastlineSamples.length-1].y;
+    }
+    function beachLanternPost(x,z){
+      // Weathered timber, a curved brass arm and a warm six-sided glass lantern.
+      let post=new T.Group();post.position.set(x,.46,z);world.add(post);
+      cylinder(post,.077,.105,2.1,0,1.05,0,'#866550',10);
+      cylinder(post,.12,.12,.16,0,.13,0,'#9a7255',10);
+      cylinder(post,.13,.105,.12,0,2.16,0,'#a17a5d',10);
+      sphere(post,.105,0,2.25,0,'#e7c996',10).castShadow=false;
+      let arm=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3([
+        new T.Vector3(0,2.01,0),new T.Vector3(.14,2.18,.13),new T.Vector3(.36,2.18,.28)
+      ]),8,.032,6,false),material('#967052',.6));
+      post.add(arm);
+      cylinder(post,.026,.026,.13,.36,2.09,.28,'#8d674e',7);
+      let glass=material('#ffd6a0',.38,{emissive:'#ec9650',emissiveIntensity:1.25});
+      cylinder(post,.145,.115,.31,.36,1.88,.28,glass,6).castShadow=false;
+      cylinder(post,.17,.17,.045,.36,1.69,.28,'#7e604c',6);
+      let top=new T.Mesh(new T.ConeGeometry(.19,.17,6),material('#956d52',.72));
+      top.position.set(.36,2.065,.28);post.add(top);
+      for(let i=0;i<6;i++){
+        let a=i*Math.PI/3;
+        cylinder(post,.012,.012,.32,.36+Math.cos(a)*.133,1.88,.28+Math.sin(a)*.133,'#82624b',5);
+      }
+      return post;
     }
     function addBeachFurniture(kind,x,z,height){
       const art=BEACH_ART[kind];let texture=beachTextureCache.get(kind);
@@ -265,7 +289,7 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       // Fine reusable sand grain: one 256px procedural texture for the level beach and the slope.
       let grain=sandTexture(),sandMat=material('#fff6e7',.94,{map:grain,side:T.DoubleSide});
       // A shallow, organic slope covers the former vertical green seawall.
-      let bank=coastRibbon(68,[[-.9,.64],[-.1,.6],[.35,.34],[.85,-.23],[1.44,-.73]],sandMat);
+      let bank=coastRibbon(72,[[-1.3,.625],[-.4,.625],[.7,.605],[1.5,.15],[2.15,-.735]],sandMat);
       bank.receiveShadow=true;world.add(bank);
       // The water becomes clear turquoise beside the sand, then fades into the bay.
       let shallowCanvas=document.createElement('canvas');shallowCanvas.width=8;shallowCanvas.height=128;
@@ -274,22 +298,24 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       seaBlend.addColorStop(.7,'rgba(61,181,179,.36)');seaBlend.addColorStop(1,'rgba(34,148,158,0)');
       shallowPaint.fillStyle=seaBlend;shallowPaint.fillRect(0,0,8,128);
       let shallowTex=new T.CanvasTexture(shallowCanvas);shallowTex.colorSpace=T.SRGBColorSpace;
-      let positions=[],uv=[],idx=[];
+      let positions=[],uv=[],colors=[],idx=[];
       for(let i=0;i<=68;i++){
-        let x=-14.7+29.4*i/68,z=shorelineZ(x)+1.38;
-        for(let j=0;j<=4;j++){positions.push(x,-.714,z+j*.76);uv.push(i/68,1-j/4);
+        let x=-14.7+29.4*i/68,z=shorelineZ(x)+2.12;
+        let edgeFade=Math.min(1,i/6,(68-i)/6);
+        for(let j=0;j<=4;j++){positions.push(x,-.714,z+j*.76);uv.push(i/68,1-j/4);colors.push(1,1,1,edgeFade);
           if(i<68&&j<4){let a=i*5+j,b=(i+1)*5+j;idx.push(a,a+1,b,a+1,b+1,b)}}
       }
       let shallows=new T.BufferGeometry();shallows.setAttribute('position',new T.Float32BufferAttribute(positions,3));
-      shallows.setAttribute('uv',new T.Float32BufferAttribute(uv,2));shallows.setIndex(idx);shallows.computeVertexNormals();
-      world.add(new T.Mesh(shallows,new T.MeshBasicMaterial({map:shallowTex,transparent:true,depthWrite:false,side:T.DoubleSide})));
+      shallows.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
+      shallows.setAttribute('color',new T.Float32BufferAttribute(colors,4));shallows.setIndex(idx);shallows.computeVertexNormals();
+      world.add(new T.Mesh(shallows,new T.MeshBasicMaterial({map:shallowTex,vertexColors:true,transparent:true,depthWrite:false,side:T.DoubleSide})));
       // Two thin broken wavelets follow the curved waterline; animate only their position.
       tideFoam=new T.Group();world.add(tideFoam);
       for(let row=0;row<2;row++){
         let vertices=[],indices=[];
         for(let i=0;i<=94;i++){
-          let x=-14.6+29.2*i/94,z=shorelineZ(x)+1.43+row*.49+.085*Math.sin(x*1.45+row*2);
-          let w=(.055+row*.02)*(i%19<3?.25:1);
+          let x=-14.6+29.2*i/94,z=shorelineZ(x)+2.15+row*.49+.085*Math.sin(x*1.45+row*2);
+          let w=(.055+row*.02)*(i%19<3||i<5||i>89?.03:1);
           vertices.push(x,-.688,z-w,x,-.688,z+w);
           if(i<94){let a=i*2;indices.push(a,a+1,a+2,a+1,a+3,a+2)}
         }
@@ -348,12 +374,11 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       }
       // Soft light strings define two seating corners without blocking the sea view.
       for(let [left,right] of [[-12.3,-7.5],[7.7,12.5]]){
-        for(let x of [left,right]){cylinder(world,.065,.08,2.18,x,1.54,12.9,'#8d6a55',8);
-          sphere(world,.11,x,2.67,12.9,'#ffe2b1',8)}
+        for(let x of [left,right])beachLanternPost(x,12.9);
         let lightPoints=[];for(let i=0;i<=16;i++){let t=i/16,x=left+(right-left)*t,y=2.64-.24*Math.sin(t*Math.PI);
           lightPoints.push(new T.Vector3(x,y,12.9));
-          if(i%2===1){let bulb=sphere(world,.072,x,y-.08,12.9,'#ffe0a7',7);
-            bulb.material.emissive=new T.Color('#d78b4e');bulb.material.emissiveIntensity=1.6}
+          if(i%2===1){let bulb=sphere(world,.065,x,y-.08,12.9,'#ffd1a0',8);
+            bulb.material.emissive=new T.Color('#cf8147');bulb.material.emissiveIntensity=1.25}
         }
         world.add(new T.Line(new T.BufferGeometry().setFromPoints(lightPoints),new T.LineBasicMaterial({color:'#a68168'})));
         let warm=new T.PointLight('#ffd39b',1.3,4.8,2);warm.position.set((left+right)/2,2.35,12.9);world.add(warm);
