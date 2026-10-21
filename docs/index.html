@@ -132,7 +132,7 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
     dialog.onclick=async e=>{let t=e.target,c=city.coffee;if(t.dataset.quest){if(t.dataset.answer!=='yes'){dialog.querySelector('p').textContent='Этот вариант не подходит. Попробуй ещё раз.';return;}c[t.dataset.quest]=true;cat(t.dataset.quest==='recipe'?'ryzhiy':'citera').xp+=6;close();notice(t.dataset.quest==='recipe'?'Рыжий придумал первую булочку.':'Цитера доставила оборудование к кофейне.');changed();return;}if(t.dataset.style){c.style=t.dataset.style;close();notice('Белла выбрала оформление кофейни. Цвет крыши появится после открытия.');changed();return;}if(t.dataset.order!==undefined){if(Number(t.dataset.order)!==c.orders%3){dialog.querySelector('p').textContent='Это другой заказ. Гость подождёт, попробуй ещё раз.';return;}c.orders++;city.coins+=8;cat('ryzhiy').xp+=3;close();notice(`Заказ выполнен! +8 монет. Всего заказов: ${c.orders}.`);changed();return;}let id=t.id;if(e.target.hasAttribute('data-close'))close();if(id==='help')showGuide();if(id==='import')document.getElementById('file').click();if(id==='export'){await write().catch(()=>{});let blob=new Blob([JSON.stringify(city,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='tihaya-buhta-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);close();notice('Копия сохранения загружена. Сохрани файл в «Файлы».');}if(id==='restore'){let prev=await read('previous').catch(()=>null);if(!prev||!valid(prev)){notice('Предыдущей исправной копии пока нет.');close();return;}if(confirm('Заменить текущий город предыдущей копией?')){city=sanitize(prev);city.savedAt=Date.now();changed();notice('Предыдущая копия восстановлена.');}close();}};
     document.getElementById('file').onchange=async e=>{let f=e.target.files[0];e.target.value='';if(!f)return;if(f.size>200000){notice('Файл слишком большой.');close();return;}try{let data=JSON.parse(await f.text());if(!valid(data))throw Error('Неверный формат или версия файла.');if(!confirm('Заменить текущий город содержимым этого файла?'))return;city=sanitize(data);city.savedAt=Date.now();changed();close();notice('Город восстановлен из файла.');}catch(err){close();notice(`Не удалось импортировать: ${err.message}`);}};
 
-    let renderer,scene,world,camera,controls,raycaster,pointer,catLabels=new Map(),catMeshes=new Map(),homes=new Map(),coffeeMesh=null,coffeeState='',renderReady=false,needsRender=true,waveTexture=null;
+    let renderer,scene,world,camera,controls,raycaster,pointer,catLabels=new Map(),catMeshes=new Map(),homes=new Map(),coffeeMesh=null,coffeeState='',renderReady=false,needsRender=true,waveTexture=null,tideFoam=null;
     const S=1.35;
     const spot=(x,y)=>[(x-10)*S,(y-7.5)*S];
     const material=(color,roughness=.86,more={})=>new T.MeshStandardMaterial({color,roughness,...more});
@@ -151,6 +151,39 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
     function mountain(x,z,size=1){let g=new T.Group();g.position.set(x,-.1,z);world.add(g);let m=new T.Mesh(new T.ConeGeometry(1.5*size,2.6*size,5),material('#648382'));m.position.y=1.0*size;m.rotation.y=.4;m.castShadow=true;g.add(m);let snow=new T.Mesh(new T.ConeGeometry(.53*size,.7*size,5),material('#d7dccb'));snow.position.y=2.37*size;snow.rotation.y=.4;g.add(snow)}
     const beachTextureCache=new Map();
     let beachShadowTexture=null;
+    function sandTexture(){
+      // A 256px seamless WebP tile derived from the approved sandy material.
+      let tex=new T.TextureLoader().load('data:image/webp;base64,UklGRkQFAABXRUJQVlA4IDgFAACwMQCdASoAAQABPm02lUmkIqcooCmREA2JaWzy/7yThBWygEWX6JEJrZ4Ivj/9U6Oz9S7kflHTA5sv+89u3wiA92jrxV/+tH3q0++3pmX+Rk9gFbUuJKBIseSNoGa+0pzFPuWFevIkSSyZ50IGEYqRTsyMXeE6i6IAs+/Z9zOfYvYJg45Amo2vMm1cCo+Qt9NR6z7NQua9zC5j0GY4EoJLCrR+8BAy5unkClRK80LvMwuk1QL8rjEdaqto7H2trIpM5PYzBxKS5nJkM/1F8GpJt2qeC5cjLr6nkpBIJrUji2hEJmgF8eMD1NzAdwelO4rRw1OfDZkyyRyKLDJWyPYtRMybpvdpRAxqp5SSHI5S0q6pp5wOD4jeBgtMciBKRSeuH1MZ5KRF0uWKQNoTJAhuO/SSLgy/TvCrr63ARV3H6tMcSiBLjN6dACjaNHWTzuPbndhl2tlsqleXs18j4YlXV9QUmdqCy1d6Napr599mB873gHmeZWHdBLsAupZOjFMbdhbRMPURYFBJu36oSk7kvXKt4ZQAAP702LfUv/3HxT4i7gf9tsub8MDkQd47+2BLQMjsAOcqEnthzemshafIBG4yYTVdSmMOHdkaohvSvyqzI9FtYMSgO10R2s+StdwXmlLlThkPJM9eLyJj8jEcf973d+y7A2xrWxXFW14N4xNhr15jD5ZuYeWr2UWHKiVfPt0BxZl3k42hAnv2RCb1DKmGj8WKBwF4CRY/OYF7VNCkv17TEKx6XdphyQQ2OnMEwL4xbyW9Rga16YNlXnlwwBq1I9HchISBEGty/N976reCv0yeyJEfzVK3ux42UD4gedWEJNzak+7/2XyFrL1X17AZt2Mos80LznrRPeutsHktZzb516gfgi5YkMH5QuM+K66SmlZm/Dhm7OKJsbOijLG/Ey8rAYqEnIp3pxuwi2p56l5+0OFN3/l4+aFv+yK6kpz1K4lx1SqDkEWWHaUsl2Fo4vBvEV1n2r+0GcT/8xBh0bhTmgVlA6beX6QYLFb4c96k86ZuegBdtFuioCxc62LZe0fC/xwFg7ZKHs5wofVGgvAReOGMCKnJr3GMTBiCRQXLF2oJdRZWaIp6RaZPMnnqKbfCPoxttNlrZtQllg27YMafztKUgpprhYerTXjYrkXd4kmN4jz4hkoDwo6iJkeYU0HO2z/sjW5nHEFquJROJWZwtFVJ6AauEQJgCDIM4Djd85jYKZGcAl8bRDTFbqIKmBHoieWvyrBMIGXkjFZugUqNlklwRAMOY+5zwN/2UmB6UT4V6kkOWJsK3vCCTnpbhByQOe0CeQIeMEjXjH7Hfbm8+mNfSa+Vgh6LeM0SLugKDeYiESH4Wkm0tJChdZesG+2jr+0SmxikDTpqGasnNleJR8BaH732OfD1O6fdweiC/kPWfpG9o1FI46FGr8mr+ZUeLDalMA4jl0TX8QIk8GPgChxdr94gWw9rgiuQRe5WBXNHjx7pkhyRzVVEqjrOirxKgVke4Y3nlOalR3Nlo5tt+hIC7VTIqwU1C8QeB0VdlofA7AzSLEvIPpEcr56SJPOqMp0IgHeZeZsEnZx+edhhBWPb9ILj3u6IeYHY3F3I/w6PBlv3TO4QHgQn2RyIC2QK8nT3m5IMIEUKmd9oWXijKKPHoq7OcK+8S7rlv8oMNmKRlzwvw2kqUwbkOIQ2G+sCS1wP8gYF3QBULP0GARK+4J6fA9fOcyaFJr5B9CFYFQG6VM6PzoRe4rNGNAc3b2GNG5aIwQC7ER2BUO85C1XjAAAA',()=>{needsRender=true});
+      tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.colorSpace=T.SRGBColorSpace;return tex;
+    }
+    function coastRibbon(samples,rows,mat){
+      let vertices=[],uv=[],indices=[];
+      for(let i=0;i<=samples;i++){
+        let x=-14.7+29.4*i/samples,z=shorelineZ(x);
+        for(let j=0;j<rows.length;j++){
+          let r=rows[j],zz=z+r[0];
+          vertices.push(x,r[1]+.013*Math.sin(x*1.7+j),zz);
+          uv.push(x,zz);
+          if(i<samples&&j<rows.length-1){
+            let a=i*rows.length+j,b=(i+1)*rows.length+j;
+            indices.push(a,b,a+1,b,b+1,a+1);
+          }
+        }
+      }
+      let g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(vertices,3));
+      g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(indices);g.computeVertexNormals();
+      return new T.Mesh(g,mat);
+    }
+    let coastlineSamples=[];
+    function shorelineZ(x){
+      for(let i=1;i<coastlineSamples.length;i++){
+        if(coastlineSamples[i].x>=x){
+          let a=coastlineSamples[i-1],b=coastlineSamples[i],t=(x-a.x)/(b.x-a.x||1);
+          return a.y+(b.y-a.y)*t;
+        }
+      }
+      return coastlineSamples[x<0?0:coastlineSamples.length-1].y;
+    }
     function addBeachFurniture(kind,x,z,height){
       const art=BEACH_ART[kind];let texture=beachTextureCache.get(kind);
       if(!texture){
@@ -172,11 +205,11 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       shadow.rotation.x=-Math.PI/2;shadow.position.y=.014;group.add(shadow);
       return group;
     }
-    function sceneBase(){scene=new T.Scene();world=new T.Group();world.scale.set(1.58,1,1.58);scene.add(world);scene.background=new T.Color('#246e7c');scene.fog=new T.Fog('#4f9195',65,145);
-      renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;
+    function sceneBase(){scene=new T.Scene();world=new T.Group();world.scale.set(1.58,1,1.58);scene.add(world);scene.background=new T.Color('#167987');scene.fog=new T.Fog('#4b9294',65,145);
+      renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.16;
       // A repeating, slowly drifting water texture gives the whole bay visible wavelets.
       let waves=document.createElement('canvas');waves.width=512;waves.height=512;
-      let wavePaint=waves.getContext('2d');wavePaint.fillStyle='#187e91';wavePaint.fillRect(0,0,512,512);
+      let wavePaint=waves.getContext('2d');wavePaint.fillStyle='#137f8e';wavePaint.fillRect(0,0,512,512);
       for(let i=0;i<130;i++){let x=(i*317.31)%560-30,y=(i*199.67)%512,len=10+(i*43)%53;
         wavePaint.beginPath();wavePaint.moveTo(x,y);
         wavePaint.quadraticCurveTo(x+len*.46,y-2-(i%4),x+len,y+(i%3)-1);
@@ -185,6 +218,14 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       }
       waveTexture=new T.CanvasTexture(waves);waveTexture.wrapS=waveTexture.wrapT=T.RepeatWrapping;
       waveTexture.repeat.set(12,12);waveTexture.colorSpace=T.SRGBColorSpace;
+      // Broad low-contrast caustics reuse the existing tiny canvas, with no downloaded sea image.
+      for(let i=0;i<75;i++){
+        let x=(i*137.37)%512,y=(i*227.89)%512;
+        wavePaint.beginPath();wavePaint.moveTo(x-21,y-7);
+        wavePaint.bezierCurveTo(x-8,y+5,x+7,y-8,x+24,y+7);
+        wavePaint.strokeStyle='rgba(192,245,223,.075)';wavePaint.lineWidth=2+(i%3);wavePaint.stroke();
+      }
+      waveTexture.needsUpdate=true;
       let water=new T.Mesh(new T.PlaneGeometry(180,180),new T.MeshStandardMaterial({map:waveTexture,roughness:.54,metalness:.08}));
       water.rotation.x=-Math.PI/2;water.position.y=-.75;scene.add(water);
       // The coast is a continuous curved island, with its stone sides above the sea.
@@ -200,12 +241,14 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       coast.bezierCurveTo(-17.3,.4,-16.4,-5,-16.2,-9.9);
       let shore=new T.Mesh(new T.ExtrudeGeometry(coast,{depth:.86,steps:1,bevelEnabled:true,bevelSegments:2,bevelSize:.13,bevelThickness:.08,curveSegments:6}),[mats.grass,material('#5d7773')]);
       shore.rotation.x=Math.PI/2;shore.position.y=.44;shore.receiveShadow=true;world.add(shore);
-      const edge=coast.getSpacedPoints(115);
-      for(let i=0;i<edge.length;i+=2){let p=edge[i],a=Math.atan2(p.y,p.x),x=p.x+Math.cos(a)*.38,z=p.y+Math.sin(a)*.38;
+      const edge=coast.getSpacedPoints(160);
+      coastlineSamples=edge.filter(p=>p.y>12&&p.x>=-15.2&&p.x<=15.2).sort((a,b)=>a.x-b.x);
+      for(let i=0;i<edge.length;i+=2){let p=edge[i];if(p.y>11.5)continue;
+        let a=Math.atan2(p.y,p.x),x=p.x+Math.cos(a)*.38,z=p.y+Math.sin(a)*.38;
         let foam=rounded(world,.37+(i%4)*.1,.008,.024,x,-.733,z,i%5?'#a3d5d0':'#dcf0dc',.004,false);foam.rotation.y=a;
       }
-      let sun=new T.DirectionalLight('#ffd2a3',2.85);sun.position.set(-12,16,13);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-48,right:48,top:48,bottom:-48,near:.5,far:85});sun.shadow.bias=-.0001;sun.shadow.normalBias=.025;sun.shadow.radius=3;scene.add(sun);
-      scene.add(new T.HemisphereLight('#f8e1c9','#856958',1.36));scene.add(new T.AmbientLight('#ffddae',.36));
+      let sun=new T.DirectionalLight('#ffd7ac',2.45);sun.position.set(-12,16,13);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-48,right:48,top:48,bottom:-48,near:.5,far:85});sun.shadow.bias=-.0001;sun.shadow.normalBias=.025;sun.shadow.radius=4;scene.add(sun);
+      scene.add(new T.HemisphereLight('#fff0da','#758c83',1.22));scene.add(new T.AmbientLight('#ffddae',.29));
       camera=new T.OrthographicCamera(-10,10,10,-10,.1,120);camera.position.set(23,27,46);
       controls=new OrbitControls(camera,canvas);controls.enableRotate=false;controls.enableDamping=true;controls.dampingFactor=.1;controls.screenSpacePanning=true;controls.minZoom=.34;controls.maxZoom=3.1;controls.touches.ONE=T.TOUCH.PAN;controls.touches.TWO=T.TOUCH.DOLLY_PAN;controls.target.set(0,0,15.5);controls.update();controls.addEventListener('change',()=>needsRender=true);
       raycaster=new T.Raycaster();pointer=new T.Vector2();
@@ -219,7 +262,41 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       }
       for(let i=0;i<32;i++){let side=i%3,x=side===0?-15:side===1?15:-13.4+(i*4.31)%26.8;
         let z=side===2?-9.25+(i%3)*.3:-7.5+(i*1.51)%12.8;fir(x,z,.36+(i%4)*.09)}
-      // Broad, gently curved sandy beach with two subtly different sand tones.
+      // Fine reusable sand grain: one 256px procedural texture for the level beach and the slope.
+      let grain=sandTexture(),sandMat=material('#fff6e7',.94,{map:grain,side:T.DoubleSide});
+      // A shallow, organic slope covers the former vertical green seawall.
+      let bank=coastRibbon(68,[[-.9,.64],[-.1,.6],[.35,.34],[.85,-.23],[1.44,-.73]],sandMat);
+      bank.receiveShadow=true;world.add(bank);
+      // The water becomes clear turquoise beside the sand, then fades into the bay.
+      let shallowCanvas=document.createElement('canvas');shallowCanvas.width=8;shallowCanvas.height=128;
+      let shallowPaint=shallowCanvas.getContext('2d'),seaBlend=shallowPaint.createLinearGradient(0,0,0,128);
+      seaBlend.addColorStop(0,'rgba(218,226,181,.84)');seaBlend.addColorStop(.22,'rgba(112,208,187,.74)');
+      seaBlend.addColorStop(.7,'rgba(61,181,179,.36)');seaBlend.addColorStop(1,'rgba(34,148,158,0)');
+      shallowPaint.fillStyle=seaBlend;shallowPaint.fillRect(0,0,8,128);
+      let shallowTex=new T.CanvasTexture(shallowCanvas);shallowTex.colorSpace=T.SRGBColorSpace;
+      let positions=[],uv=[],idx=[];
+      for(let i=0;i<=68;i++){
+        let x=-14.7+29.4*i/68,z=shorelineZ(x)+1.38;
+        for(let j=0;j<=4;j++){positions.push(x,-.714,z+j*.76);uv.push(i/68,1-j/4);
+          if(i<68&&j<4){let a=i*5+j,b=(i+1)*5+j;idx.push(a,a+1,b,a+1,b+1,b)}}
+      }
+      let shallows=new T.BufferGeometry();shallows.setAttribute('position',new T.Float32BufferAttribute(positions,3));
+      shallows.setAttribute('uv',new T.Float32BufferAttribute(uv,2));shallows.setIndex(idx);shallows.computeVertexNormals();
+      world.add(new T.Mesh(shallows,new T.MeshBasicMaterial({map:shallowTex,transparent:true,depthWrite:false,side:T.DoubleSide})));
+      // Two thin broken wavelets follow the curved waterline; animate only their position.
+      tideFoam=new T.Group();world.add(tideFoam);
+      for(let row=0;row<2;row++){
+        let vertices=[],indices=[];
+        for(let i=0;i<=94;i++){
+          let x=-14.6+29.2*i/94,z=shorelineZ(x)+1.43+row*.49+.085*Math.sin(x*1.45+row*2);
+          let w=(.055+row*.02)*(i%19<3?.25:1);
+          vertices.push(x,-.688,z-w,x,-.688,z+w);
+          if(i<94){let a=i*2;indices.push(a,a+1,a+2,a+1,a+3,a+2)}
+        }
+        let g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(vertices,3));g.setIndex(indices);g.computeVertexNormals();
+        tideFoam.add(new T.Mesh(g,new T.MeshBasicMaterial({color:row?'#c8f1e4':'#fff8e6',transparent:true,opacity:row?.35:.69,depthWrite:false,side:T.DoubleSide})));
+      }
+      // Broad, gently curved sandy beach.
       let beach=new T.Shape();beach.moveTo(-14.7,9.05);
       beach.bezierCurveTo(-9.2,9.4,5.6,9.35,14.3,9.05);
       beach.lineTo(13.9,12.82);
@@ -227,21 +304,15 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       beach.bezierCurveTo(-5.2,14.15,-10.8,13.4,-14.7,12.6);beach.closePath();
       // A shallow solid layer sits above the island surface so the green ground cannot cover it.
       let sand=new T.Mesh(new T.ExtrudeGeometry(beach,{depth:.07,steps:1,bevelEnabled:false,curveSegments:20}),
-        [material('#eec48a',1,{side:T.DoubleSide}),material('#d8ad77',1,{side:T.DoubleSide})]);
+        [sandMat,material('#e3bb82',1,{side:T.DoubleSide})]);
       sand.rotation.x=Math.PI/2;sand.position.y=.59;sand.receiveShadow=true;world.add(sand);
-      let wetSand=new T.Shape();wetSand.moveTo(-13.9,12.45);
-      wetSand.bezierCurveTo(-6.6,13.25,4.8,13.7,13.25,12.58);
-      wetSand.lineTo(13.55,13.15);
-      wetSand.bezierCurveTo(6.5,14.15,-5.5,14.55,-13.9,12.95);wetSand.closePath();
-      let tide=new T.Mesh(new T.ShapeGeometry(wetSand,18),material('#d8b78d',.93,{side:T.DoubleSide,transparent:true,opacity:.8}));
-      tide.rotation.x=Math.PI/2;tide.position.y=.602;world.add(tide);
       for(let i=0;i<125;i++){let x=-13.8+(i*9.71)%27.6,z=10.2+(i*2.73)%3.35;
         let dot=sphere(world,.016+(i%4)*.007,x,.617,z,i%3?'#f7dfb3':'#d6a971',6);dot.castShadow=false}
       for(let i=0;i<17;i++){let x=-12+(i*5.73)%24,z=11.1+(i*1.37)%2.4;
         let shell=sphere(world,.055,x,.617,z,i%2?'#fff0cf':'#e8a79a',7);shell.scale.set(1,.38,.7);shell.castShadow=false}
       // The promenade lies at the back of the beach, leaving the shore open for rest.
       rounded(world,30.7,.066,.9,0,.635,9.58,material('#e3cbad'),.13,false);
-      for(let i=0;i<38;i++){let x=-12.8+i*.68;sphere(world,.055+(i%3)*.011,x,.615,13.63+(i%3)*.07,i%2?'#c4c8ad':'#e0d4b7',7)}
+      for(let i=0;i<18;i++){let x=-12.8+i*1.42;sphere(world,.033+(i%3)*.008,x,.625,12.8+(i%3)*.15,i%2?'#eee1c0':'#f9e8c9',7)}
       for(let x of [-11.3,-4.2,3.9,11.1])rounded(world,.72,.045,20.7,x,.49,-.13,material('#d7c6ab'),.09,false);
       for(let z of [-5.5,5.75])rounded(world,29,.05,.76,0,.5,z,material('#d5c2a7'),.09,false);
       rounded(world,29.4,.06,1.58,0,.51,0,material('#decbaa'),.18,false);
@@ -324,7 +395,6 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
         if(x>-18&&x<18&&z>-13.3&&z<15)continue;
         let glint=rounded(world,.25+(i%5)*.11,.009,.019,x,-.735,z,i%6?'#a6d7d4':'#f3cfaa',.005,false);
         glint.rotation.y=(i%3)*.17}
-      for(let i=0;i<34;i++){let x=-16+i*.98;rounded(world,.45+(i%3)*.18,.009,.023,x,-.731,15.1+(i%3)*.17,'#d7eadd',.006,false)}
       let boat=new T.Group();boat.position.set(9,-.48,21.2);world.add(boat);
       let hull=new T.Mesh(new T.CapsuleGeometry(.37,1.25,4,9),material('#49798e',.44));hull.rotation.z=Math.PI/2;hull.scale.set(1.1,.6,1);boat.add(hull);
       rounded(boat,.84,.35,.56,0,.27,0,'#d9ac88',.09);rounded(boat,1.04,.06,.68,0,.48,0,'#695e65',.035);
@@ -515,7 +585,7 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       renderReady=true;
     }
     let lastDraw=0,resizeTimer;
-    function frame(now){let dt=clamp((now-lastFrame)/1000,0,.1);lastFrame=now;if(waveTexture){waveTexture.offset.x=(now*.000007)%1;waveTexture.offset.y=(now*.000003)%1}simulate(dt);controls.update();updateCafe();updateHomes();updateCats();
+    function frame(now){let dt=clamp((now-lastFrame)/1000,0,.1);lastFrame=now;if(waveTexture){waveTexture.offset.x=(now*.000007)%1;waveTexture.offset.y=(now*.000003)%1}if(tideFoam)tideFoam.position.z=.035*Math.sin(now*.0008);simulate(dt);controls.update();updateCafe();updateHomes();updateCats();
       if(now-lastDraw>33||needsRender){renderer.render(scene,camera);updateLabels();needsRender=false;lastDraw=now}
       requestAnimationFrame(frame);
     }
@@ -532,3 +602,4 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
   </script>
 </body>
 </html>
+
