@@ -64,6 +64,7 @@
 import * as T from "three";
 import {CAT_ART} from "./cats-art.js?v=1";
 import {BEACH_ART} from "./beach-art.js?v=1";
+import {SITE_ART} from "./site-art.js?v=1";
 import {OrbitControls} from "three/addons/controls/OrbitControls.js";
 import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js";
 (()=>{"use strict";
@@ -150,7 +151,24 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
     function palm(x,z){let g=new T.Group();g.position.set(x,.44,z);world.add(g);let stem=cylinder(g,.1,.16,1.7,0,.86,0,'#aa8469',9);stem.rotation.z=.08;for(let i=0;i<8;i++){let a=i*Math.PI/4;let m=sphere(g,.59,Math.cos(a)*.55,1.76,Math.sin(a)*.55,i%2?'#477e68':'#64a27d');m.scale.set(1,.15,.35);m.rotation.y=a;}}
     function mountain(x,z,size=1){let g=new T.Group();g.position.set(x,-.1,z);world.add(g);let m=new T.Mesh(new T.ConeGeometry(1.5*size,2.6*size,5),material('#648382'));m.position.y=1.0*size;m.rotation.y=.4;m.castShadow=true;g.add(m);let snow=new T.Mesh(new T.ConeGeometry(.53*size,.7*size,5),material('#d7dccb'));snow.position.y=2.37*size;snow.rotation.y=.4;g.add(snow)}
     const beachTextureCache=new Map();
+    const siteTextureCache=new Map();
     let beachShadowTexture=null;
+    function siteTexture(kind){
+      let texture=siteTextureCache.get(kind);
+      if(!texture){
+        texture=new T.TextureLoader().load(SITE_ART[kind].src,()=>{needsRender=true});
+        texture.colorSpace=T.SRGBColorSpace;siteTextureCache.set(kind,texture);
+      }
+      return texture;
+    }
+    function siteFigure(parent,kind,height){
+      let art=SITE_ART[kind],sprite=new T.Sprite(new T.SpriteMaterial({
+        map:siteTexture(kind),transparent:true,alphaTest:.035,depthWrite:false,toneMapped:false
+      }));
+      sprite.center.set(.5,0);sprite.position.y=.035;
+      sprite.scale.set(height*art.aspect/world.scale.x,height,1);
+      parent.add(sprite);return sprite;
+    }
     function sandTexture(){
       // A 256px seamless WebP tile derived from the approved sandy material.
       let tex=new T.TextureLoader().load('data:image/webp;base64,UklGRkQFAABXRUJQVlA4IDgFAACwMQCdASoAAQABPm02lUmkIqcooCmREA2JaWzy/7yThBWygEWX6JEJrZ4Ivj/9U6Oz9S7kflHTA5sv+89u3wiA92jrxV/+tH3q0++3pmX+Rk9gFbUuJKBIseSNoGa+0pzFPuWFevIkSSyZ50IGEYqRTsyMXeE6i6IAs+/Z9zOfYvYJg45Amo2vMm1cCo+Qt9NR6z7NQua9zC5j0GY4EoJLCrR+8BAy5unkClRK80LvMwuk1QL8rjEdaqto7H2trIpM5PYzBxKS5nJkM/1F8GpJt2qeC5cjLr6nkpBIJrUji2hEJmgF8eMD1NzAdwelO4rRw1OfDZkyyRyKLDJWyPYtRMybpvdpRAxqp5SSHI5S0q6pp5wOD4jeBgtMciBKRSeuH1MZ5KRF0uWKQNoTJAhuO/SSLgy/TvCrr63ARV3H6tMcSiBLjN6dACjaNHWTzuPbndhl2tlsqleXs18j4YlXV9QUmdqCy1d6Napr599mB873gHmeZWHdBLsAupZOjFMbdhbRMPURYFBJu36oSk7kvXKt4ZQAAP702LfUv/3HxT4i7gf9tsub8MDkQd47+2BLQMjsAOcqEnthzemshafIBG4yYTVdSmMOHdkaohvSvyqzI9FtYMSgO10R2s+StdwXmlLlThkPJM9eLyJj8jEcf973d+y7A2xrWxXFW14N4xNhr15jD5ZuYeWr2UWHKiVfPt0BxZl3k42hAnv2RCb1DKmGj8WKBwF4CRY/OYF7VNCkv17TEKx6XdphyQQ2OnMEwL4xbyW9Rga16YNlXnlwwBq1I9HchISBEGty/N976reCv0yeyJEfzVK3ux42UD4gedWEJNzak+7/2XyFrL1X17AZt2Mos80LznrRPeutsHktZzb516gfgi5YkMH5QuM+K66SmlZm/Dhm7OKJsbOijLG/Ey8rAYqEnIp3pxuwi2p56l5+0OFN3/l4+aFv+yK6kpz1K4lx1SqDkEWWHaUsl2Fo4vBvEV1n2r+0GcT/8xBh0bhTmgVlA6beX6QYLFb4c96k86ZuegBdtFuioCxc62LZe0fC/xwFg7ZKHs5wofVGgvAReOGMCKnJr3GMTBiCRQXLF2oJdRZWaIp6RaZPMnnqKbfCPoxttNlrZtQllg27YMafztKUgpprhYerTXjYrkXd4kmN4jz4hkoDwo6iJkeYU0HO2z/sjW5nHEFquJROJWZwtFVJ6AauEQJgCDIM4Djd85jYKZGcAl8bRDTFbqIKmBHoieWvyrBMIGXkjFZugUqNlklwRAMOY+5zwN/2UmB6UT4V6kkOWJsK3vCCTnpbhByQOe0CeQIeMEjXjH7Hfbm8+mNfSa+Vgh6LeM0SLugKDeYiESH4Wkm0tJChdZesG+2jr+0SmxikDTpqGasnNleJR8BaH732OfD1O6fdweiC/kPWfpG9o1FI46FGr8mr+ZUeLDalMA4jl0TX8QIk8GPgChxdr94gWw9rgiuQRe5WBXNHjx7pkhyRzVVEqjrOirxKgVke4Y3nlOalR3Nlo5tt+hIC7VTIqwU1C8QeB0VdlofA7AzSLEvIPpEcr56SJPOqMp0IgHeZeZsEnZx+edhhBWPb9ILj3u6IeYHY3F3I/w6PBlv3TO4QHgQn2RyIC2QK8nT3m5IMIEUKmd9oWXijKKPHoq7OcK+8S7rlv8oMNmKRlzwvw2kqUwbkOIQ2G+sCS1wP8gYF3QBULP0GARK+4J6fA9fOcyaFJr5B9CFYFQG6VM6PzoRe4rNGNAc3b2GNG5aIwQC7ER2BUO85C1XjAAAA',()=>{needsRender=true});
@@ -343,9 +361,19 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       for(let z of [-5.5,5.75])rounded(world,29,.05,.76,0,.5,z,material('#d5c2a7'),.09,false);
       rounded(world,29.4,.06,1.58,0,.51,0,material('#decbaa'),.18,false);
       // A footpath reaches every entrance, including the buildings on the waterfront.
-      for(let d of [...defs,...scenicSites,cafeSite]){let [x,z]=spot(...d.home);let near=[-5.5,0,5.75,9.58].reduce((best,v)=>Math.abs(v-z)<Math.abs(best-z)?v:best,-5.5);
+      for(let d of [...defs,...scenicSites,cafeSite]){let [x,z]=spot(...d.home);let near=d.id==='residence_far'?9.58:[-5.5,0,5.75,9.58].reduce((best,v)=>Math.abs(v-z)<Math.abs(best-z)?v:best,-5.5);
         let length=Math.abs(near-z);if(length>.35)rounded(world,.33,.025,length,x,.535,(near+z)/2,material('#ead9bc'),.045,false);
       }
+      // Stone entries connect the two new gardens to the beach promenade.
+      let [marinaX,marinaZ]=spot(13.4,13.9),[cottageX,cottageZ]=spot(19.5,12.8);
+      for(let [x,z,length] of [[marinaX,marinaZ,2],[cottageX,cottageZ,5]])
+        for(let i=1;i<=length;i++){
+          let step=new T.Mesh(new T.CircleGeometry(.24+(i%2)*.035,9),
+            material(i%2?'#e8d9b7':'#ddc9a9'));
+          step.rotation.x=-Math.PI/2;step.scale.y=.73;
+          step.position.set(x+(i%2?.08:-.08),.558,z+(9.58-z)*i/(length+1));
+          step.receiveShadow=true;world.add(step);
+        }
       for(let x of [-13,-9,-5,-1,3,7,11,14]){
         for(let z of [-1.27,1.29]){rounded(world,.92,.12,.3,x,.7,z,'#aa795b',.05);
           rounded(world,.92,.4,.1,x,.91,z+(z>0?.16:-.16),'#ba8965',.04);
@@ -464,10 +492,15 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
 
     function addBuilding(d){let p=spot(...d.home),g=new T.Group();g.position.set(p[0],.47,p[1]);g.userData.pick=d.id;world.add(g);let id=d.id;
       let home=id.startsWith('residence'),office=id.startsWith('office');
+      if(id==='marina'||id==='residence_far'){
+        siteFigure(g,id,id==='marina'?3.68:3.65);
+        let warm=new T.PointLight('#ffc786',id==='marina'?.57:.48,3.1,2);
+        warm.position.set(0,1.27,.85);g.add(warm);
+        return;
+      }
       if(id==='observatory'){cylinder(g,1.13,1.17,1.35,0,.69,0,'#e0dfd1',16);let dome=new T.Mesh(new T.SphereGeometry(1.17,20,10,0,Math.PI*2,0,Math.PI/2),material('#8da6ae',.57));dome.position.y=1.35;dome.castShadow=true;g.add(dome);rounded(g,.94,.2,.36,.45,1.7,.47,'#b4c7c1',.07);sphere(g,.1,0,2.49,0,'#f6dfac');return}
       if(id==='greenhouse'){rounded(g,2.65,.11,2.05,0,.1,0,'#78977f',.08);for(let x of [-1.18,0,1.18])for(let z of [-.9,.9])cylinder(g,.035,.045,1.45,x,.82,z,'#85aa9c',7);let glassMat=material('#c9ede0',.13,{transparent:true,opacity:.43,side:T.DoubleSide,depthWrite:false});rounded(g,2.4,1.4,1.9,0,.82,0,glassMat,.07,false);cap(g,2.65,2.13,1.86,glassMat);for(let x of [-.7,.3,.75])sphere(g,.3,x,.5,0,'#6ba477');return}
       if(id==='market'){for(let i=-1;i<=1;i++){let stall=new T.Group();stall.position.x=i*1.18;g.add(stall);rounded(stall,1,.14,.8,0,.55,.05,'#a77d60',.06);for(let x of [-.43,.43])cylinder(stall,.035,.04,1,x,1.07,-.25,'#8b735e',6);rounded(stall,1.15,.1,1,0,1.58,0,i%2?'#f2c389':'#d9907e',.04);for(let x of [-.25,.12,.33])sphere(stall,.12,x,.72,.22,i%2?'#e8a974':'#8da96f',8)}plaque(g,'РЫНОК',1.17,1.17,'#946954');return}
-      if(id==='marina'){rounded(g,2.65,.25,1.65,0,.16,0,'#b48967',.08);for(let z of [-.65,.65])for(let x of [-1.2,1.2])cylinder(g,.055,.065,1.4,x,.85,z,'#816c5e',7);cap(g,2.85,1.85,1.75,'#859fa5');rounded(g,1.65,1,.9,0,.67,-.18,'#e0d1b5',.08);rounded(g,1.1,.63,.25,0,.72,.49,'#658fa0',.06);return}
       let cfg={
         bookshop:{w:2.72,d:2.25,h:1.9,roof:'#bd8375',walls:'#e6cfb3',kind:'steep',text:'КНИГИ'},
         post:{w:2.35,d:2.05,h:1.7,roof:'#78a7a7',walls:'#ecdec2',kind:'hip',text:'ПОЧТА'},
@@ -480,7 +513,6 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
         residence_hill:{w:2.1,d:1.9,h:2.0,roof:'#b68473',walls:'#e8d3ba',kind:'steep'},
         residence_east:{w:2.2,d:2.0,h:2.9,roof:'#8e9ea3',walls:'#e6d2bb',kind:'flat'},
         residence_coast:{w:2.12,d:1.95,h:1.87,roof:'#c6997d',walls:'#efdcc4',kind:'steep'},
-        residence_far:{w:2.1,d:1.9,h:2.03,roof:'#97a58c',walls:'#ebe0cd',kind:'hip'}
       }[id];if(!cfg)return;
       rounded(g,cfg.w+.18,.17,cfg.d+.19,0,.09,0,'#b4a18c',.09);
       rounded(g,cfg.w,cfg.h,cfg.d,0,.22+cfg.h/2,0,cfg.walls,.12);
@@ -596,7 +628,11 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
 
     function focusCity(x,y){if(!controls)return;let [wx,wz]=spot(x,y),delta=new T.Vector3(wx*world.scale.x-controls.target.x,0,wz*world.scale.z-controls.target.z);controls.target.add(delta);camera.position.add(delta);controls.update();needsRender=true}
     function resize3D(){if(!renderer)return;let w=innerWidth,h=innerHeight;document.body.style.setProperty('--screen-w',w+'px');document.body.style.setProperty('--screen-h',h+'px');let size=27;camera.left=-size*w/h/2;camera.right=size*w/h/2;camera.top=size/2;camera.bottom=-size/2;camera.updateProjectionMatrix();renderer.setSize(w,h,false);needsRender=true}
-    function init3D(){sceneBase();for(let d of scenicSites)addBuilding(d);for(let d of defs){addHome(d);addCat(d)}makeCafe();updateHomes();updateCats();resize3D();
+    function init3D(){sceneBase();for(let d of scenicSites)addBuilding(d);
+      for(let [x,z,height] of [[6.9,7.65,1.72],[10.62,7.9,1.7],[14.9,5.15,1.5]]){
+        let garden=new T.Group();garden.position.set(x,.48,z);world.add(garden);siteFigure(garden,'garden',height);
+      }
+      for(let d of defs){addHome(d);addCat(d)}makeCafe();updateHomes();updateCats();resize3D();
       let touches=new Map(),blocked=false;canvas.addEventListener('pointerdown',e=>{touches.set(e.pointerId,{x:e.clientX,y:e.clientY,moved:false});if(touches.size>1)blocked=true});
       canvas.addEventListener('pointermove',e=>{let p=touches.get(e.pointerId);if(p&&Math.hypot(e.clientX-p.x,e.clientY-p.y)>9)p.moved=true});
       canvas.addEventListener('pointercancel',e=>{touches.delete(e.pointerId);if(!touches.size)blocked=false});
