@@ -63,6 +63,7 @@
   <script type="module">
 import * as T from "three";
 import {CAT_ART} from "./cats-art.js?v=1";
+import {BEACH_ART} from "./beach-art.js?v=1";
 import {OrbitControls} from "three/addons/controls/OrbitControls.js";
 import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js";
 (()=>{"use strict";
@@ -148,6 +149,29 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
     function fir(x,z,size=1){let g=new T.Group();g.position.set(x,.43,z);world.add(g);cylinder(g,.09,.13,.9*size,0,.45*size,0,'#7e6957',7);for(let j=0;j<3;j++){let m=new T.Mesh(new T.ConeGeometry((.54-j*.11)*size,.9*size,7),material(j%2?'#497a67':'#547f6c'));m.position.y=(.79+j*.36)*size;m.castShadow=true;g.add(m)}return g;}
     function palm(x,z){let g=new T.Group();g.position.set(x,.44,z);world.add(g);let stem=cylinder(g,.1,.16,1.7,0,.86,0,'#aa8469',9);stem.rotation.z=.08;for(let i=0;i<8;i++){let a=i*Math.PI/4;let m=sphere(g,.59,Math.cos(a)*.55,1.76,Math.sin(a)*.55,i%2?'#477e68':'#64a27d');m.scale.set(1,.15,.35);m.rotation.y=a;}}
     function mountain(x,z,size=1){let g=new T.Group();g.position.set(x,-.1,z);world.add(g);let m=new T.Mesh(new T.ConeGeometry(1.5*size,2.6*size,5),material('#648382'));m.position.y=1.0*size;m.rotation.y=.4;m.castShadow=true;g.add(m);let snow=new T.Mesh(new T.ConeGeometry(.53*size,.7*size,5),material('#d7dccb'));snow.position.y=2.37*size;snow.rotation.y=.4;g.add(snow)}
+    const beachTextureCache=new Map();
+    let beachShadowTexture=null;
+    function addBeachFurniture(kind,x,z,height){
+      const art=BEACH_ART[kind];let texture=beachTextureCache.get(kind);
+      if(!texture){
+        texture=new T.TextureLoader().load(art.src,()=>{needsRender=true});
+        texture.colorSpace=T.SRGBColorSpace;beachTextureCache.set(kind,texture);
+      }
+      let group=new T.Group();group.position.set(x,.59,z);world.add(group);
+      let sprite=new T.Sprite(new T.SpriteMaterial({map:texture,transparent:true,alphaTest:.025,depthWrite:false,toneMapped:false}));
+      sprite.center.set(.5,0);sprite.position.y=.025;
+      sprite.scale.set(height*art.aspect/world.scale.x,height,1);group.add(sprite);
+      if(!beachShadowTexture){
+        let c=document.createElement('canvas');c.width=c.height=64;let q=c.getContext('2d');
+        let gradient=q.createRadialGradient(32,32,2,32,32,31);
+        gradient.addColorStop(0,'rgba(94,62,32,.24)');gradient.addColorStop(1,'rgba(94,62,32,0)');
+        q.fillStyle=gradient;q.fillRect(0,0,64,64);beachShadowTexture=new T.CanvasTexture(c);
+      }
+      let shadow=new T.Mesh(new T.PlaneGeometry(height*art.aspect/world.scale.x*.94,kind==='poufs'?1.05:.86),
+        new T.MeshBasicMaterial({map:beachShadowTexture,transparent:true,depthWrite:false}));
+      shadow.rotation.x=-Math.PI/2;shadow.position.y=.014;group.add(shadow);
+      return group;
+    }
     function sceneBase(){scene=new T.Scene();world=new T.Group();world.scale.set(1.58,1,1.58);scene.add(world);scene.background=new T.Color('#246e7c');scene.fog=new T.Fog('#4f9195',65,145);
       renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;
       // A repeating, slowly drifting water texture gives the whole bay visible wavelets.
@@ -240,27 +264,16 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       for(let i=0;i<28;i++){let x=-12.8+(i*7.17)%25.6,z=-7.5+(i*4.31)%16.2;
         if(Math.abs(z)<2.3||Math.abs(x)<2&&z>1&&z<4.3)continue;groveTree(x,z,.62+(i%4)*.1)}
       for(let x of [-12.9,-6.3,3.1,12.9])palm(x,10.1);
-      // Loungers have wooden legs, raised backrests and folded colorful towels.
-      for(let [x,z,color] of [[-11,11.15,'#ed9d80'],[-8.3,11.35,'#9fc6bc'],[-3.3,11.25,'#e7bb7e'],[.6,11.3,'#d29b9e'],[8.1,11.2,'#a2c4b2'],[11.5,11.3,'#f1b68e']]){
-        let lounger=new T.Group();lounger.position.set(x,0,z);lounger.rotation.y=.16+(x%3)*.04;world.add(lounger);
-        rounded(lounger,.69,.085,1.45,0,.62,0,'#a4775c',.045);
-        for(let dx of [-.27,.27])for(let dz of [-.55,.55])cylinder(lounger,.04,.045,.25,dx,.49,dz,'#886a54',6);
-        rounded(lounger,.63,.075,.6,0,.84,-.43,'#f0dbbf',.055).rotation.x=-.5;
-        rounded(lounger,.57,.037,.52,0,.697,.36,color,.04);
-        rounded(lounger,.43,.085,.19,0,.77,-.55,color,.06);
-        cylinder(world,.047,.06,1.56,x+.95,1.2,z-.13,'#9c8066',8);
-        let umbrella=new T.Mesh(new T.ConeGeometry(.86,.32,12),material(color,.91,{side:T.DoubleSide}));
-        umbrella.position.set(x+.95,1.92,z-.13);umbrella.castShadow=true;world.add(umbrella);
-      }
-      // Low poufs with tables form small sitting groups closer to the water.
-      for(let [x,z,color] of [[-9.5,12.75,'#d99482'],[-2.5,12.8,'#8fb6aa'],[11,12.7,'#e3b685']]){
-        for(let [dx,dz] of [[-.63,0],[.64,.08],[0,.66]]){
-          let cushion=sphere(world,.41,x+dx,.68,z+dz,color,12);cushion.scale.y=.45;
-          rounded(world,.42,.045,.23,x+dx,.86,z+dz,'#edd4b4',.07,false);
-        }
-        cylinder(world,.43,.44,.36,x,.67,z-.1,'#a77959',12);
-        cylinder(world,.54,.54,.065,x,.89,z-.1,'#d2a780',12);
-        sphere(world,.12,x+.14,1.02,z-.15,'#f8e0aa',8);
+      // Approved beach artwork: alternating scalloped parasols, cushioned loungers and wicker lamps.
+      for(let [kind,x,z] of [
+        ['sage',-11,11.15],['peach',-7.9,11.25],
+        ['sage',-3.25,11.2],['peach',.45,11.25],
+        ['sage',8.05,11.2],['peach',11.8,11.3]
+      ])addBeachFurniture(kind,x,z,2.55);
+      // Three calm seating corners with tactile beanbags, a rug and warm lanterns.
+      for(let [x,z] of [[-9.5,12.9],[-2.35,12.95],[11,12.85]]){
+        addBeachFurniture('poufs',x,z,1.55);
+        let lanternLight=new T.PointLight('#ffc88d',.7,3.3,2);lanternLight.position.set(x,1.55,z);world.add(lanternLight);
       }
       // Soft light strings define two seating corners without blocking the sea view.
       for(let [left,right] of [[-12.3,-7.5],[7.7,12.5]]){
