@@ -50,9 +50,16 @@ export function createEnvironment(world,renderer,onReady){
     rects=[...[-11.3,-4.2,3.9,11.1].map(x=>({x,z:-.45,w:1.05,d:19.85})),
       ...[-5.5,5.75].map(z=>({x:0,z,w:29,d:1.05})),{x:0,z:0,w:29.4,d:1.8}];
     for(const site of sites){
+      if(['residence_east','post','citera'].includes(site.id))continue;
       const [x,z]=spot(...site.home),near=site.id==='residence_far'?9.48:[-5.5,0,5.75,9.48].reduce((a,b)=>Math.abs(b-z)<Math.abs(a-z)?b:a,-5.5);
       if(Math.abs(near-z)>.32)rects.push({x,z:(near+z)/2,w:site.id==='marina'?.9:.76,d:Math.abs(near-z)+.2});
     }
+    // One straight courtyard joins both streets. Doorways face this path,
+    // rather than sending a strip of paving underneath the buildings.
+    rects.push({x:7.5,z:2.95,w:6.65,d:.68},
+      {x:6.48,z:2.52,w:.72,d:.88},{x:9.72,z:2.52,w:.72,d:.88},
+      {x:9.045,z:5.28,w:.82,d:.94},
+      {x:5.05,z:4.35,w:1.55,d:1.5});
     const size=.55,cells=new Map(),slabs=[],edges=[];
     for(let ix=0;ix<57;ix++)for(let iz=0;iz<38;iz++){
       const x=-15.4+ix*size,z=-10.45+iz*size;
@@ -89,9 +96,51 @@ export function createEnvironment(world,renderer,onReady){
     const planted=[];
     for(let i=0;i<1000&&planted.length<20;i++){
       const x=-14.5+(i*7.171)%29,z=-8.5+(i*4.313)%16.8;
-      if(contains(x,z,.45)||!clear(x,z,2)||Math.abs(x)<2&&z>1&&z<4.3||planted.some(p=>Math.hypot(x-p[0],z-p[1])<2.4))continue;
+      if(x>4.25&&x<10.65&&z>.5&&z<5.3||contains(x,z,.45)||!clear(x,z,2)||Math.abs(x)<2&&z>1&&z<4.3||planted.some(p=>Math.hypot(x-p[0],z-p[1])<2.4))continue;
       const size=.79+(i%5)*.05;tree(x,z,size);planted.push([x,z]);
     }
+  }
+  function quarter(){
+    // Small shared garden and service corners. Reuse materials and instance
+    // repeated pieces: no new textures or additional point lights.
+    const frames=[],soil=[],stones=[],foliage=[],flowers=[];
+    for(const [x,z,w,d] of [[5.1,1.0,.62,.78],[7.9,1.0,.64,.78],
+      [10.4,1.1,.38,.95],[6.3,3.65,1.2,.43],[6.3,5.02,1.2,.43],
+      [10.35,4.35,.42,.95]]){
+      frames.push({x,y:.55,z,w:w+.1,h:.19,d:d+.1});
+      soil.push({x,y:.653,z,w:w-.06,h:.025,d:d-.06});
+      for(let i=0;i<5;i++){
+        const px=x+((i*37%11)/10-.5)*w*.8,pz=z+((i*17%7)/6-.5)*d*.75;
+        foliage.push([px,.76+(i%2)*.05,pz,.17+(i%3)*.025]);
+        for(let j=0;j<3;j++)flowers.push([px+(j-1)*.07,.9+(i%2)*.05,pz,.043]);
+      }
+    }
+    batch(frames,new T.MeshStandardMaterial({color:'#a88b70',roughness:1}));
+    batch(soil,new T.MeshStandardMaterial({color:'#6b5842',roughness:1}));
+    function clusters(records,color){
+      const m=new T.InstancedMesh(new T.SphereGeometry(1,7,5),
+        new T.MeshStandardMaterial({color,roughness:1}),records.length),o=new T.Object3D();
+      records.forEach(([x,y,z,r],i)=>{o.position.set(x,y,z);o.scale.set(r,r*.85,r);o.updateMatrix();m.setMatrixAt(i,o.matrix);m.setColorAt(i,new T.Color(color).multiplyScalar(.92+(i%4)*.055));});
+      m.computeBoundingSphere();m.receiveShadow=true;world.add(m);
+    }
+    clusters(foliage,'#789156');clusters(flowers,'#e8b8a4');
+    for(let i=0;i<4;i++)stones.push({x:5.9+i*.46,y:.49,z:4.35,w:.36,h:.06,d:.42});
+    batch(stones,stoneMaterial);
+    bench(4.65,4.15,.86);lantern(4.65,3.55,1.85);
+    // Two lidded bins tucked beside the post office, clear of the entrance.
+    for(const [x,color] of [[10.12,'#718471'],[10.48,'#a18a70']]){
+      batch([{x,y:.72,z:1.66,w:.28,h:.46,d:.33},
+        {x,y:.965,z:1.66,w:.32,h:.055,d:.37}],
+        new T.MeshStandardMaterial({color,roughness:.9}),true);
+    }
+    // A low timber parcel shelf beside the postal path.
+    batch([{x:10.35,y:.66,z:2.43,w:.47,h:.08,d:.32},
+      {x:10.17,y:.58,z:2.43,w:.055,h:.26,d:.27},
+      {x:10.53,y:.58,z:2.43,w:.055,h:.26,d:.27}],
+      new T.MeshStandardMaterial({color:'#a7815c',roughness:1}));
+    batch([{x:10.28,y:.8,z:2.43,w:.23,h:.21,d:.22},
+      {x:10.49,y:.77,z:2.43,w:.15,h:.15,d:.18}],
+      new T.MeshStandardMaterial({color:'#cfa97b',roughness:1}));
   }
   function grassDetails(){
     const positions=[];
@@ -109,5 +158,5 @@ export function createEnvironment(world,renderer,onReady){
     for(let i=0;i<flowers.count;i++){let [x,z]=positions[i*3];dummy.position.set(x,.55,z);dummy.rotation.set(0,0,0);dummy.scale.set(1,.5,1);dummy.updateMatrix();flowers.setMatrixAt(i,dummy.matrix)}
     flowers.instanceMatrix.needsUpdate=true;flowers.computeBoundingSphere();world.add(flowers);
   }
-  return {grassMaterial,tree,bench,lantern,paths,promenade,avenueFurniture,trees};
+  return {grassMaterial,tree,bench,lantern,paths,promenade,avenueFurniture,trees,quarter};
 }
