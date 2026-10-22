@@ -88,7 +88,10 @@ export function createEnvironment(world,renderer,onReady){
     for(const x of [-13.45,-8.1,-2.3,5.8,12.25])lantern(x,8.55,2.22,.7,x===-8.1||x===12.25);
   }
   function avenueFurniture(){
-    for(const x of [-13,-9,-5,-1,3,7,11,14])for(const z of [-1.3,1.32])bench(x,z,.93,.535);
+    for(const x of [-13,-9,-5,-1,3,7,11,14])for(const z of [-1.3,1.32]){
+      // The eastern cross street runs through x=11.1: keep this seat on the lawn.
+      bench(x===11&&z>0?12.35:x,x===11&&z>0?1.65:z,.93,.535);
+    }
     for(const x of [-12,-6,0,6,12])for(const z of [-1.55,1.55])lantern(x,z,2.08,.535,x===0);
   }
   function clear(x,z,margin=1.9){return buildings.every(b=>Math.hypot(x-b.p[0],z-b.p[1])>margin);}
@@ -124,7 +127,9 @@ export function createEnvironment(world,renderer,onReady){
       m.computeBoundingSphere();m.receiveShadow=true;world.add(m);
     }
     clusters(foliage,'#789156');clusters(flowers,'#e8b8a4');
-    for(let i=0;i<4;i++)stones.push({x:5.9+i*.46,y:.49,z:4.35,w:.36,h:.06,d:.42});
+    // Island bevel raises the grass to y=.52. Keep the entire stone above it
+    // so the two surfaces cannot fight for the same depth on mobile GPUs.
+    for(let i=0;i<4;i++)stones.push({x:5.9+i*.46,y:.56,z:4.35,w:.36,h:.06,d:.42});
     batch(stones,stoneMaterial);
     bench(4.65,4.15,.86);lantern(4.65,3.55,1.85);
     // Two lidded bins tucked beside the post office, clear of the entrance.
