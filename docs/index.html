@@ -69,10 +69,11 @@ import {CAT_ART} from "./cats-art.js?v=1";
 import {BEACH_ART} from "./beach-art.js?v=1";
 import {SITE_ART as BASE_SITE_ART} from "./site-art.js?v=1";
 import {QUARTER_ART} from "./quarter-art.js?v=1";
-const SITE_ART={...BASE_SITE_ART,...QUARTER_ART};
+import {SEASIDE_ART} from "./seaside-art.js?v=1";
+const SITE_ART={...BASE_SITE_ART,...QUARTER_ART,...SEASIDE_ART};
 import {PROMENADE_PALM} from "./promenade-art.js?v=1";
 import {BOOKSHOP_ART} from "./bookshop-art.js?v=2";
-import {createEnvironment} from "./environment.js?v=3";
+import {createEnvironment} from "./environment.js?v=4";
 import {OrbitControls} from "three/addons/controls/OrbitControls.js";
 import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js";
 (()=>{"use strict";
@@ -88,7 +89,7 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       {id:'townhall',name:'Ратуша',home:[8.5,5.2],roof:'#99a6a3',wall:'#efe1cd',floors:2},
       {id:'marina',name:'Лодочная',home:[13.4,13.9],roof:'#7da6b1',wall:'#d6c4a7',floors:1},
       {id:'greenhouse',name:'Оранжерея',home:[.3,6.8],roof:'#8aab94',wall:'#d7e5d2',floors:1},
-      {id:'restaurant',name:'Ресторан',home:[7.3,9],roof:'#b16f67',wall:'#f2d3b1',floors:2},
+      {id:'restaurant',name:'Ресторан',home:[8,9.2],roof:'#b16f67',wall:'#f2d3b1',floors:2},
       {id:'office_west',name:'Офис',home:[10.5,3],roof:'#7d9da2',wall:'#e7ded1',floors:2},
       {id:'office_east',name:'Офис',home:[16.1,4.1],roof:'#9e94ad',wall:'#e9e3d8',floors:3},
       {id:'residence_hill',name:'Жилой дом',home:[4.5,3.7],roof:'#b88470',wall:'#ead8c2',floors:2},
@@ -399,8 +400,9 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       for(let i=0;i<18;i++){let x=-12.8+i*1.42;sphere(world,.033+(i%3)*.008,x,.625,12.8+(i%3)*.15,i%2?'#eee1c0':'#f9e8c9',7)}
       environment.paths([...defs,...scenicSites,cafeSite],spot);
       environment.avenueFurniture();
-      rounded(world,3.7,.04,2.1,-.2,.515,2.55,material('#8eaf8b'),.3,false);
-      let pond=new T.Mesh(new T.CircleGeometry(.92,24),material('#80bec0',.38));pond.rotation.x=-Math.PI/2;pond.position.set(-.2,.55,2.55);world.add(pond);
+      // The approved stone-edged pond replaces the old flat green rectangle.
+      const pondGarden=new T.Group();pondGarden.position.set(1.35,.54,3.45);world.add(pondGarden);
+      siteFigure(pondGarden,'pond_garden',2.85);
       environment.trees();
       environment.quarter();
       for(let [x,z,h] of [[-12.6,8.35,3.05],[-9.15,8.35,2.86],[-6.1,8.35,2.99],[-.55,8.32,2.9],[4.15,10.45,2.87],[8.15,8.36,2.94],[15.05,8.34,2.96]])palm(x,z,h);
@@ -504,6 +506,14 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
 
     function addBuilding(d){let p=spot(...d.home),g=new T.Group();g.position.set(p[0],.47,p[1]);g.userData.pick=d.id;world.add(g);let id=d.id;
       let home=id.startsWith('residence'),office=id.startsWith('office');
+      if(id==='restaurant'){
+        if(beachShadowTexture){
+          const shadow=new T.Mesh(new T.PlaneGeometry(3.2,2.05),new T.MeshBasicMaterial({map:beachShadowTexture,transparent:true,opacity:.25,depthWrite:false}));
+          shadow.rotation.x=-Math.PI/2;shadow.position.set(.1,.065,.12);g.add(shadow);
+        }
+        siteFigure(g,'restaurant',4.05);
+        return;
+      }
       // Approved block: garden details and warm light are baked into two shared textures.
       // Return before primitive construction so old walls, roof and mailbox cannot show through.
       if(id==='residence_east'||id==='post'){
@@ -561,6 +571,15 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
     }
 
     function addHome(d){let [x,z]=spot(...d.home),g=new T.Group();g.position.set(x,.47,z);g.userData.pick=d.id;world.add(g);homes.set(d.id,g);
+      if(d.id==='bella'){
+        if(beachShadowTexture){
+          const shadow=new T.Mesh(new T.PlaneGeometry(2.6,1.65),new T.MeshBasicMaterial({map:beachShadowTexture,transparent:true,opacity:.25,depthWrite:false}));
+          shadow.rotation.x=-Math.PI/2;shadow.position.set(.08,.065,.1);g.add(shadow);
+        }
+        siteFigure(g,'bella_home',3.0);
+        g.userData.upgradeSignature='';
+        return;
+      }
       if(d.id==='citera'){
         if(beachShadowTexture){
           let shadow=new T.Mesh(new T.PlaneGeometry(2.9,1.6),new T.MeshBasicMaterial({map:beachShadowTexture,transparent:true,opacity:.28,depthWrite:false}));

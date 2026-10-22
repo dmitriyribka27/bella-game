@@ -50,7 +50,7 @@ export function createEnvironment(world,renderer,onReady){
     rects=[...[-11.3,-4.2,3.9,11.1].map(x=>({x,z:-.45,w:1.05,d:19.85})),
       ...[-5.5,5.75].map(z=>({x:0,z,w:29,d:1.05})),{x:0,z:0,w:29.4,d:1.8}];
     for(const site of sites){
-      if(['residence_east','post','citera'].includes(site.id))continue;
+      if(['residence_east','post','citera','restaurant','bella'].includes(site.id))continue;
       const [x,z]=spot(...site.home),near=site.id==='residence_far'?9.48:[-5.5,0,5.75,9.48].reduce((a,b)=>Math.abs(b-z)<Math.abs(a-z)?b:a,-5.5);
       if(Math.abs(near-z)>.32)rects.push({x,z:(near+z)/2,w:site.id==='marina'?.9:.76,d:Math.abs(near-z)+.2});
     }
@@ -60,6 +60,9 @@ export function createEnvironment(world,renderer,onReady){
       {x:6.48,z:2.52,w:.72,d:.88},{x:9.72,z:2.52,w:.72,d:.88},
       {x:9.045,z:5.28,w:.82,d:.94},
       {x:5.05,z:4.35,w:1.55,d:1.5});
+    // Clear front approaches for the restaurant terrace and Bella's porch.
+    rects.push({x:-2.7,z:4.05,w:.82,d:3.5},
+      {x:-1.35,z:8.45,w:.82,d:2.12});
     const size=.55,cells=new Map(),slabs=[],edges=[];
     for(let ix=0;ix<57;ix++)for(let iz=0;iz<38;iz++){
       const x=-15.4+ix*size,z=-10.45+iz*size;
@@ -99,7 +102,7 @@ export function createEnvironment(world,renderer,onReady){
     const planted=[];
     for(let i=0;i<1000&&planted.length<20;i++){
       const x=-14.5+(i*7.171)%29,z=-8.5+(i*4.313)%16.8;
-      if(x>4.25&&x<10.65&&z>.5&&z<5.3||contains(x,z,.45)||!clear(x,z,2)||Math.abs(x)<2&&z>1&&z<4.3||planted.some(p=>Math.hypot(x-p[0],z-p[1])<2.4))continue;
+      if(x>4.25&&x<10.65&&z>.5&&z<5.3||contains(x,z,.45)||!clear(x,z,2)||Math.hypot(x-1.35,z-3.0)<1.9||planted.some(p=>Math.hypot(x-p[0],z-p[1])<2.4))continue;
       const size=.79+(i%5)*.05;tree(x,z,size);planted.push([x,z]);
     }
   }
