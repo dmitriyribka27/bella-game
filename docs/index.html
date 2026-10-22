@@ -67,7 +67,9 @@
 import * as T from "three";
 import {CAT_ART} from "./cats-art.js?v=1";
 import {BEACH_ART} from "./beach-art.js?v=1";
-import {SITE_ART} from "./site-art.js?v=1";
+import {SITE_ART as BASE_SITE_ART} from "./site-art.js?v=1";
+import {QUARTER_ART} from "./quarter-art.js?v=1";
+const SITE_ART={...BASE_SITE_ART,...QUARTER_ART};
 import {PROMENADE_PALM} from "./promenade-art.js?v=1";
 import {BOOKSHOP_ART} from "./bookshop-art.js?v=2";
 import {createEnvironment} from "./environment.js?v=1";
@@ -501,6 +503,17 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
 
     function addBuilding(d){let p=spot(...d.home),g=new T.Group();g.position.set(p[0],.47,p[1]);g.userData.pick=d.id;world.add(g);let id=d.id;
       let home=id.startsWith('residence'),office=id.startsWith('office');
+      // Approved block: garden details and warm light are baked into two shared textures.
+      // Return before primitive construction so old walls, roof and mailbox cannot show through.
+      if(id==='residence_east'||id==='post'){
+        if(beachShadowTexture){
+          const shadow=new T.Mesh(new T.PlaneGeometry(id==='post'?2.8:2.6,1.65),
+            new T.MeshBasicMaterial({map:beachShadowTexture,transparent:true,opacity:.26,depthWrite:false}));
+          shadow.rotation.x=-Math.PI/2;shadow.position.set(.1,.025,.08);g.add(shadow);
+        }
+        siteFigure(g,id,id==='residence_east'?4.45:3.5);
+        return;
+      }
       if(id==='marina'||id==='residence_far'){
         siteFigure(g,id,id==='marina'?3.68:3.65);
         let warm=new T.PointLight('#ffc786',id==='marina'?.57:.48,3.1,2);
