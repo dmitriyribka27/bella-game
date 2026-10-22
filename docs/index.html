@@ -72,7 +72,7 @@ import {QUARTER_ART} from "./quarter-art.js?v=1";
 const SITE_ART={...BASE_SITE_ART,...QUARTER_ART};
 import {PROMENADE_PALM} from "./promenade-art.js?v=1";
 import {BOOKSHOP_ART} from "./bookshop-art.js?v=2";
-import {createEnvironment} from "./environment.js?v=1";
+import {createEnvironment} from "./environment.js?v=2";
 import {OrbitControls} from "three/addons/controls/OrbitControls.js";
 import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js";
 (()=>{"use strict";
@@ -83,7 +83,7 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       {id:'observatory',name:'Обсерватория',home:[8,.5],roof:'#7a91ad',wall:'#e8e4d9',floors:2},
       {id:'club',name:'Клуб',home:[12.8,1.7],roof:'#aa6f68',wall:'#e7d3b9',floors:2},
       {id:'hotel',name:'Отель',home:[18.5,6.3],roof:'#d19573',wall:'#f4ddc2',floors:3},
-      {id:'post',name:'Почта',home:[17.4,8.5],roof:'#79a6a7',wall:'#eadcc9',floors:2},
+      {id:'post',name:'Почта',home:[17.2,9.1],roof:'#79a6a7',wall:'#eadcc9',floors:2},
       {id:'market',name:'Рынок',home:[0,9.6],roof:'#e6a460',wall:'#e8d1ad',floors:1},
       {id:'townhall',name:'Ратуша',home:[8.5,5.2],roof:'#99a6a3',wall:'#efe1cd',floors:2},
       {id:'marina',name:'Лодочная',home:[13.4,13.9],roof:'#7da6b1',wall:'#d6c4a7',floors:1},
@@ -100,7 +100,7 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       {id:'kent',name:'Кент',job:'боксёр',color:'#8e9290',roof:'#9c6d61',home:[1.2,2.1],work:[12.8,1.7],face:'tabby',symbol:'🥊'},
       {id:'mia',name:'Мия',job:'провидица',color:'#fafaf1',roof:'#8c9bb4',home:[5.4,1.2],work:[8,.5],face:'mia',symbol:'✦'},
       {id:'lev',name:'Лев',job:'администратор',color:'#f4eee2',roof:'#9b8167',home:[12.6,6.1],work:[8.5,5.2],face:'lev',symbol:'📋'},
-      {id:'citera',name:'Цитера',job:'хозяйка книжной лавки',color:'#383b3d',roof:'#b08791',home:[16.7,11.4],work:[16.3,12.4],face:'citera',symbol:'📚'},
+      {id:'citera',name:'Цитера',job:'хозяйка книжной лавки',color:'#383b3d',roof:'#b08791',home:[16.7,11.0],work:[16.3,12.0],face:'citera',symbol:'📚'},
       {id:'ryzhiy',name:'Рыжий',job:'пекарь',color:'#d98546',roof:'#d2946a',home:[2.1,12.4],work:[5,11.2],face:'ryzhiy',symbol:'🥐'},
       {id:'bella',name:'Белла',job:'хозяйка города',color:'#fff8f0',roof:'#e8a0ae',home:[9,13],work:[8.3,8.2],face:'bella',symbol:'♡'}
     ];
@@ -402,6 +402,7 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       rounded(world,3.7,.04,2.1,-.2,.515,2.55,material('#8eaf8b'),.3,false);
       let pond=new T.Mesh(new T.CircleGeometry(.92,24),material('#80bec0',.38));pond.rotation.x=-Math.PI/2;pond.position.set(-.2,.55,2.55);world.add(pond);
       environment.trees();
+      environment.quarter();
       for(let [x,z,h] of [[-12.6,8.35,3.05],[-9.15,8.35,2.86],[-6.1,8.35,2.99],[-.55,8.32,2.9],[4.15,10.45,2.87],[8.15,8.36,2.94],[15.05,8.34,2.96]])palm(x,z,h);
       // Approved beach artwork: alternating scalloped parasols, cushioned loungers and wicker lamps.
       for(let [kind,x,z] of [
@@ -511,7 +512,9 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
             new T.MeshBasicMaterial({map:beachShadowTexture,transparent:true,opacity:.26,depthWrite:false}));
           shadow.rotation.x=-Math.PI/2;shadow.position.set(.1,.025,.08);g.add(shadow);
         }
-        siteFigure(g,id,id==='residence_east'?4.45:3.5);
+        // Match the shop's scale; align both front steps to the shared courtyard.
+        const figure=siteFigure(g,id,id==='residence_east'?3.65:3.15);
+        figure.center.set(.5,.055);
         return;
       }
       if(id==='marina'||id==='residence_far'){
