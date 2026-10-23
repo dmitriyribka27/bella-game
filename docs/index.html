@@ -47,7 +47,7 @@
     .dialog button { display:block; width:100%; padding:13px; margin-top:8px; border:0; border-radius:12px; background:#dcece3; color:#27484b; font-weight:700; }
     .dialog button:first-of-type { background:#f2bc86; }
     .dialog small { color:#647979; }
-    .dialog.bookshop { width:min(100%,440px); padding:14px; }
+    .dialog.bookshop { width:min(100%,600px); padding:14px; }
     .dialog.location,.dialog.places { width:min(100%,420px); }
     .locationHead { display:flex;align-items:center;gap:13px;margin-bottom:13px; }
     .locationIcon { display:grid;place-items:center;flex:none;width:60px;height:60px;border-radius:17px;background:linear-gradient(145deg,#ffe7bb,#cfdfca);font-size:33px;box-shadow:inset 0 1px 0 #ffffffba; }
@@ -60,7 +60,14 @@
     .dialog .placeItem {display:flex;align-items:center;gap:10px;text-align:left;padding:10px 12px;background:#eaf0e8;}
     .placeItem span:first-child {font-size:20px;}
     .placeItem span:last-child {font-weight:700;}
-    .bookInterior { display:block; width:100%; aspect-ratio:1.31; object-fit:cover; border-radius:15px; background:#493b32; margin:10px 0; }
+    .bookScene { width:100%; aspect-ratio:1619/971; overflow:hidden; border-radius:15px; background:#111511; margin:10px 0 9px; }
+    .bookInterior { display:block; width:100%; height:100%; object-fit:contain; transform-origin:center; transition:transform .35s ease; }
+    .bookScene[data-room="bookshop"] .bookInterior { transform:translate(-38%,-2%) scale(1.8); }
+    .bookScene[data-room="lounge"] .bookInterior { transform:translate(38%,-28%) scale(1.8); }
+    .bookScene[data-room="bedroom"] .bookInterior { transform:translate(38%,38%) scale(1.8); }
+    .bookRooms { display:flex; gap:5px; flex-wrap:wrap; margin:0 0 10px; }
+    .dialog .bookRooms button { flex:1 1 auto; width:auto; display:inline-block; min-width:0; margin:0; padding:8px 6px; font-size:11px; background:#e3ebe1; }
+    .dialog .bookRooms button.active { background:#f2bc86; color:#553e2c; }
     .shopStatus { display:block; padding:8px 10px; border-radius:10px; background:#eee8d7; color:#594a3e; font-size:12px; }
     #file { display:none; }
     .mapTools{position:absolute;z-index:2;right:12px;bottom:calc(min(31%,260px) + 14px);display:flex;gap:5px}
@@ -77,7 +84,7 @@
   <canvas id="world" aria-label="Карта города Тихая бухта"></canvas>
   <div id="catLabels" aria-hidden="true"></div>
   <header class="top">
-    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.3.9 · 2D</small></div>
+    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.4.0 · 2D</small></div>
     <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Сохранения и помощь">☰</button></div>
   </header>
   <div class="hint">Коснись здания · двумя пальцами меняй масштаб</div>
@@ -88,7 +95,6 @@
   <input id="file" type="file" accept="application/json,.json">
   <script type="module">
 import {CAT_ART} from "./cats-art.js?v=1";
-import {BOOKSHOP_ART} from "./bookshop-art.js?v=2";
 import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,LOCATION_POINTS,LOCATIONS,NODES,advance,walkTarget} from "./map2d.js?v=14";
 (()=>{"use strict";
     const FORMAT=8, DB='quiet-bay-save', KEY='city';
@@ -214,8 +220,8 @@ import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,LOCATION_POINTS,LOCATIONS,
     function showBookshop(note=''){
       selected='citera';renderUI();let b=city.books,remaining=Math.max(0,Math.ceil((b.nextAt-Date.now())/1000));
       let req=bookRequests[b.orders%bookRequests.length];
-      show(`<h2>Книжная лавка Цитеры</h2><img id="bookInterior" class="bookInterior" alt="Тёплый книжный магазин с полками, креслом и прилавком"><span class="shopStatus">Помогли ${b.orders} посетителям · Цитера работает здесь</span><p>${note||(!remaining?`Посетитель ищет ${req.wish}. Что предложим?`:`Следующий посетитель заглянет примерно через ${remaining} сек. Можно пока заниматься городом.`)}</p>${!remaining?req.books.map((name,i)=>`<button data-book="${i}">${name}</button>`).join(''):'<button data-book-refresh>Проверить посетителей</button>'}<button data-close>Вернуться в город</button>`);
-      dialog.classList.add('bookshop');document.getElementById('bookInterior').src=BOOKSHOP_ART.interior.src;
+      show(`<h2>Книжная лавка и дом Цитеры</h2><div class="bookScene" id="bookScene" data-room="all"><img id="bookInterior" class="bookInterior" src="./assets/interiors/citera-home-v1.webp" alt="Три соединённые комнаты: книжная лавка, гостиная с диваном и игрушками, спальня с душем за шторкой" draggable="false"></div><div class="bookRooms" aria-label="Рассмотреть комнаты"><button class="active" data-book-room="all" aria-pressed="true">Весь дом</button><button data-book-room="bookshop" aria-pressed="false">Лавка</button><button data-book-room="lounge" aria-pressed="false">Гостиная</button><button data-book-room="bedroom" aria-pressed="false">Спальня</button></div><span class="shopStatus">Помогли ${b.orders} посетителям · Цитера работает здесь</span><p>${note||(!remaining?`Посетитель ищет ${req.wish}. Что предложим?`:`Следующий посетитель заглянет примерно через ${remaining} сек. Можно пока заниматься городом.`)}</p>${!remaining?req.books.map((name,i)=>`<button data-book="${i}">${name}</button>`).join(''):'<button data-book-refresh>Проверить посетителей</button>'}<button data-close>Вернуться в город</button>`);
+      dialog.classList.add('bookshop');
     }
     function bookAction(i){let b=city.books,req=bookRequests[b.orders%bookRequests.length];if(city.paused){showBookshop('Город на паузе. Продолжи игру, чтобы помочь посетителю.');return;}
       if(Date.now()<b.nextAt){showBookshop();return;}
@@ -301,7 +307,7 @@ import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,LOCATION_POINTS,LOCATIONS,
       const patientButton=e.target.closest('button[data-patient]');
       if(patientButton)hospitalAction(patientButton.dataset.patient);
     });
-    dialog.onclick=async e=>{let t=e.target,c=city.coffee;if(t.dataset.book!==undefined){bookAction(Number(t.dataset.book));return;}if(t.hasAttribute('data-book-refresh')){showBookshop();return;}if(t.dataset.quest){if(t.dataset.answer!=='yes'){dialog.querySelector('p').textContent='Этот вариант не подходит. Попробуй ещё раз.';return;}c[t.dataset.quest]=true;cat(t.dataset.quest==='recipe'?'ryzhiy':'citera').xp+=6;close();notice(t.dataset.quest==='recipe'?'Рыжий придумал первую булочку.':'Цитера устроила книжный уголок в кофейне.');changed();return;}if(t.dataset.style){c.style=t.dataset.style;close();notice('Белла выбрала оформление кофейни. Выбранный стиль сохранён для дальнейшего оформления кофейни.');changed();return;}if(t.dataset.order!==undefined){if(Number(t.dataset.order)!==c.orders%3){dialog.querySelector('p').textContent='Это другой заказ. Гость подождёт, попробуй ещё раз.';return;}c.orders++;city.coins+=8;cat('ryzhiy').xp+=3;close();notice(`Заказ выполнен! +8 монет. Всего заказов: ${c.orders}.`);changed();return;}let id=t.id;if(e.target.hasAttribute('data-close'))close();if(id==='help')showGuide();if(id==='import')document.getElementById('file').click();if(id==='export'){await write().catch(()=>{});let blob=new Blob([JSON.stringify(city,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='tihaya-buhta-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);close();notice('Копия сохранения загружена. Сохрани файл в «Файлы».');}if(id==='restore'||id==='restoreBefore2D'||id==='restoreBeforePaths'){let prev=await read(id==='restoreBefore2D'?'before-map-2d-v1':id==='restoreBeforePaths'?'before-paths-2d-v1':'previous').catch(()=>null);if(!prev||!valid(prev)){notice('Предыдущей исправной копии пока нет.');close();return;}if(confirm('Заменить текущий город предыдущей копией?')){city=sanitize(prev);city.savedAt=Date.now();changed();notice('Предыдущая копия восстановлена.');}close();}};
+    dialog.onclick=async e=>{let t=e.target,c=city.coffee;if(t.dataset.bookRoom){const room=t.dataset.bookRoom;document.getElementById('bookScene').dataset.room=room;for(const button of dialog.querySelectorAll('[data-book-room]')){const active=button.dataset.bookRoom===room;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));}return;}if(t.dataset.book!==undefined){bookAction(Number(t.dataset.book));return;}if(t.hasAttribute('data-book-refresh')){showBookshop();return;}if(t.dataset.quest){if(t.dataset.answer!=='yes'){dialog.querySelector('p').textContent='Этот вариант не подходит. Попробуй ещё раз.';return;}c[t.dataset.quest]=true;cat(t.dataset.quest==='recipe'?'ryzhiy':'citera').xp+=6;close();notice(t.dataset.quest==='recipe'?'Рыжий придумал первую булочку.':'Цитера устроила книжный уголок в кофейне.');changed();return;}if(t.dataset.style){c.style=t.dataset.style;close();notice('Белла выбрала оформление кофейни. Выбранный стиль сохранён для дальнейшего оформления кофейни.');changed();return;}if(t.dataset.order!==undefined){if(Number(t.dataset.order)!==c.orders%3){dialog.querySelector('p').textContent='Это другой заказ. Гость подождёт, попробуй ещё раз.';return;}c.orders++;city.coins+=8;cat('ryzhiy').xp+=3;close();notice(`Заказ выполнен! +8 монет. Всего заказов: ${c.orders}.`);changed();return;}let id=t.id;if(e.target.hasAttribute('data-close'))close();if(id==='help')showGuide();if(id==='import')document.getElementById('file').click();if(id==='export'){await write().catch(()=>{});let blob=new Blob([JSON.stringify(city,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='tihaya-buhta-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);close();notice('Копия сохранения загружена. Сохрани файл в «Файлы».');}if(id==='restore'||id==='restoreBefore2D'||id==='restoreBeforePaths'){let prev=await read(id==='restoreBefore2D'?'before-map-2d-v1':id==='restoreBeforePaths'?'before-paths-2d-v1':'previous').catch(()=>null);if(!prev||!valid(prev)){notice('Предыдущей исправной копии пока нет.');close();return;}if(confirm('Заменить текущий город предыдущей копией?')){city=sanitize(prev);city.savedAt=Date.now();changed();notice('Предыдущая копия восстановлена.');}close();}};
     document.getElementById('file').onchange=async e=>{let f=e.target.files[0];e.target.value='';if(!f)return;if(f.size>200000){notice('Файл слишком большой.');close();return;}try{let data=JSON.parse(await f.text());if(!valid(data))throw Error('Неверный формат или версия файла.');if(!confirm('Заменить текущий город содержимым этого файла?'))return;city=sanitize(data);city.savedAt=Date.now();changed();close();notice('Город восстановлен из файла.');}catch(err){close();notice(`Не удалось импортировать: ${err.message}`);}};
 
     let map=null;
