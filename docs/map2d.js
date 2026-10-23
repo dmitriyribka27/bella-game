@@ -8,7 +8,7 @@ const points={
   squareWest:[.495,.343],squareSouth:[.545,.376],squareEast:[.610,.338],
   market:[.713,.275],marketWalk:[.739,.296],greenhouse:[.657,.216],
   gardenSouth:[.616,.292],gardenStairs:[.634,.246],
-  kent:[.352,.355],kentCross:[.392,.379],office:[.443,.388],officeEast:[.490,.381],
+  kent:[.352,.355],kentCross:[.392,.379],hospital:[.443,.388],officeEast:[.490,.381],
   restaurant:[.363,.525],terrace:[.419,.523],pondNorth:[.469,.518],
   lowerCross:[.486,.479],lev:[.488,.440],midStairs:[.523,.401],
   lowerSquare:[.484,.519],bookApproach:[.513,.566],citera:[.553,.588],
@@ -29,7 +29,7 @@ const paths=[
   'squareEast gardenSouth gardenStairs greenhouse',
   'market marketWalk marketStairs cafe ryzhiy squareEast square',
   'marketStairs eastStairs east eastWalk post promEast',
-  'squareWest officeEast office kentCross kent',
+  'squareWest officeEast hospital kentCross kent',
   'square squareSouth midStairs lev lowerCross lowerSquare',
   'lowerCross pondNorth terrace restaurant',
   'lowerSquare bookApproach citera',
@@ -47,9 +47,10 @@ export const NODES=Object.fromEntries(Object.entries(points).map(([k,p])=>[k,xy(
 const links=Object.fromEntries(Object.keys(NODES).map(k=>[k,[]]));
 for(const [a,b] of pairs){links[a].push(b);links[b].push(a);}
 export const HOME_POINTS={kent:NODES.kent,mia:NODES.mia,lev:NODES.lev,citera:NODES.citera,ryzhiy:NODES.ryzhiy,bella:NODES.bella};
-export const WORK_POINTS={kent:NODES.ryzhiy,mia:NODES.observatory,lev:NODES.townhall,citera:NODES.citera,ryzhiy:NODES.cafe,bella:NODES.square};
-export const SITE_POINTS={cafe:NODES.cafe,restaurant:NODES.restaurant,post:NODES.post,observatory:NODES.observatory,market:NODES.market,greenhouse:NODES.greenhouse,townhall:NODES.townhall};
-export const BUILDING_POINTS={...HOME_POINTS,...SITE_POINTS,townhouse:NODES.townhouse,office:NODES.office,residence:NODES.residence,lighthouse:NODES.lighthouse,marina:NODES.marina};
+// Kent serves as mayor at the central square until his separate town hall is built.
+export const WORK_POINTS={kent:NODES.square,mia:NODES.observatory,lev:NODES.hospital,citera:NODES.citera,ryzhiy:NODES.cafe,bella:NODES.square};
+export const SITE_POINTS={cafe:NODES.cafe,restaurant:NODES.restaurant,hospital:NODES.hospital,post:NODES.post,observatory:NODES.observatory,market:NODES.market,greenhouse:NODES.greenhouse,townhall:NODES.townhall};
+export const BUILDING_POINTS={...HOME_POINTS,...SITE_POINTS,townhouse:NODES.townhouse,residence:NODES.residence,lighthouse:NODES.lighthouse,marina:NODES.marina};
 const distance=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
 export function nearest(p){return Object.keys(NODES).reduce((a,b)=>distance(p,NODES[a])<distance(p,NODES[b])?a:b);}
 export function route(from,to){
@@ -75,6 +76,9 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onC
   const camera={x:WIDTH/2,y:HEIGHT/2,scale:1,min:.1,max:1.15};
   const images=new Map(),tiles=new Map(),details=new Map(),pointers=new Map();let width=0,height=0,dpr=1,overview=null,dirty=true,last=0,gesture=null,hitCats=[];
   const detailPatches=[
+    // Kent's residence, Lev's cottage, and the former pink residential building
+    // repurposed as the hospital. Later patches protect the restaurant facade.
+    {name:'kent-hospital-lev',x:1090,y:570,w:1120,h:780},
     {name:'restaurant',x:1080,y:960,w:580,h:460},
     {name:'bella',x:1030,y:1430,w:590,h:360},
     {name:'pond',x:1470,y:1315,w:450,h:350},
@@ -155,7 +159,7 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onC
       ['observatory',.314,.145,.036,.045],['townhouse',.503,.230,.042,.047],
       ['townhall',.569,.234,.052,.063],['greenhouse',.659,.163,.043,.045],
       ['market',.711,.233,.063,.042],['cafe',.708,.367,.040,.042],
-      ['restaurant',.352,.453,.073,.070],['office',.437,.335,.044,.049],
+      ['restaurant',.352,.453,.073,.070],['hospital',.437,.335,.044,.049],
       ['residence',.650,.466,.047,.043],['post',.678,.544,.043,.038],
       ['marina',.684,.680,.050,.050],['lighthouse',.293,.745,.040,.054]
     ];
