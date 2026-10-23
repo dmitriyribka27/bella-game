@@ -73,7 +73,12 @@ export function advance(cat,dt){
 export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onCafe,onVisit,onNotice}){
   const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw Error('Canvas 2D недоступен');
   const camera={x:WIDTH/2,y:HEIGHT/2,scale:1,min:.1,max:1.15};
-  const images=new Map(),tiles=new Map(),pointers=new Map();let width=0,height=0,dpr=1,overview=null,dirty=true,last=0,gesture=null,hitCats=[];
+  const images=new Map(),tiles=new Map(),details=new Map(),pointers=new Map();let width=0,height=0,dpr=1,overview=null,dirty=true,last=0,gesture=null,hitCats=[];
+  const detailPatches=[
+    {name:'restaurant',x:1080,y:960,w:580,h:460},
+    {name:'bella',x:1030,y:1430,w:590,h:360},
+    {name:'pond',x:1470,y:1315,w:450,h:350}
+  ];
   const sheet=document.getElementById('sheet'),tags=document.getElementById('catLabels');
   const resident=document.getElementById('residents');
   const names={kent:'Кент',mia:'Мия',lev:'Лев',citera:'Цитера',ryzhiy:'Рыжий',bella:'Белла'};
@@ -104,6 +109,16 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onC
       const key=row+'-'+col;used.add(key);let t=tiles.get(key);if(t&&!t.image&&!t.loading&&performance.now()>t.retryAt){tiles.delete(key);t=null;}t=t||tile(row,col);t.used=performance.now();if(t.image)ctx.drawImage(t.image,x,y,1280,h);
     }}
     for(const [key,t] of [...tiles].sort((a,b)=>a[1].used-b[1].used)){if(tiles.size<=6)break;if(!used.has(key)&&!t.loading){if(t.image)t.image.src='';tiles.delete(key);}}
+    // Detail art has its own resolution and is loaded only when its quarter is in view.
+    const density=camera.scale*dpr;
+    if(density>.7){const a=worldAt(0,0),b=worldAt(width,height);ctx.globalAlpha=Math.min(1,Math.max(0,(density-.7)/.45));
+      for(const p of detailPatches){if(p.x+p.w<a[0]||p.x>b[0]||p.y+p.h<a[1]||p.y>b[1])continue;
+        let state=details.get(p.name);
+        if(!state){state={image:null};details.set(p.name,state);const img=new Image();img.onload=()=>{state.image=img;dirty=true;};img.src='./assets/island-v1/'+p.name+'-detail-v1.webp';}
+        if(state.image)ctx.drawImage(state.image,p.x,p.y,p.w,p.h);
+      }
+      ctx.globalAlpha=1;
+    }
     ctx.restore();
   }
   function drawCats(now){
