@@ -154,10 +154,11 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onLocation
   const sheet=document.getElementById('sheet'),tags=document.getElementById('catLabels');
   const resident=document.getElementById('residents');
   const names={kent:'Кент',mia:'Мия',lev:'Лев',citera:'Цитера',ryzhiy:'Рыжий',bella:'Белла'};
-  const labels=new Map();
+  const labels=new Map(),visibleLabels=new Set();
+  let lastSelected=null;
   for(const [id,art] of Object.entries(catArt)){
     const img=new Image();img.onload=()=>{images.set(id,img);dirty=true;};img.src=art.src;
-    const tag=document.createElement('div');tag.className='catLabel';tag.textContent=names[id]||id;tags.append(tag);labels.set(id,tag);
+    const tag=document.createElement('div');tag.className='catLabel';tag.textContent=names[id]||id;tag.style.display='none';tags.append(tag);labels.set(id,tag);
     const button=document.createElement('button');button.textContent=names[id]||id;button.dataset.resident=id;button.onclick=()=>{onSelect(id);const c=getCity().cats.find(c=>c.id===id);focus(c.x,c.y);};resident.append(button);
   }
   function region(){return {top:112,bottom:Math.max(200,sheet.getBoundingClientRect().top-10)};}
@@ -194,8 +195,8 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onLocation
     mapCtx.restore();
   }
   function drawCats(now){
-    hitCats=[];const city=getCity(),selected=getSelected(),r=region();for(const tag of labels.values())tag.style.display='none';
-    const occupied=[];
+    hitCats=[];const city=getCity(),selected=getSelected(),r=region();
+    const occupied=[],nextVisible=new Set();
     for(const cat of [...city.cats].sort((a,b)=>a.y-b.y)){
       const img=images.get(cat.id);if(!img)continue;
       const p=screenAt(cat.x/20.5*WIDTH,cat.y/15*HEIGHT),h=Math.min(70,Math.max(19,65*camera.scale)),w=h*img.width/img.height;
@@ -204,9 +205,11 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onLocation
       ctx.fillStyle='#253d3440';ctx.beginPath();ctx.ellipse(p[0],p[1]+1,w*.30,h*.07,0,0,Math.PI*2);ctx.fill();
       if(cat.id===selected){ctx.strokeStyle='#fff0bc';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p[0],p[1],w*.39,h*.1,0,0,Math.PI*2);ctx.stroke();}
       ctx.drawImage(img,p[0]-w/2,p[1]-h+bob,w,h);hitCats.push({id:cat.id,x:p[0],y:p[1]-h/2,w:Math.max(30,w),h:Math.max(32,h)});
-      if(camera.scale>camera.min*1.65||cat.id===selected){const tag=labels.get(cat.id),box={x:p[0]-30,y:p[1]-h-24};if(!occupied.some(o=>Math.abs(o.x-box.x)<65&&Math.abs(o.y-box.y)<25)){tag.style.left=p[0]+'px';tag.style.top=(p[1]-h-3)+'px';tag.style.display='block';tag.classList.toggle('selected',cat.id===selected);occupied.push(box);}}
+      if(camera.scale>camera.min*1.65||cat.id===selected){const tag=labels.get(cat.id),box={x:p[0]-30,y:p[1]-h-24};if(!occupied.some(o=>Math.abs(o.x-box.x)<65&&Math.abs(o.y-box.y)<25)){tag.style.left=p[0]+'px';tag.style.top=(p[1]-h-3)+'px';if(!visibleLabels.has(cat.id))tag.style.display='block';tag.classList.toggle('selected',cat.id===selected);nextVisible.add(cat.id);occupied.push(box);}}
     }
-    for(const button of resident.children)button.classList.toggle('active',button.dataset.resident===selected);
+    for(const id of visibleLabels)if(!nextVisible.has(id))labels.get(id).style.display='none';
+    visibleLabels.clear();for(const id of nextVisible)visibleLabels.add(id);
+    if(selected!==lastSelected){for(const button of resident.children)button.classList.toggle('active',button.dataset.resident===selected);lastSelected=selected;}
   }
   function pick(x,y){const hit=[...hitCats].reverse().find(h=>Math.abs(x-h.x)<h.w/2&&Math.abs(y-h.y)<h.h/2);if(hit){onSelect(hit.id);dirty=true;return;}
     const p=worldAt(x,y),id=locationAt(p[0]/WIDTH,p[1]/HEIGHT);
