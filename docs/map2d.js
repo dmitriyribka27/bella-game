@@ -78,6 +78,9 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onC
     {name:'restaurant',x:1080,y:960,w:580,h:460},
     {name:'bella',x:1030,y:1430,w:590,h:360},
     {name:'pond',x:1470,y:1315,w:450,h:350},
+    // Citera's bookshop, post office and neighboring residence. Keep this
+    // behind the coastal patches so the boathouse shoreline stays intact.
+    {name:'citera-quarter',x:1750,y:900,w:1296,h:853},
     // The coastal art is aligned against recognizable landmarks in the island map.
     // Each transparent WebP softly fades into the existing 2D artwork at its edges.
     {name:'lighthouse',x:880,y:1710,w:530,h:482.5},
