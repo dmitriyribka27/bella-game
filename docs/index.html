@@ -67,14 +67,24 @@
     .bookScene[data-room="lounge"] .bookCanvas { transform:translate(38%,-28%) scale(1.8); }
     .bookScene[data-room="bedroom"] .bookCanvas { transform:translate(38%,38%) scale(1.8); }
     .bookGuestLayer{position:absolute;inset:0;pointer-events:none;}
-    .dialog .bookGuest{position:absolute;width:auto;min-width:0;min-height:0;display:grid;justify-items:center;gap:0;padding:2px 5px 4px;margin:0;background:#fff9e8eb;border:1px solid #fff5ce;border-radius:12px;box-shadow:0 3px 12px #16251b85;color:#36534a;pointer-events:auto;animation:guestEnter 1.05s cubic-bezier(.2,.7,.25,1) both;}
-    .bookGuest svg{display:block;width:37px;height:39px;filter:drop-shadow(0 2px 1px #1d312b57);animation:guestBreathe 2.3s ease-in-out infinite alternate;}
+    .bookGuestTrack{position:absolute;inset:0;pointer-events:none;}
+    .dialog .bookGuest{position:absolute;left:var(--shelf-x);top:var(--shelf-y);width:auto;min-width:0;min-height:0;display:grid;justify-items:center;gap:0;padding:2px 5px 4px;margin:0;background:#fff9e8eb;border:1px solid #fff5ce;border-radius:12px;box-shadow:0 3px 12px #16251b85;color:#36534a;pointer-events:auto;}
+    .bookGuest svg{display:block;width:37px;height:39px;filter:drop-shadow(0 2px 1px #1d312b57);}
     .bookGuest span{font-size:9px;font-weight:800;line-height:1.1;white-space:nowrap;}
     .dialog .bookGuest::after{content:'💬';position:absolute;top:-15px;right:-13px;background:#fff9e8;border-radius:50%;font-size:13px;padding:3px;box-shadow:0 2px 5px #152e2940;}
-    .bookGuest:nth-child(1){left:58%;top:59%;--guest-start-x:clamp(75px,14vw,160px);--guest-start-y:clamp(22px,5vw,60px);--guest-mid-x:clamp(40px,8vw,90px);--guest-mid-y:clamp(22px,5vw,55px);}
-    .bookGuest:nth-child(2){left:82%;top:70%;--guest-start-x:clamp(15px,3vw,35px);--guest-start-y:15px;--guest-mid-x:-28px;--guest-mid-y:-22px;animation-delay:.18s;}
-    @keyframes guestEnter{0%{opacity:0;translate:var(--guest-start-x) var(--guest-start-y);scale:.65}42%{opacity:1;translate:var(--guest-mid-x) var(--guest-mid-y);scale:.84}100%{opacity:1;translate:0 0;scale:1}}
-    @keyframes guestBreathe{to{transform:translateY(-2px) rotate(-2deg)}}
+    .bookGuestTrack[data-slot="0"]{--shelf-x:67%;--shelf-y:64%;}
+    .bookGuestTrack[data-slot="1"]{--shelf-x:78%;--shelf-y:70%;}
+    .dialog .bookGuestTrack .bookGuest{background:#fff9e8eb;}
+    .bookGuestTrack[data-route="enter"]{animation:guestWalkIn 3.6s linear both;animation-delay:var(--route-delay,0ms);}
+    .bookGuestTrack[data-route="counter"]{animation:guestToCounter 1.5s ease-in-out both;animation-delay:var(--route-delay,0ms);}
+    .bookGuestTrack[data-route="counter"] .bookGuest,.bookGuestTrack[data-route="waiting"] .bookGuest,.bookGuestTrack[data-route="exit"] .bookGuest{left:57%;top:60%;}
+    .bookGuestTrack[data-route="exit"]{animation:guestWalkOut 2.5s ease-in both;}
+    .bookGuestTrack[data-route="exit"] .bookGuest{pointer-events:none;}
+    .bookScene[data-room="lounge"] .bookGuestLayer,.bookScene[data-room="bedroom"] .bookGuestLayer{display:none;}
+    .bookScene[data-paused="true"] .bookGuestTrack{animation-play-state:paused;}
+    @keyframes guestWalkIn{0%{opacity:0;transform:translate3d(calc(89% - var(--shelf-x)),calc(63% - var(--shelf-y)),0)}12%{opacity:1}50%{transform:translate3d(calc(80% - var(--shelf-x)),calc(72% - var(--shelf-y)),0)}100%{opacity:1;transform:translate3d(0,0,0)}}
+    @keyframes guestToCounter{0%{transform:translate3d(calc(var(--shelf-x) - 57%),calc(var(--shelf-y) - 60%),0)}100%{transform:translate3d(0,0,0)}}
+    @keyframes guestWalkOut{0%{opacity:1;transform:translate3d(0,0,0)}60%{opacity:1;transform:translate3d(22%,12%,0)}100%{opacity:0;transform:translate3d(32% ,3%,0)}}
     .bookRooms { display:flex; gap:5px; flex-wrap:wrap; margin:0 0 10px; }
     .dialog .bookRooms button { flex:1 1 auto; width:auto; display:inline-block; min-width:0; margin:0; padding:8px 6px; font-size:11px; background:#e3ebe1; }
     .dialog .bookRooms button.active { background:#f2bc86; color:#553e2c; }
@@ -139,7 +149,7 @@
     .bookSaleFx>.bookCover .bookCoverTitle{font-size:8px;}
     .bookSaleFx strong{padding:7px;border-radius:12px;background:#fcf2cbe6;color:#4a5734;font-size:13px;white-space:nowrap;box-shadow:0 3px 10px #1f27254a;}
     @keyframes bookSaleFloat{0%{opacity:0;transform:translate(-90px,62px) scale(.45) rotate(-24deg)}25%{opacity:1}68%{opacity:1;transform:translate(0,-13px) scale(1) rotate(6deg)}100%{opacity:0;transform:translate(13px,-44px) scale(.9) rotate(-4deg)}}
-    @media (prefers-reduced-motion:reduce){.bookCanvas,.bookGuest,.bookSaleFx{transition:none!important;animation:none!important;}}
+    @media (prefers-reduced-motion:reduce){.bookCanvas,.bookGuestTrack,.bookSaleFx{transition:none!important;animation:none!important;}.bookGuestTrack[data-route="exit"]{display:none;}}
     #file { display:none; }
     .mapTools{position:absolute;z-index:2;right:12px;bottom:calc(min(31%,260px) + 14px);display:flex;gap:5px}
     .mapTools button{border:1px solid #fff9;background:#fff8ebed;color:#29474a;border-radius:12px;padding:9px 12px;min-height:42px;font-weight:700;box-shadow:0 3px 12px #21454735}
@@ -155,7 +165,7 @@
   <canvas id="world" aria-label="Карта города Тихая бухта"></canvas>
   <div id="catLabels" aria-hidden="true"></div>
   <header class="top">
-    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.7.0 · 2D</small></div>
+    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.8.0 · 2D</small></div>
     <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Сохранения и помощь">☰</button></div>
   </header>
   <div class="hint">Коснись здания · двумя пальцами меняй масштаб</div>
@@ -171,6 +181,7 @@ import {BOOK_VISITORS,BOOK_VISITOR_BY_ID,newBookVisitorState,sanitizeBookVisitor
 import {BOOK_SUPPLIERS,BOOK_CATALOG,BOOK_BY_ID,SUPPLIER_BY_ID,chapterBook,newBookInventory,sanitizeBookInventory,pendingCopies,totalCopies,orderBook,receiveBookShipments,sellBook} from "./book-inventory.js?v=1";
 import {bookCoverMarkup} from "./book-covers.js?v=1";
 import {BOOK_SCENES,BOOK_SCENE_BY_ID,sanitizeBookScenes,availableBookScene,finishBookScene} from "./book-scenes.js?v=1";
+import {createBookVisitorMotion,syncBookVisitorMotion,focusBookVisitor,leaveBookVisitor,bookVisitorRoute,activeBookDeparture} from "./book-visitor-motion.js?v=1";
 (()=>{"use strict";
     const FORMAT=11, DB='quiet-bay-save', KEY='city';
     const cafeSite={id:'cafe',name:'Кофейня',home:[5,11.2],roof:'#c98165'};
@@ -232,6 +243,7 @@ import {BOOK_SCENES,BOOK_SCENE_BY_ID,sanitizeBookScenes,availableBookScene,finis
     const overlay=document.getElementById('overlay'), dialog=document.getElementById('dialog');
     let db, city, selected='bella', gesture=null;
     let bookRoom='all',bookTab='visitors',bookSelected=null,bookSupplier='needed',bookFocused=null,bookShelfFilter='stock',bookSceneSelected=null,bookSaleFlash=null;
+    const bookMotion=createBookVisitorMotion();
     let lastFrame=performance.now(), saveTimer=0, dirty=false, time=0;
     function initial(){const visitors=newBookVisitorState();return {version:FORMAT,coins:30,paused:false,savedAt:Date.now(),coffee:{built:false,plan:false,delivery:false,recipe:false,style:null,orders:0},books:{orders:0,nextAt:0,visitors,inventory:newBookInventory(visitors),scenes:[]},cats:defs.map(d=>({id:d.id,x:d.home[0],y:d.home[1],target:[...d.home],activity:d.id==='bella'?'walk':'work',hunger:80,energy:80,mood:75,xp:0,level:1,phase:0,upgrades:{bed:0,bowl:0,toy:0}}))};}
     function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
@@ -347,7 +359,11 @@ import {BOOK_SCENES,BOOK_SCENE_BY_ID,sanitizeBookScenes,availableBookScene,finis
       if(received.length){changed();if(!note)note=`📦 Получена поставка: ${received.map(s=>escapeBookText(BOOK_BY_ID[s.bookId].title)+' ×'+s.qty).join(', ')}.`;}
       if(!city.paused&&bringNextBookVisitor(vis)){changed();}
       if(bookSelected&&!vis.queue.includes(bookSelected))bookSelected=null;
-      const guestButtons=vis.queue.map(id=>{const v=BOOK_VISITOR_BY_ID[id];return `<button class="bookGuest" data-book-visitor="${id}" aria-label="Поговорить: ${v.name}">${bookGuestSprite(v)}<span>${v.name}</span></button>`;}).join('');
+      const now=Date.now();
+      syncBookVisitorMotion(bookMotion,vis.queue,now);
+      const guestButtons=vis.queue.map(id=>{const v=BOOK_VISITOR_BY_ID[id],route=bookVisitorRoute(bookMotion,id,bookSelected,now),slot=bookMotion.slots.get(id);return `<div class="bookGuestTrack" data-slot="${slot}" data-route="${route.name}" style="--route-delay:${route.delay}ms"><button class="bookGuest" data-book-visitor="${id}" aria-label="Поговорить: ${v.name}">${bookGuestSprite(v)}<span>${v.name}</span></button></div>`;}).join('');
+      const departure=activeBookDeparture(bookMotion,now);
+      const exitGuest=departure?`<div class="bookGuestTrack" data-route="exit" aria-hidden="true"><div class="bookGuest">${bookGuestSprite(BOOK_VISITOR_BY_ID[departure.id])}<span>${BOOK_VISITOR_BY_ID[departure.id].name}</span></div></div>`:'';
       const roomTabs=[['all','Весь дом'],['bookshop','Лавка'],['lounge','Гостиная'],['bedroom','Спальня']].map(([id,label])=>`<button data-book-room="${id}" class="${bookRoom===id?'active':''}" aria-pressed="${bookRoom===id}">${label}</button>`).join('');
       let content='';
       if(bookTab==='supply'){
@@ -374,7 +390,7 @@ import {BOOK_SCENES,BOOK_SCENE_BY_ID,sanitizeBookScenes,availableBookScene,finis
       }
       const saleFlash=bookSaleFlash?`<div class="bookSaleFx" aria-hidden="true">${bookCoverMarkup(bookSaleFlash.id)}<strong>+${bookSaleFlash.coins} 🪙</strong></div>`:'';
       bookSaleFlash=null;
-      show(`<h2>Книжная лавка и дом Цитеры</h2><div class="bookScene" id="bookScene" data-room="${bookRoom}"><div class="bookCanvas"><img id="bookInterior" class="bookInterior" src="./assets/interiors/citera-home-v1.webp" alt="Книжная лавка, гостиная и спальня Цитеры" draggable="false"><div class="bookGuestLayer">${guestButtons}</div></div><button class="sceneShelfHotspot" data-book-shelf>📚 Рассмотреть полки</button>${saleFlash}</div><div class="bookRooms" aria-label="Рассмотреть комнаты">${roomTabs}</div><span class="shopStatus">📚 Обслужено гостей: ${b.orders} · 📖 На полке: ${totalCopies(b.inventory)} · 🐈 В лавке: ${vis.queue.length}</span><div class="bookPanelTabs"><button data-book-tab="visitors" class="${bookTab==='visitors'?'active':''}">Посетители</button><button data-book-tab="shelves" class="${bookTab==='shelves'?'active':''}">Витрина</button><button data-book-tab="supply" class="${bookTab==='supply'?'active':''}">Закупки</button><button data-book-tab="stories" class="${bookTab==='stories'?'active':''}">Истории</button></div>${note?`<div class="bookMessage" role="status">${note}</div>`:''}${content}<button data-close>Вернуться в город</button>`);
+      show(`<h2>Книжная лавка и дом Цитеры</h2><div class="bookScene" id="bookScene" data-room="${bookRoom}" data-paused="${city.paused}"><div class="bookCanvas"><img id="bookInterior" class="bookInterior" src="./assets/interiors/citera-home-v1.webp" alt="Книжная лавка, гостиная и спальня Цитеры" draggable="false"><div class="bookGuestLayer">${guestButtons}${exitGuest}</div></div><button class="sceneShelfHotspot" data-book-shelf>📚 Рассмотреть полки</button>${saleFlash}</div><div class="bookRooms" aria-label="Рассмотреть комнаты">${roomTabs}</div><span class="shopStatus">📚 Обслужено гостей: ${b.orders} · 📖 На полке: ${totalCopies(b.inventory)} · 🐈 В лавке: ${vis.queue.length}</span><div class="bookPanelTabs"><button data-book-tab="visitors" class="${bookTab==='visitors'?'active':''}">Посетители</button><button data-book-tab="shelves" class="${bookTab==='shelves'?'active':''}">Витрина</button><button data-book-tab="supply" class="${bookTab==='supply'?'active':''}">Закупки</button><button data-book-tab="stories" class="${bookTab==='stories'?'active':''}">Истории</button></div>${note?`<div class="bookMessage" role="status">${note}</div>`:''}${content}<button data-close>Вернуться в город</button>`);
       dialog.classList.add('bookshop');
     }
     function bookAction(i){
@@ -385,6 +401,7 @@ import {BOOK_SCENES,BOOK_SCENE_BY_ID,sanitizeBookScenes,availableBookScene,finis
       if(i!==chapter.right){showBookshop('💬 '+chapter.hint+' Можно предложить другую книгу.');return;}
       const book=chapterBook(chapter),sale=sellBook(city.books.inventory,book.id);
       if(!sale.ok){showBookshop(`📦 «${book.title}» закончилась. Открой вкладку «Закупки» и закажи экземпляры у издательства.`);return;}
+      leaveBookVisitor(bookMotion,id);
       finishBookVisit(vis,id);
       city.books.orders++;city.coins+=sale.revenue;
       const c=cat('citera');c.xp+=5;c.mood=clamp(c.mood+3,0,100);
@@ -453,7 +470,7 @@ import {BOOK_SCENES,BOOK_SCENE_BY_ID,sanitizeBookScenes,availableBookScene,finis
     details.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.cafe){coffeeAction(b.dataset.cafe);return;}if(b.dataset.action==='cafe'){selected='cafe';renderUI();notice('Помоги жителям открыть кофейню.');return;}if(b.dataset.action==='guide')showGuide();else if(b.dataset.action==='bookshop')showBookshop();else if(b.dataset.action==='focus'){let c=cat(selected);focusCity(c.x,c.y);}else if(b.dataset.action)assign(cat(selected),b.dataset.action);else if(b.dataset.upgrade)improve(b.dataset.upgrade);});
     function close(){if(dialog.classList.contains('bookshop')){bookRoom='all';bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;}overlay.hidden=true;dialog.classList.remove('bookshop','location','places');}
     function show(html){dialog.classList.remove('bookshop','location','places');dialog.innerHTML=html;overlay.hidden=false;}
-    function showGuide(){show(`<h2>Добро пожаловать в бухту</h2><p>Коснись кота, чтобы выбрать жителя. Коты сами работают, едят и отдыхают. Назначай занятия, помогай с настроением и улучшай их дома.</p><p>Коснись здания на карте, чтобы открыть его окно. Там можно отправить жителя к входу по дорожке, открыть существующие занятия или управление домом. Кнопка «Места» покажет все доступные локации. Обычные жилые дома без жителей не открываются.</p><p>Перетаскивай город одним пальцем, меняй масштаб двумя. Пауза останавливает жизнь котов; сохранения хранятся в Safari.</p><p>Кент работает в ратуше, Мия — в обсерватории, Лев лечит жителей в больнице. В лавке Цитеры общайся с покупателями и подбирай им книги. На вкладке «Витрина» можно рассматривать обложки и проверять остатки. В «Закупках» пополняй склад: доставка займёт немного реального времени, даже если выйти из игры. Когда двое гостей заговорят у полок, присоединяйся к их небольшой истории. Кофейню Рыжего можно открыть через поручения.</p><button data-close>Играть</button>`);}
+    function showGuide(){show(`<h2>Добро пожаловать в бухту</h2><p>Коснись кота, чтобы выбрать жителя. Коты сами работают, едят и отдыхают. Назначай занятия, помогай с настроением и улучшай их дома.</p><p>Коснись здания на карте, чтобы открыть его окно. Там можно отправить жителя к входу по дорожке, открыть существующие занятия или управление домом. Кнопка «Места» покажет все доступные локации. Обычные жилые дома без жителей не открываются.</p><p>Перетаскивай город одним пальцем, меняй масштаб двумя. Пауза останавливает жизнь котов; сохранения хранятся в Safari.</p><p>Кент работает в ратуше, Мия — в обсерватории, Лев лечит жителей в больнице. В лавке Цитеры гости входят через дверь, подходят к полкам, а при начале беседы идут к кассе. После покупки они уходят с книгой. На вкладке «Витрина» можно рассматривать обложки и проверять остатки. В «Закупках» пополняй склад: доставка займёт немного реального времени, даже если выйти из игры. Когда двое гостей заговорят у полок, присоединяйся к их небольшой истории. Кофейню Рыжего можно открыть через поручения.</p><button data-close>Играть</button>`);}
     document.getElementById('places').onclick=showPlaces;
     document.getElementById('settings').onclick=()=>show(`<h2>Город и сохранение</h2><p>Игра сохраняется автоматически в Safari. Для переноса на другое устройство экспортируй файл JSON и импортируй его там.</p><button id="export">Экспортировать сохранение</button><button id="import">Импортировать файл</button><button id="restore">Вернуть предыдущую копию</button><button id="restoreBeforeShelves">Копия до новой витрины</button><button id="restoreBeforeInventory">Копия до системы закупок</button><button id="restoreBefore2D">Копия до перехода в 2D</button><button id="restoreBeforePaths">Копия до новых маршрутов</button><button id="help">Как играть</button><button data-close>Закрыть</button><small>Не очищай данные Safari до экспорта. Формат сохранения: ${FORMAT}.</small>`);
     document.getElementById('pause').onclick=()=>{city.paused=!city.paused;notice(city.paused?'Город на паузе.':'Город снова живёт.');changed();};
@@ -510,7 +527,7 @@ import {BOOK_SCENES,BOOK_SCENE_BY_ID,sanitizeBookScenes,availableBookScene,finis
         return;
       }
       if(button.hasAttribute('data-book-go-supply')){e.stopImmediatePropagation();bookTab='supply';bookSupplier='needed';bookSelected=null;showBookshop();return;}
-      if(d.bookVisitor){e.stopImmediatePropagation();bookSelected=d.bookVisitor;bookSceneSelected=null;bookTab='visitors';bookRoom='bookshop';showBookshop();return;}
+      if(d.bookVisitor){e.stopImmediatePropagation();focusBookVisitor(bookMotion,d.bookVisitor);bookSelected=d.bookVisitor;bookSceneSelected=null;bookTab='visitors';bookRoom='bookshop';showBookshop();return;}
       if(d.bookChoice!==undefined){e.stopImmediatePropagation();bookAction(Number(d.bookChoice));return;}
       if(button.hasAttribute('data-book-back')){e.stopImmediatePropagation();bookSelected=null;bookSceneSelected=null;showBookshop();return;}
       if(button.hasAttribute('data-book-refresh')){e.stopImmediatePropagation();showBookshop();return;}
