@@ -52,7 +52,7 @@ export function advance(cat,dt){
 export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onCafe,onNotice}){
   const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw Error('Canvas 2D недоступен');
   const camera={x:WIDTH/2,y:HEIGHT/2,scale:1,min:.1,max:1.15};
-  const images=new Map(),tiles=new Map(),pointers=new Map();let width=0,height=0,dpr=1,overview=null,seaPattern=null,dirty=true,last=0,gesture=null,hitCats=[];
+  const images=new Map(),tiles=new Map(),pointers=new Map();let width=0,height=0,dpr=1,overview=null,dirty=true,last=0,gesture=null,hitCats=[];
   const sheet=document.getElementById('sheet'),tags=document.getElementById('catLabels');
   const resident=document.getElementById('residents');
   const names={kent:'Кент',mia:'Мия',lev:'Лев',citera:'Цитера',ryzhiy:'Рыжий',bella:'Белла'};
@@ -73,7 +73,8 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onC
   function focus(x,y){camera.x=x/20.5*WIDTH;camera.y=y/15*HEIGHT;camera.scale=Math.max(camera.scale,Math.min(.55,camera.min*4.5));clampCamera();dirty=true;}
   function tile(row,col){const key=row+'-'+col;let t=tiles.get(key);if(!t){t={image:null,loading:true,used:performance.now(),retryAt:0};tiles.set(key,t);const img=new Image();img.onload=()=>{t.image=img;t.loading=false;dirty=true;};img.onerror=()=>{t.loading=false;t.retryAt=performance.now()+15000;};img.src='./assets/island-v1/map-'+key+'.webp';}t.used=performance.now();return t;}
   function drawMap(){
-    ctx.fillStyle=seaPattern||'#1387a3';ctx.fillRect(0,0,width,height);
+    const sea=ctx.createRadialGradient(width/2,height*.43,0,width/2,height*.43,Math.max(width,height)*.82);
+    sea.addColorStop(0,'#0989aa');sea.addColorStop(1,'#07546f');ctx.fillStyle=sea;ctx.fillRect(0,0,width,height);
     ctx.save();const c=center();ctx.translate(c[0],c[1]);ctx.scale(camera.scale,camera.scale);ctx.translate(-camera.x,-camera.y);
     ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';if(overview)ctx.drawImage(overview,0,0,WIDTH,HEIGHT);
     const used=new Set();if(camera.scale*dpr>.41){const a=worldAt(0,0),b=worldAt(width,height);for(let row=0;row<3;row++)for(let col=0;col<3;col++){
@@ -115,7 +116,18 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onC
   for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,release);
   canvas.addEventListener('wheel',e=>{e.preventDefault();zoom(Math.exp(-e.deltaY*.002),e.clientX,e.clientY);},{passive:false});
   document.getElementById('zoomIn').onclick=()=>zoom(1.4);document.getElementById('zoomOut').onclick=()=>zoom(1/1.4);document.getElementById('fitMap').onclick=fit;
-  const overviewImage=new Image();overviewImage.onload=()=>{overview=overviewImage;const water=document.createElement('canvas');water.width=120;water.height=80;water.getContext('2d').drawImage(overviewImage,0,0,120,80,0,0,120,80);seaPattern=ctx.createPattern(water,'repeat');dirty=true;document.getElementById('mapLoading').hidden=true;};overviewImage.onerror=()=>{document.getElementById('mapLoading').textContent='Карта не загрузилась. Обнови страницу при подключении к интернету.';onNotice('Не удалось загрузить карту. Прогресс сохранён.');};overviewImage.src='./assets/island-v1/overview.webp';
+  const overviewImage=new Image();overviewImage.onload=()=>{
+    const soft=document.createElement('canvas');soft.width=overviewImage.width;soft.height=overviewImage.height;
+    const s=soft.getContext('2d');s.drawImage(overviewImage,0,0);s.globalCompositeOperation='destination-out';
+    const fade=60,w=soft.width,h=soft.height;
+    for(const [axis,edge,length] of [['x',0,w],['x',w,w],['y',0,h],['y',h,h]]){
+      const from=edge===0?0:edge-fade,to=edge===0?fade:edge;
+      const g=axis==='x'?s.createLinearGradient(from,0,to,0):s.createLinearGradient(0,from,0,to);
+      g.addColorStop(0,edge===0?'#000':'#0000');g.addColorStop(1,edge===0?'#0000':'#000');
+      s.fillStyle=g;if(axis==='x')s.fillRect(from,0,fade,h);else s.fillRect(0,from,w,fade);
+    }
+    overview=soft;dirty=true;document.getElementById('mapLoading').hidden=true;
+  };overviewImage.onerror=()=>{document.getElementById('mapLoading').textContent='Карта не загрузилась. Обнови страницу при подключении к интернету.';onNotice('Не удалось загрузить карту. Прогресс сохранён.');};overviewImage.src='./assets/island-v1/overview.webp';
   window.addEventListener('resize',resize);if(typeof ResizeObserver!=='undefined')new ResizeObserver(()=>{dirty=true;}).observe(sheet);fit();
   return {focus,fit,render(now){if(document.hidden||getCity().paused&&!dirty)return;if(now-last<40&&!dirty)return;last=now;ctx.setTransform(dpr,0,0,dpr,0,0);drawMap();drawCats(now);dirty=false;},invalidate(){dirty=true;}};
 }
