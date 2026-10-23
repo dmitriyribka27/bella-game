@@ -49,6 +49,35 @@
     .dialog small { color:#647979; }
     .dialog.bookshop { width:min(100%,600px); padding:14px; }
     .dialog.cafeInteriorDialog { width:min(100%,660px); padding:14px; }
+    .dialog.cafeOpeningDialog { width:min(100%,510px); padding:17px; }
+    .cafeOpeningIntro { margin:5px 0 12px; color:#526b65; }
+    .cafeProgressSegments { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; margin:10px 0 15px; }
+    .cafeProgressSegments span { height:8px; border-radius:8px; background:#dce5d9; }
+    .cafeProgressSegments span.done { background:#77a896; }
+    .cafeProgressSegments span.now { background:#efb77c; }
+    .cafeStageCard { margin:8px 0; padding:12px; background:#f2f2e9; border:1px solid #e3e8de; border-radius:15px; }
+    .cafeStageCard.current { background:#fff6e8; border-color:#e8c599; box-shadow:0 3px 10px #ae87501b; }
+    .cafeStageCard.complete { background:#ebf2e8; }
+    .cafeStageCard.locked { opacity:.67; }
+    .cafeStageHeader { display:flex; align-items:center; gap:10px; }
+    .cafeStageIcon { width:39px; height:39px; display:grid; place-items:center; flex:none; border-radius:12px; background:#e0e8df; font-size:23px; }
+    .current .cafeStageIcon { background:#f6d6ad; }
+    .cafeStageTitle { flex:1; min-width:0; }
+    .cafeStageTitle strong { display:block; font-size:13px; }
+    .cafeStageTitle small { display:block; margin-top:2px; line-height:1.3; font-size:11px; }
+    .cafeStageStatus { font-size:11px; font-weight:800; white-space:nowrap; color:#6c8075; }
+    .cafeStageCard.current .cafeStageStatus { color:#a46c32; }
+    .cafeTaskArea { padding-top:12px; }
+    .cafeTaskArea p { margin:0 0 10px; font-weight:700; }
+    .cafeTaskHistory { display:flex; align-items:center; flex-wrap:wrap; gap:5px; margin:0 0 10px; padding:9px; background:#f4e9d7; border-radius:11px; }
+    .cafeTaskHistory span { padding:6px 8px; font-size:10px; background:#e2ecdc; border-radius:9px; font-weight:700; }
+    .cafeTaskHistory .cafeTaskPending { background:#fff9ec; border:1px dashed #d8ba96; color:#906b46; }
+    .cafeTaskHistory i { font-style:normal; font-size:12px; color:#af926e; }
+    .cafeTaskChoices { display:grid; gap:6px; }
+    .dialog .cafeTaskChoices button { margin:0; min-height:45px; background:#fffbf4; border:1px solid #e9d9c1; text-align:left; font-size:12px; padding:10px 12px; }
+    .dialog .cafeTaskChoices button:first-of-type { background:#fffbf4; }
+    .cafeOpeningResult { margin:10px 0; padding:10px; border-radius:11px; background:#e5efe0; color:#356052; font-size:12px; line-height:1.4; }
+    .dialog .cafeOpeningPrimary { background:#f2bc86; }
     .cafeScene { width:100%; aspect-ratio:1586/992; position:relative; overflow:hidden; border-radius:15px; background:#292626; margin:10px 0 9px; }
     .cafeCanvas { width:100%; height:100%; transform-origin:center; transition:transform .3s ease; }
     .cafeInterior { display:block; width:100%; height:100%; object-fit:contain; }
@@ -175,7 +204,7 @@
   <canvas id="world" aria-label="Карта города Тихая бухта"></canvas>
   <div id="catLabels" aria-hidden="true"></div>
   <header class="top">
-    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.8.0 · 2D</small></div>
+    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.8.2 · 2D</small></div>
     <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Сохранения и помощь">☰</button></div>
   </header>
   <div class="hint">Коснись здания · двумя пальцами меняй масштаб</div>
@@ -192,6 +221,7 @@ import {BOOK_SUPPLIERS,BOOK_CATALOG,BOOK_BY_ID,SUPPLIER_BY_ID,chapterBook,newBoo
 import {bookCoverMarkup} from "./book-covers.js?v=1";
 import {BOOK_SCENES,BOOK_SCENE_BY_ID,sanitizeBookScenes,availableBookScene,finishBookScene} from "./book-scenes.js?v=1";
 import {createBookVisitorMotion,syncBookVisitorMotion,focusBookVisitor,leaveBookVisitor,bookVisitorRoute,activeBookDeparture} from "./book-visitor-motion.js?v=1";
+import {CAFE_OPENING_STAGES,cafeStageDone,nextCafeStage,startCafeTask,answerCafeTask} from "./cafe-opening.js?v=1";
 (()=>{"use strict";
     const FORMAT=11, DB='quiet-bay-save', KEY='city';
     const cafeSite={id:'cafe',name:'Кофейня',home:[5,11.2],roof:'#c98165'};
@@ -253,6 +283,7 @@ import {createBookVisitorMotion,syncBookVisitorMotion,focusBookVisitor,leaveBook
     const overlay=document.getElementById('overlay'), dialog=document.getElementById('dialog');
     let db, city, selected='bella', gesture=null;
     let bookRoom='all',bookTab='visitors',bookSelected=null,bookSupplier='needed',bookFocused=null,bookShelfFilter='stock',bookSceneSelected=null,bookSaleFlash=null;
+    let cafeTask=null;
     const bookMotion=createBookVisitorMotion();
     let lastFrame=performance.now(), saveTimer=0, dirty=false, time=0;
     function initial(){const visitors=newBookVisitorState();return {version:FORMAT,coins:30,paused:false,savedAt:Date.now(),coffee:{built:false,plan:false,delivery:false,recipe:false,style:null,orders:0},books:{orders:0,nextAt:0,visitors,inventory:newBookInventory(visitors),scenes:[]},cats:defs.map(d=>({id:d.id,x:d.home[0],y:d.home[1],target:[...d.home],activity:d.id==='bella'?'walk':'work',hunger:80,energy:80,mood:75,xp:0,level:1,phase:0,upgrades:{bed:0,bowl:0,toy:0}}))};}
@@ -310,14 +341,46 @@ import {createBookVisitorMotion,syncBookVisitorMotion,focusBookVisitor,leaveBook
     function cafeReady(){let c=city.coffee;return c.plan&&c.delivery&&c.recipe&&c.style;}
     function renderCafe(){
       let c=city.coffee,done=[c.plan,c.delivery,c.recipe,!!c.style].filter(Boolean).length;
-      details.innerHTML=`<div class="row"><div class="avatar">☕</div><div><h1>Кофейня Рыжего</h1><p class="sub">${c.built?'Открыта · заказов выполнено: '+c.orders:'Подготовка к открытию · '+done+'/4 поручений'}</p></div></div><div class="stats"><span class="stat">${c.built?'Рыжий печёт, Цитера подбирает книги, Лев организует':'Общая цель города'}</span>${c.style?'<span class="stat">Оформление: '+({coral:'коралловое',mint:'мятное',blue:'морское'}[c.style])+'</span>':''}</div><div class="actions"><button class="action primary" data-cafe="interior">🚪 Войти в кофейню</button>${c.built?`<button class="action primary" data-cafe="order">Выполнить заказ · +8 🪙</button><button class="action" data-cafe="focus">Показать кофейню</button>`:`<button class="action" data-cafe="plan" ${c.plan?'disabled':''}>📋 План Льва ${c.plan?'✓':''}</button><button class="action" data-cafe="delivery" ${c.delivery?'disabled':''}>📚 Книжный уголок Цитеры ${c.delivery?'✓':''}</button><button class="action" data-cafe="recipe" ${c.recipe?'disabled':''}>🥐 Рецепт Рыжего ${c.recipe?'✓':''}</button><button class="action" data-cafe="style">🎨 Оформление ${c.style?'✓':''}</button><button class="action primary" data-cafe="build" ${!cafeReady()||city.coins<80?'disabled':''}>Открыть · 80 🪙</button><button class="action" data-cafe="focus">Показать на карте</button>`}</div>`;
+      details.innerHTML=`<div class="row"><div class="avatar">☕</div><div><h1>Кофейня Рыжего</h1><p class="sub">${c.built?'Открыта · заказов выполнено: '+c.orders:'Подготовка к открытию · '+done+'/4 этапов'}</p></div></div><div class="stats"><span class="stat">${c.built?'Рыжий встречает гостей':'Лев, Цитера, Рыжий и Белла готовят открытие'}</span>${c.style?'<span class="stat">Оформление: '+({coral:'коралловое',mint:'мятное',blue:'морское'}[c.style])+'</span>':''}</div><div class="actions"><button class="action primary" data-cafe="interior">🚪 Войти в кофейню</button>${c.built?'<button class="action primary" data-cafe="order">🥐 Принять заказ · +8 🪙</button>':`<button class="action primary" data-cafe="opening">📋 Открытие · ${done}/4</button>`}<button class="action" data-cafe="focus">Показать на карте</button></div>`;
     }
     function showCafeInterior(){
       const c=city.coffee;
       show(`<h2>☕ Кофейня Рыжего</h2><div class="cafeScene" id="cafeScene" data-view="all"><div class="cafeCanvas"><img class="cafeInterior" src="./assets/interiors/ryzhiy-cafe-v1.webp" alt="Уютная кофейня Рыжего: стойка с выпечкой, кофемашина и столики у окон" draggable="false" decoding="async"></div></div><div class="cafeViews" aria-label="Рассмотреть интерьер"><button class="active" data-cafe-view="all" aria-pressed="true">Весь зал</button><button data-cafe-view="bar" aria-pressed="false">☕ Стойка</button><button data-cafe-view="tables" aria-pressed="false">🪑 Столики</button></div><span class="shopStatus">${c.built?`Кофейня открыта · выполнено заказов: ${c.orders}`:'Кофейня готовится к открытию — зайти и рассмотреть интерьер уже можно.'}</span>${c.built?'<button data-cafe-interior-order>🥐 Принять заказ гостя</button>':'<button data-cafe-interior-manage>📋 Заняться открытием кофейни</button>'}<button data-close>Вернуться в город</button>`);
       dialog.classList.add('cafeInteriorDialog');
     }
-    function coffeeAction(a){let c=city.coffee;if(a==='focus'){focusCity(...cafeSite.home);return;}if(a==='plan'&&!c.plan){c.plan=true;cat('lev').xp+=6;notice('Лев составил план открытия. Осталось организовать доставку, рецепт и оформление.');changed();return;}if(a==='delivery'&&!c.delivery)show('<h2>Книжный уголок Цитеры</h2><p>Цитера принесла книги для гостей кофейни. Где устроить книжную полку?</p><button data-quest="delivery" data-answer="yes">В кофейне, рядом с уютными столиками</button><button data-quest="delivery" data-answer="no">На складе вдали от посетителей</button><button data-close>Позже</button>');if(a==='recipe'&&!c.recipe)show('<h2>Первый рецепт Рыжего</h2><p>Нужна сладкая булочка к открытию. Что добавим в тесто?</p><button data-quest="recipe" data-answer="yes">Корицу и немного сахара</button><button data-quest="recipe" data-answer="no">Соль и морскую воду</button><button data-close>Позже</button>');if(a==='style')show('<h2>Белла выбирает оформление</h2><p>Выбор сохраняется в прогрессе кофейни; её подробное оформление проработаем отдельно.</p><button data-style="coral">Коралловое</button><button data-style="mint">Мятное</button><button data-style="blue">Морское</button><button data-close>Позже</button>');if(a==='build'){if(!cafeReady()||city.coins<80)return;city.coins-=80;c.built=true;notice('Кофейня открыта! Коснись её снова, чтобы выполнять заказы посетителей.');changed();}if(a==='order'&&c.built){let names=['Булочка с корицей','Ягодный чай','Какао'],n=c.orders%3;show(`<h2>Заказ посетителя</h2><p>Гость просит: <b>${names[n]}</b>. Что подать?</p>${names.map((name,i)=>`<button data-order="${i}">${name}</button>`).join('')}<button data-close>Позже</button>`);}}
+    function showCafeOpening(note=''){
+      const c=city.coffee,active=nextCafeStage(c);
+      if(active&&cafeTask?.stageId!==active.id)cafeTask=startCafeTask(active);
+      const done=CAFE_OPENING_STAGES.filter(stage=>cafeStageDone(c,stage)).length;
+      const cards=CAFE_OPENING_STAGES.map((stage,index)=>{
+        const complete=cafeStageDone(c,stage),current=!complete&&stage.id===active?.id;
+        const status=complete?'✓ Готово':current?'● Сейчас':'🔒 Закрыто';
+        let task='';
+        if(current){
+          const step=stage.steps[cafeTask.step];
+          const start={plan:'🚪 Вход',delivery:'📚 Полка Цитеры',recipe:'🥣 Миска Рыжего',style:'🎨 Зал Беллы'}[stage.id];
+          const history=`<div class="cafeTaskHistory"><span>${start}</span>${cafeTask.history.map(label=>`<i>›</i><span>${label}</span>`).join('')}<i>›</i><span class="cafeTaskPending">?</span></div>`;
+          const answers=step.options.map(option=>`<button data-cafe-task-answer="${option.id}">${option.label}</button>`).join('');
+          task=`<div class="cafeTaskArea"><small>Мини-задание ${cafeTask.step+1}/${stage.steps.length}</small><p>${step.question}</p>${history}<div class="cafeTaskChoices">${answers}</div></div>`;
+        }
+        return `<section class="cafeStageCard ${complete?'complete':current?'current':'locked'}"><div class="cafeStageHeader"><span class="cafeStageIcon">${stage.icon}</span><div class="cafeStageTitle"><strong>${index+1}. ${stage.title}</strong><small>${stage.owner} · ${stage.description}</small></div><span class="cafeStageStatus">${status}</span></div>${task}</section>`;
+      }).join('');
+      const previousScroll=dialog.classList.contains('cafeOpeningDialog')?dialog.scrollTop:0;
+      const finish=c.built?'<div class="cafeOpeningResult">🎉 Кофейня открыта! Рыжий готов принимать гостей.</div>':
+        cafeReady()?`<div class="cafeOpeningResult">✨ Все четыре этапа пройдены! Осталось устроить открытие.</div><button class="cafeOpeningPrimary" data-cafe-open-confirm ${city.coins<80?'disabled':''}>🎉 Открыть кофейню · 80 🪙</button>${city.coins<80?`<small>Нужно ещё ${80-city.coins} монет.</small>`:''}`:
+        '<small>Следующий этап откроется сразу после завершения текущего.</small>';
+      show(`<h2>☕ Открытие кофейни</h2><p class="cafeOpeningIntro">Четыре маленьких дела для четырёх жителей. Без таймера и штрафов: выполняй задания в своём темпе.</p><strong>${done} из 4 этапов</strong><div class="cafeProgressSegments" aria-label="Этапов завершено: ${done} из 4">${CAFE_OPENING_STAGES.map(stage=>`<span class="${cafeStageDone(c,stage)?'done':stage.id===active?.id?'now':''}"></span>`).join('')}</div>${note?`<div class="cafeOpeningResult" role="status">${note}</div>`:''}${cards}${finish}<button data-cafe-back-interior>🚪 Вернуться в интерьер</button><button data-close>Вернуться в город</button>`);
+      dialog.classList.add('cafeOpeningDialog');dialog.scrollTop=previousScroll;
+    }
+    function coffeeAction(a){
+      if(a==='focus'){focusCity(...cafeSite.home);return;}
+      if(a==='opening'){showCafeOpening();return;}
+      const c=city.coffee;
+      if(a==='order'&&c.built){
+        const names=['Булочка с корицей','Ягодный чай','Какао'],n=c.orders%3;
+        show(`<h2>Заказ посетителя</h2><p>Гость просит: <b>${names[n]}</b>. Что подать?</p>${names.map((name,i)=>`<button data-order="${i}">${name}</button>`).join('')}<button data-close>Позже</button>`);
+      }
+    }
     function bookGuestSprite(v){
       return `<svg viewBox="0 0 64 76" aria-hidden="true"><path d="M12 66c-10-7-9-20-4-25" fill="none" stroke="${v.coat}" stroke-width="6" stroke-linecap="round"/><ellipse cx="33" cy="60" rx="21" ry="13" fill="${v.coat}"/><path d="M10 25 14 3 28 15Q32 14 36 15L52 3 55 28" fill="${v.coat}" stroke="#4a4640" stroke-width="1.5" stroke-linejoin="round"/><ellipse cx="32" cy="33" rx="25" ry="23" fill="${v.coat}"/><path d="M15 14 17 8 24 18M43 18 51 8 51 18" fill="${v.accent}"/><ellipse cx="22" cy="31" rx="3" ry="4" fill="#292b2c"/><ellipse cx="42" cy="31" rx="3" ry="4" fill="#292b2c"/><path d="M28 40 36 40 32 44Z" fill="#e3aa9c"/><path d="M32 44q-4 6-8 1m8-1q4 6 8 1" fill="none" stroke="#50423e" stroke-width="1.5" stroke-linecap="round"/><path d="M7 39 22 41M7 46 22 44M42 41 58 39M42 44 58 46" stroke="#fbf3df" stroke-width="1.3" stroke-linecap="round"/><path d="M18 56q14 11 30 0" fill="none" stroke="${v.accent}" stroke-width="6" stroke-linecap="round"/></svg>`;
     }
@@ -486,8 +549,8 @@ import {createBookVisitorMotion,syncBookVisitorMotion,focusBookVisitor,leaveBook
     }
     function renderUI(){if(!city)return;document.getElementById('money').textContent=`🪙 ${city.coins}`;document.getElementById('pause').textContent=city.paused?'▶':'Ⅱ';if(selected==='cafe'){renderCafe();return;}let c=cat(selected),d=byId[selected];let bella=c.id==='bella';details.innerHTML=`<div class="row"><div class="avatar">${d.symbol}</div><div><h1>${d.name} <span style="font-size:12px;font-weight:400">${bella?'':`· уровень ${c.level}`}</span></h1><p class="sub">${d.job} · ${activities[c.activity]}</p></div></div><div class="stats">${bella?'<span class="stat">Гуляет и навещает друзей</span>':`<span class="stat">🥣 ${Math.round(c.hunger)}%</span><span class="stat">💤 ${Math.round(c.energy)}%</span><span class="stat">♡ ${Math.round(c.mood)}%</span><span class="stat">✦ ${Math.floor(c.xp)}/${c.level*18} опыта</span>`}</div><div class="actions">${bella?'<button class="action primary" data-action="cafe">☕ Кофейня</button><button class="action" data-action="guide">Как играть</button><button class="action" data-action="focus">Показать на карте</button>':`<button class="action primary" data-action="work">Работать · +монеты</button><button class="action" data-action="rest">Отдыхать · +бодрость</button><button class="action" data-action="eat">Кормить · +сытость</button><button class="action" data-action="play">Играть · +настроение</button><button class="action" data-action="walk">Гулять</button>${c.id==='citera'?'<button class="action primary" data-action="bookshop">📚 Войти в книжную лавку</button>':''}<button class="action" data-action="focus">Показать на карте</button><button class="action" data-upgrade="bed" ${c.upgrades.bed>=3?'disabled':''}>🛏 Кровать ${c.upgrades.bed}/3 · ${homeCost(c,'bed')} 🪙</button><button class="action" data-upgrade="bowl" ${c.upgrades.bowl>=3?'disabled':''}>🥣 Миска ${c.upgrades.bowl}/3 · ${homeCost(c,'bowl')} 🪙</button><button class="action" data-upgrade="toy" ${c.upgrades.toy>=3?'disabled':''}>🧶 Игрушки ${c.upgrades.toy}/3 · ${homeCost(c,'toy')} 🪙</button>`}</div>`;}
     details.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.cafe){coffeeAction(b.dataset.cafe);return;}if(b.dataset.action==='cafe'){selected='cafe';renderUI();notice('Помоги жителям открыть кофейню.');return;}if(b.dataset.action==='guide')showGuide();else if(b.dataset.action==='bookshop')showBookshop();else if(b.dataset.action==='focus'){let c=cat(selected);focusCity(c.x,c.y);}else if(b.dataset.action)assign(cat(selected),b.dataset.action);else if(b.dataset.upgrade)improve(b.dataset.upgrade);});
-    function close(){if(dialog.classList.contains('bookshop')){bookRoom='all';bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;}overlay.hidden=true;dialog.classList.remove('bookshop','location','places','cafeInteriorDialog');}
-    function show(html){dialog.classList.remove('bookshop','location','places','cafeInteriorDialog');dialog.innerHTML=html;overlay.hidden=false;}
+    function close(){if(dialog.classList.contains('bookshop')){bookRoom='all';bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;}overlay.hidden=true;dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog');}
+    function show(html){dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog');dialog.innerHTML=html;overlay.hidden=false;}
     function showGuide(){show(`<h2>Добро пожаловать в бухту</h2><p>Коснись кота, чтобы выбрать жителя. Коты сами работают, едят и отдыхают. Назначай занятия, помогай с настроением и улучшай их дома.</p><p>Коснись здания на карте, чтобы открыть его окно. Там можно отправить жителя к входу по дорожке, открыть существующие занятия или управление домом. Кнопка «Места» покажет все доступные локации. Обычные жилые дома без жителей не открываются.</p><p>Перетаскивай город одним пальцем, меняй масштаб двумя. Пауза останавливает жизнь котов; сохранения хранятся в Safari.</p><p>Кент работает в ратуше, Мия — в обсерватории, Лев лечит жителей в больнице. В лавке Цитеры гости входят через дверь, подходят к полкам, а при начале беседы идут к кассе. После покупки они уходят с книгой. На вкладке «Витрина» можно рассматривать обложки и проверять остатки. В «Закупках» пополняй склад: доставка займёт немного реального времени, даже если выйти из игры. Когда двое гостей заговорят у полок, присоединяйся к их небольшой истории. Кофейню Рыжего можно открыть через поручения.</p><button data-close>Играть</button>`);}
     // Only the open interior mounts its image; none of these controls run in the map animation loop.
     details.addEventListener('click',e=>{
@@ -497,6 +560,32 @@ import {createBookVisitorMotion,syncBookVisitorMotion,focusBookVisitor,leaveBook
     dialog.addEventListener('click',e=>{
       const button=e.target.closest('button');if(!button)return;
       if(button.hasAttribute('data-location-cafe-enter')){e.stopImmediatePropagation();showCafeInterior();return;}
+      if(button.hasAttribute('data-cafe-back-interior')){e.stopImmediatePropagation();showCafeInterior();return;}
+      if(button.hasAttribute('data-cafe-task-answer')){
+        e.stopImmediatePropagation();
+        const stage=nextCafeStage(city.coffee),result=answerCafeTask(stage,cafeTask,button.dataset.cafeTaskAnswer);
+        if(!result.ok){showCafeOpening('💡 '+result.hint);return;}
+        cafeTask=result.session;
+        if(result.complete){
+          if(stage.id==='style')city.coffee.style=result.session.style;
+          else city.coffee[stage.id]=true;
+          const resident={plan:'lev',delivery:'citera',recipe:'ryzhiy'}[stage.id];
+          if(resident)cat(resident).xp+=6;
+          else cat('bella').mood=clamp(cat('bella').mood+6,0,100);
+          cafeTask=null;
+          changed();
+          showCafeOpening(`✓ ${stage.owner}: этап «${stage.title}» завершён. ${result.message}`);
+        }else showCafeOpening(`✓ ${result.message}`);
+        return;
+      }
+      if(button.hasAttribute('data-cafe-open-confirm')){
+        e.stopImmediatePropagation();
+        if(city.coffee.built||!cafeReady()||city.coins<80)return;
+        city.coins-=80;city.coffee.built=true;
+        cat('ryzhiy').mood=clamp(cat('ryzhiy').mood+10,0,100);
+        changed();showCafeOpening('🎉 Рыжий распахнул двери! Первые заказы уже ждут.');
+        return;
+      }
       if(button.dataset.cafeView){
         e.stopImmediatePropagation();
         const view=button.dataset.cafeView;
@@ -510,7 +599,7 @@ import {createBookVisitorMotion,syncBookVisitorMotion,focusBookVisitor,leaveBook
       }
       if(button.hasAttribute('data-cafe-interior-order')){e.stopImmediatePropagation();coffeeAction('order');return;}
       if(button.hasAttribute('data-cafe-interior-manage')){
-        e.stopImmediatePropagation();selected='cafe';close();renderUI();notice('Открыты поручения кофейни Рыжего.');
+        e.stopImmediatePropagation();selected='cafe';renderUI();showCafeOpening();
       }
     },true);
     document.getElementById('places').onclick=showPlaces;
@@ -524,7 +613,7 @@ import {createBookVisitorMotion,syncBookVisitorMotion,focusBookVisitor,leaveBook
       if(d.locationManage){e.stopPropagation();selected=locationInfo[d.locationManage].owner;close();renderUI();notice('Открыта карточка жителя и улучшения дома.');return;}
       if(d.locationWork){e.stopPropagation();sendToLocation(d.locationWork,locationInfo[d.locationWork].worker,'work');return;}
       if(d.locationVisit){e.stopPropagation();sendToLocation(d.locationVisit,currentVisitor(),'walk');return;}
-      if(button.hasAttribute('data-location-cafe')){e.stopPropagation();selected='cafe';close();renderUI();focusCity(...NODES.cafe);notice('Открыты дела кофейни Рыжего.');}
+      if(button.hasAttribute('data-location-cafe')){e.stopPropagation();selected='cafe';renderUI();showCafeOpening();}
     },true);
     dialog.addEventListener('click',e=>{
       const patientButton=e.target.closest('button[data-patient]');
@@ -574,7 +663,7 @@ import {createBookVisitorMotion,syncBookVisitorMotion,focusBookVisitor,leaveBook
       if(button.hasAttribute('data-book-back')){e.stopImmediatePropagation();bookSelected=null;bookSceneSelected=null;showBookshop();return;}
       if(button.hasAttribute('data-book-refresh')){e.stopImmediatePropagation();showBookshop();return;}
     },true);
-    dialog.onclick=async e=>{let t=e.target,c=city.coffee;if(t.dataset.bookRoom){const room=t.dataset.bookRoom;document.getElementById('bookScene').dataset.room=room;for(const button of dialog.querySelectorAll('[data-book-room]')){const active=button.dataset.bookRoom===room;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));}return;}if(t.dataset.book!==undefined){bookAction(Number(t.dataset.book));return;}if(t.hasAttribute('data-book-refresh')){showBookshop();return;}if(t.dataset.quest){if(t.dataset.answer!=='yes'){dialog.querySelector('p').textContent='Этот вариант не подходит. Попробуй ещё раз.';return;}c[t.dataset.quest]=true;cat(t.dataset.quest==='recipe'?'ryzhiy':'citera').xp+=6;close();notice(t.dataset.quest==='recipe'?'Рыжий придумал первую булочку.':'Цитера устроила книжный уголок в кофейне.');changed();return;}if(t.dataset.style){c.style=t.dataset.style;close();notice('Белла выбрала оформление кофейни. Выбранный стиль сохранён для дальнейшего оформления кофейни.');changed();return;}if(t.dataset.order!==undefined){if(Number(t.dataset.order)!==c.orders%3){dialog.querySelector('p').textContent='Это другой заказ. Гость подождёт, попробуй ещё раз.';return;}c.orders++;city.coins+=8;cat('ryzhiy').xp+=3;close();notice(`Заказ выполнен! +8 монет. Всего заказов: ${c.orders}.`);changed();return;}let id=t.id;if(e.target.hasAttribute('data-close'))close();if(id==='help')showGuide();if(id==='import')document.getElementById('file').click();if(id==='export'){await write().catch(()=>{});let blob=new Blob([JSON.stringify(city,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='tihaya-buhta-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);close();notice('Копия сохранения загружена. Сохрани файл в «Файлы».');}if(id==='restore'||id==='restoreBeforeInventory'||id==='restoreBefore2D'||id==='restoreBeforePaths'){let prev=await read(id==='restoreBeforeInventory'?'before-book-inventory-v1':id==='restoreBefore2D'?'before-map-2d-v1':id==='restoreBeforePaths'?'before-paths-2d-v1':'previous').catch(()=>null);if(!prev||!valid(prev)){notice('Предыдущей исправной копии пока нет.');close();return;}if(confirm('Заменить текущий город предыдущей копией?')){city=sanitize(prev);city.savedAt=Date.now();changed();notice('Предыдущая копия восстановлена.');}close();}};
+    dialog.onclick=async e=>{let t=e.target,c=city.coffee;if(t.dataset.bookRoom){const room=t.dataset.bookRoom;document.getElementById('bookScene').dataset.room=room;for(const button of dialog.querySelectorAll('[data-book-room]')){const active=button.dataset.bookRoom===room;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));}return;}if(t.dataset.book!==undefined){bookAction(Number(t.dataset.book));return;}if(t.hasAttribute('data-book-refresh')){showBookshop();return;}if(t.dataset.order!==undefined){if(Number(t.dataset.order)!==c.orders%3){dialog.querySelector('p').textContent='Это другой заказ. Гость подождёт, попробуй ещё раз.';return;}c.orders++;city.coins+=8;cat('ryzhiy').xp+=3;close();notice(`Заказ выполнен! +8 монет. Всего заказов: ${c.orders}.`);changed();return;}let id=t.id;if(e.target.hasAttribute('data-close'))close();if(id==='help')showGuide();if(id==='import')document.getElementById('file').click();if(id==='export'){await write().catch(()=>{});let blob=new Blob([JSON.stringify(city,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='tihaya-buhta-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);close();notice('Копия сохранения загружена. Сохрани файл в «Файлы».');}if(id==='restore'||id==='restoreBeforeInventory'||id==='restoreBefore2D'||id==='restoreBeforePaths'){let prev=await read(id==='restoreBeforeInventory'?'before-book-inventory-v1':id==='restoreBefore2D'?'before-map-2d-v1':id==='restoreBeforePaths'?'before-paths-2d-v1':'previous').catch(()=>null);if(!prev||!valid(prev)){notice('Предыдущей исправной копии пока нет.');close();return;}if(confirm('Заменить текущий город предыдущей копией?')){city=sanitize(prev);city.savedAt=Date.now();changed();notice('Предыдущая копия восстановлена.');}close();}};
     document.getElementById('file').onchange=async e=>{let f=e.target.files[0];e.target.value='';if(!f)return;if(f.size>200000){notice('Файл слишком большой.');close();return;}try{let data=JSON.parse(await f.text());if(!valid(data))throw Error('Неверный формат или версия файла.');if(!confirm('Заменить текущий город содержимым этого файла?'))return;city=sanitize(data);city.savedAt=Date.now();changed();close();notice('Город восстановлен из файла.');}catch(err){close();notice(`Не удалось импортировать: ${err.message}`);}};
 
     let map=null;
