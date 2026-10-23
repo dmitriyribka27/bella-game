@@ -1,34 +1,56 @@
-// Drawn island v0.3: Canvas 2D only, with visible detail tiles and path-based cats.
+// Drawn island v0.3: Canvas 2D with entrance-to-entrance footpaths.
 export const WIDTH=3840,HEIGHT=2560;
 const xy=p=>[p[0]*20.5,p[1]*15];
 const points={
-  mia:[.347,.257],observatory:[.313,.242],upper:[.405,.305],kent:[.362,.353],
-  office:[.443,.396],northSquare:[.513,.332],townhall:[.566,.329],square:[.558,.400],
-  lev:[.485,.462],cross:[.514,.496],restaurant:[.388,.558],west:[.325,.589],
-  pond:[.478,.603],bella:[.355,.681],bellaGate:[.385,.706],promWest:[.309,.727],
-  promMiddle:[.472,.704],promEast:[.613,.657],citera:[.605,.602],post:[.704,.600],
-  east:[.747,.520],eastStairs:[.746,.454],cafe:[.707,.416],ryzhiy:[.658,.387],
-  marketStairs:[.771,.360],market:[.758,.289],greenhouse:[.700,.229],
-  beachWest:[.341,.808],beach:[.458,.800],beachEast:[.569,.772],
-  marina:[.692,.750],pier:[.738,.862],residence:[.679,.546]
+  observatory:[.293,.181],mia:[.352,.211],miaStairs:[.405,.255],
+  northBend:[.446,.267],townhouse:[.505,.282],
+  townhall:[.562,.286],squareNorth:[.533,.302],square:[.546,.342],
+  squareWest:[.495,.343],squareSouth:[.545,.376],squareEast:[.610,.338],
+  market:[.713,.275],marketWalk:[.739,.296],greenhouse:[.657,.216],
+  gardenSouth:[.616,.292],gardenStairs:[.634,.246],
+  kent:[.352,.355],kentCross:[.392,.379],office:[.443,.388],officeEast:[.490,.381],
+  restaurant:[.363,.525],terrace:[.419,.523],pondNorth:[.469,.518],
+  lowerCross:[.486,.479],lev:[.488,.440],midStairs:[.523,.401],
+  lowerSquare:[.484,.519],pondEast:[.498,.553],pondSouth:[.470,.609],
+  pondWest:[.406,.625],bookApproach:[.513,.566],citera:[.553,.588],
+  bellaNorth:[.356,.651],bella:[.333,.665],bellaGate:[.362,.686],
+  promWest:[.418,.677],promMiddle:[.496,.635],promEast:[.616,.614],
+  residence:[.695,.510],residenceFront:[.722,.513],
+  post:[.672,.580],eastWalk:[.732,.555],east:[.754,.490],
+  eastStairs:[.752,.440],cafe:[.713,.394],ryzhiy:[.651,.361],
+  marketStairs:[.738,.387],lighthouseUpper:[.354,.719],
+  lighthouseStairs:[.336,.780],lighthouse:[.290,.805],
+  promStairsEast:[.647,.663],
+  marinaSide:[.642,.715],marina:[.682,.748],pier:[.732,.820]
 };
-const pairs=[['mia','observatory'],['mia','upper'],['upper','kent'],['upper','northSquare'],
-  ['kent','office'],['office','northSquare'],['northSquare','townhall'],['townhall','square'],
-  ['office','lev'],['lev','square'],['lev','cross'],['cross','square'],['cross','restaurant'],
-  ['restaurant','west'],['restaurant','pond'],['west','bella'],['pond','bellaGate'],
-  ['bella','bellaGate'],['bellaGate','promWest'],['bellaGate','promMiddle'],
-  ['promWest','promMiddle'],['promMiddle','promEast'],['pond','citera'],
-  ['citera','promEast'],['citera','post'],['post','east'],['east','residence'],
-  ['east','eastStairs'],['eastStairs','cafe'],['cafe','ryzhiy'],['ryzhiy','square'],
-  ['cafe','marketStairs'],['marketStairs','market'],['market','greenhouse'],
-  ['greenhouse','townhall'],['promWest','beachWest'],['beachWest','beach'],
-  ['beach','beachEast'],['beachEast','marina'],['promEast','marina'],['marina','pier']];
+// Every adjacent pair in a chain follows a visible paved path or staircase.
+const paths=[
+  'observatory mia miaStairs northBend townhouse squareNorth squareWest square',
+  'squareNorth townhall',
+  'squareEast gardenSouth gardenStairs greenhouse',
+  'market marketWalk marketStairs cafe ryzhiy squareEast square',
+  'marketStairs eastStairs east eastWalk post promEast',
+  'squareWest officeEast office kentCross kent',
+  'square squareSouth midStairs lev lowerCross lowerSquare pondEast pondSouth pondWest bellaNorth bella bellaGate',
+  'lowerCross pondNorth terrace restaurant',
+  'lowerSquare bookApproach citera',
+  'citera promMiddle',
+  'citera post eastWalk',
+  'eastWalk residenceFront residence',
+  'bellaGate promWest promMiddle promEast',
+  'promWest lighthouseUpper lighthouseStairs lighthouse',
+  'promEast promStairsEast marinaSide marina',
+  'marina pier',
+  'eastWalk eastStairs'
+];
+const pairs=paths.flatMap(path=>{const ids=path.split(' ');return ids.slice(1).map((id,i)=>[ids[i],id]);});
 export const NODES=Object.fromEntries(Object.entries(points).map(([k,p])=>[k,xy(p)]));
 const links=Object.fromEntries(Object.keys(NODES).map(k=>[k,[]]));
 for(const [a,b] of pairs){links[a].push(b);links[b].push(a);}
 export const HOME_POINTS={kent:NODES.kent,mia:NODES.mia,lev:NODES.lev,citera:NODES.citera,ryzhiy:NODES.ryzhiy,bella:NODES.bella};
 export const WORK_POINTS={kent:NODES.ryzhiy,mia:NODES.observatory,lev:NODES.townhall,citera:NODES.citera,ryzhiy:NODES.cafe,bella:NODES.square};
 export const SITE_POINTS={cafe:NODES.cafe,restaurant:NODES.restaurant,post:NODES.post,observatory:NODES.observatory,market:NODES.market,greenhouse:NODES.greenhouse,townhall:NODES.townhall};
+export const BUILDING_POINTS={...HOME_POINTS,...SITE_POINTS,townhouse:NODES.townhouse,office:NODES.office,residence:NODES.residence,lighthouse:NODES.lighthouse,marina:NODES.marina};
 const distance=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
 export function nearest(p){return Object.keys(NODES).reduce((a,b)=>distance(p,NODES[a])<distance(p,NODES[b])?a:b);}
 export function route(from,to){
@@ -39,7 +61,7 @@ export function route(from,to){
   const ids=[end];while(ids[0]!==start){const p=prev[ids[0]];if(!p)throw Error('Disconnected island path');ids.unshift(p);}
   return ids.map(k=>[...NODES[k]]);
 }
-export function walkTarget(){const list=['square','pond','promMiddle','market','beach','pier','west','cafe','kent','bellaGate'];return [...NODES[list[Math.floor(Math.random()*list.length)]]];}
+export function walkTarget(){const list=[...Object.values(BUILDING_POINTS),NODES.square,NODES.pondSouth,NODES.promMiddle,NODES.pier];return [...list[Math.floor(Math.random()*list.length)]];}
 const routes=new WeakMap();
 export function advance(cat,dt){
   const key=cat.target.join(',');let r=routes.get(cat);
@@ -49,7 +71,7 @@ export function advance(cat,dt){
   if(r.index===r.points.length){cat.x=cat.target[0];cat.y=cat.target[1];}
 }
 
-export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onCafe,onNotice}){
+export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onCafe,onVisit,onNotice}){
   const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw Error('Canvas 2D недоступен');
   const camera={x:WIDTH/2,y:HEIGHT/2,scale:1,min:.1,max:1.15};
   const images=new Map(),tiles=new Map(),pointers=new Map();let width=0,height=0,dpr=1,overview=null,dirty=true,last=0,gesture=null,hitCats=[];
@@ -102,10 +124,23 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onC
   }
   function pick(x,y){const hit=[...hitCats].reverse().find(h=>Math.abs(x-h.x)<h.w/2&&Math.abs(y-h.y)<h.h/2);if(hit){onSelect(hit.id);dirty=true;return;}
     const p=worldAt(x,y),u=p[0]/WIDTH,v=p[1]/HEIGHT;
-    // Retain existing home selection and the already implemented bookshop.
-    const homes=[['bella',.321,.625,.075,.075],['citera',.577,.540,.072,.090],['kent',.347,.301,.050,.065],['mia',.360,.202,.062,.065],['lev',.469,.422,.045,.055],['ryzhiy',.649,.344,.055,.065]];
-    for(const [id,hx,hy,rx,ry] of homes)if(Math.abs(u-hx)<rx&&Math.abs(v-hy)<ry){onHome(id);dirty=true;return;}
-    if(Math.abs(u-.709)<.040&&Math.abs(v-.379)<.045){onCafe();dirty=true;}
+    const buildings=[
+      ['bella',.325,.619,.055,.051],['citera',.568,.528,.055,.055],
+      ['kent',.350,.293,.048,.048],['mia',.370,.170,.057,.052],
+      ['lev',.483,.405,.044,.044],['ryzhiy',.659,.324,.043,.047],
+      ['observatory',.314,.145,.036,.045],['townhouse',.503,.230,.042,.047],
+      ['townhall',.569,.234,.052,.063],['greenhouse',.659,.163,.043,.045],
+      ['market',.711,.233,.063,.042],['cafe',.708,.367,.040,.042],
+      ['restaurant',.352,.453,.073,.070],['office',.437,.335,.044,.049],
+      ['residence',.650,.466,.047,.043],['post',.678,.544,.043,.038],
+      ['marina',.684,.680,.050,.050],['lighthouse',.293,.745,.040,.054]
+    ];
+    for(const [id,hx,hy,rx,ry] of buildings)if(Math.abs(u-hx)<rx&&Math.abs(v-hy)<ry){
+      if(HOME_POINTS[id])onHome(id,BUILDING_POINTS[id]);
+      else if(id==='cafe')onCafe(BUILDING_POINTS[id]);
+      else onVisit(id,BUILDING_POINTS[id]);
+      dirty=true;return;
+    }
   }
   canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size===1)gesture={x:e.clientX,y:e.clientY,moved:false,multi:false};else if(gesture)gesture.multi=true;});
   canvas.addEventListener('pointermove',e=>{const previous=pointers.get(e.pointerId);if(!previous)return;const before=[...pointers.values()];pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});const after=[...pointers.values()];if(gesture&&Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)>7)gesture.moved=true;
