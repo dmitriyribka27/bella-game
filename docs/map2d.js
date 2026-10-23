@@ -85,11 +85,16 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onC
     // Citera's bookshop, post office and neighboring residence. Keep this
     // behind the coastal patches so the boathouse shoreline stays intact.
     {name:'citera-quarter',x:1750,y:900,w:1296,h:853},
-    // Ryzhiy's neighborhood is two overlapping high-resolution layers:
-    // the clock-tower town hall and residence, then greenhouse, market,
-    // Ryzhiy's home and cafe. Draw them after Citera's southern overlap.
-    {name:'ryzhiy-townhall',x:1810,y:350,w:690,h:580},
-    {name:'ryzhiy-east',x:2350,y:230,w:620,h:920},
+    // Two overlapping Retina-resolution neighborhood illustrations, shipped
+    // as seven strips so no individual WebP needs to be downscaled on upload.
+    // Whole-world-pixel seams and original alpha edges preserve alignment.
+    {name:'ryzhiy-townhall-hd-1',file:'ryzhiy-townhall-hd-1.webp',x:1810,y:350,w:690,h:193},
+    {name:'ryzhiy-townhall-hd-2',file:'ryzhiy-townhall-hd-2.webp',x:1810,y:543,w:690,h:194},
+    {name:'ryzhiy-townhall-hd-3',file:'ryzhiy-townhall-hd-3.webp',x:1810,y:737,w:690,h:193},
+    {name:'ryzhiy-east-hd-1',file:'ryzhiy-east-hd-1.webp',x:2350,y:230,w:620,h:230},
+    {name:'ryzhiy-east-hd-2',file:'ryzhiy-east-hd-2.webp',x:2350,y:460,w:620,h:230},
+    {name:'ryzhiy-east-hd-3',file:'ryzhiy-east-hd-3.webp',x:2350,y:690,w:620,h:230},
+    {name:'ryzhiy-east-hd-4',file:'ryzhiy-east-hd-4.webp',x:2350,y:920,w:620,h:230},
     // The coastal art is aligned against recognizable landmarks in the island map.
     // Each transparent WebP softly fades into the existing 2D artwork at its edges.
     {name:'lighthouse',x:880,y:1710,w:530,h:482.5},
@@ -112,7 +117,7 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onC
   function worldAt(x,y){const c=center();return [camera.x+(x-c[0])/camera.scale,camera.y+(y-c[1])/camera.scale];}
   function screenAt(x,y){const c=center();return [(x-camera.x)*camera.scale+c[0],(y-camera.y)*camera.scale+c[1]];}
   function clampCamera(){const r=region(),hw=width/(camera.scale*2),hh=(r.bottom-r.top)/(camera.scale*2);camera.x=Math.max(-hw*.1,Math.min(WIDTH+hw*.1,camera.x));camera.y=Math.max(-hh*.1,Math.min(HEIGHT+hh*.1,camera.y));}
-  function resize(){width=innerWidth;height=innerHeight;dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);canvas.style.width=width+'px';canvas.style.height=height+'px';const r=region();camera.min=Math.min(width/WIDTH,(r.bottom-r.top)/HEIGHT)*.94;camera.scale=Math.max(camera.min,Math.min(camera.max,camera.scale));dirty=true;}
+  function resize(){width=innerWidth;height=innerHeight;dpr=Math.min(devicePixelRatio||1,3);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);canvas.style.width=width+'px';canvas.style.height=height+'px';const r=region();camera.min=Math.min(width/WIDTH,(r.bottom-r.top)/HEIGHT)*.94;camera.scale=Math.max(camera.min,Math.min(camera.max,camera.scale));dirty=true;}
   function fit(){resize();camera.x=WIDTH/2;camera.y=HEIGHT/2;camera.scale=camera.min;dirty=true;}
   function zoom(factor,x=width/2,y=center()[1]){const anchor=worldAt(x,y);camera.scale=Math.max(camera.min,Math.min(camera.max,camera.scale*factor));const after=worldAt(x,y);camera.x+=anchor[0]-after[0];camera.y+=anchor[1]-after[1];clampCamera();dirty=true;}
   function focus(x,y){camera.x=x/20.5*WIDTH;camera.y=y/15*HEIGHT;camera.scale=Math.max(camera.scale,Math.min(.55,camera.min*4.5));clampCamera();dirty=true;}
@@ -133,7 +138,7 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onC
     if(density>.7){const a=worldAt(0,0),b=worldAt(width,height);ctx.globalAlpha=Math.min(1,Math.max(0,(density-.7)/.45));
       for(const p of detailPatches){if(p.x+p.w<a[0]||p.x>b[0]||p.y+p.h<a[1]||p.y>b[1])continue;
         let state=details.get(p.name);
-        if(!state){state={image:null};details.set(p.name,state);const img=new Image();img.onload=()=>{state.image=img;dirty=true;};img.src='./assets/island-v1/'+p.name+'-detail-v1.webp';}
+        if(!state){state={image:null};details.set(p.name,state);const img=new Image();img.onload=()=>{state.image=img;dirty=true;};img.src='./assets/island-v1/'+(p.file||p.name+'-detail-v1.webp');}
         if(state.image)ctx.drawImage(state.image,p.x,p.y,p.w,p.h);
       }
       ctx.globalAlpha=1;

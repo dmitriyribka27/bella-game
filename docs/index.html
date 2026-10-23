@@ -62,7 +62,7 @@
   <canvas id="world" aria-label="Карта города Тихая бухта"></canvas>
   <div id="catLabels" aria-hidden="true"></div>
   <header class="top">
-    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.3.5 · 2D</small></div>
+    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.3.6 · 2D</small></div>
     <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Сохранения и помощь">☰</button></div>
   </header>
   <div class="hint">Перетаскивай город · двумя пальцами меняй масштаб</div>
@@ -74,7 +74,7 @@
   <script type="module">
 import {CAT_ART} from "./cats-art.js?v=1";
 import {BOOKSHOP_ART} from "./bookshop-art.js?v=2";
-import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,NODES,advance,walkTarget} from "./map2d.js?v=9";
+import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,NODES,advance,walkTarget} from "./map2d.js?v=10";
 (()=>{"use strict";
     const FORMAT=8, DB='quiet-bay-save', KEY='city';
     const cafeSite={id:'cafe',name:'Кофейня',home:[5,11.2],roof:'#c98165'};
