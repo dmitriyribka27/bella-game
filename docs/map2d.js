@@ -77,7 +77,14 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onC
   const detailPatches=[
     {name:'restaurant',x:1080,y:960,w:580,h:460},
     {name:'bella',x:1030,y:1430,w:590,h:360},
-    {name:'pond',x:1470,y:1315,w:450,h:350}
+    {name:'pond',x:1470,y:1315,w:450,h:350},
+    // The coastal art is aligned against recognizable landmarks in the island map.
+    // Each transparent WebP softly fades into the existing 2D artwork at its edges.
+    {name:'lighthouse',x:880,y:1710,w:530,h:482.5},
+    {name:'beach-west',x:1340,y:1790,w:560,h:467.5},
+    {name:'beach-east',x:1860,y:1770,w:550,h:500},
+    {name:'boathouse',x:2340,y:1640,w:570,h:490},
+    {name:'pier',x:2510,y:1930,w:530,h:482.5}
   ];
   const sheet=document.getElementById('sheet'),tags=document.getElementById('catLabels');
   const resident=document.getElementById('residents');
