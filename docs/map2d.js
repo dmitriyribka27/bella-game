@@ -47,8 +47,8 @@ export const NODES=Object.fromEntries(Object.entries(points).map(([k,p])=>[k,xy(
 const links=Object.fromEntries(Object.keys(NODES).map(k=>[k,[]]));
 for(const [a,b] of pairs){links[a].push(b);links[b].push(a);}
 export const HOME_POINTS={kent:NODES.kent,mia:NODES.mia,lev:NODES.lev,citera:NODES.citera,ryzhiy:NODES.ryzhiy,bella:NODES.bella};
-// Kent serves as mayor at the central square until his separate town hall is built.
-export const WORK_POINTS={kent:NODES.square,mia:NODES.observatory,lev:NODES.hospital,citera:NODES.citera,ryzhiy:NODES.cafe,bella:NODES.square};
+// Kent now works as mayor in the clock-tower town hall.
+export const WORK_POINTS={kent:NODES.townhall,mia:NODES.observatory,lev:NODES.hospital,citera:NODES.citera,ryzhiy:NODES.cafe,bella:NODES.square};
 export const SITE_POINTS={cafe:NODES.cafe,restaurant:NODES.restaurant,hospital:NODES.hospital,post:NODES.post,observatory:NODES.observatory,market:NODES.market,greenhouse:NODES.greenhouse,townhall:NODES.townhall};
 export const BUILDING_POINTS={...HOME_POINTS,...SITE_POINTS,townhouse:NODES.townhouse,residence:NODES.residence,lighthouse:NODES.lighthouse,marina:NODES.marina};
 const distance=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
@@ -85,6 +85,11 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onC
     // Citera's bookshop, post office and neighboring residence. Keep this
     // behind the coastal patches so the boathouse shoreline stays intact.
     {name:'citera-quarter',x:1750,y:900,w:1296,h:853},
+    // Ryzhiy's neighborhood is two overlapping high-resolution layers:
+    // the clock-tower town hall and residence, then greenhouse, market,
+    // Ryzhiy's home and cafe. Draw them after Citera's southern overlap.
+    {name:'ryzhiy-townhall',x:1810,y:350,w:690,h:580},
+    {name:'ryzhiy-east',x:2350,y:230,w:620,h:920},
     // The coastal art is aligned against recognizable landmarks in the island map.
     // Each transparent WebP softly fades into the existing 2D artwork at its edges.
     {name:'lighthouse',x:880,y:1710,w:530,h:482.5},

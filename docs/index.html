@@ -62,7 +62,7 @@
   <canvas id="world" aria-label="Карта города Тихая бухта"></canvas>
   <div id="catLabels" aria-hidden="true"></div>
   <header class="top">
-    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.3.4 · 2D</small></div>
+    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.3.5 · 2D</small></div>
     <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Сохранения и помощь">☰</button></div>
   </header>
   <div class="hint">Перетаскивай город · двумя пальцами меняй масштаб</div>
@@ -74,7 +74,7 @@
   <script type="module">
 import {CAT_ART} from "./cats-art.js?v=1";
 import {BOOKSHOP_ART} from "./bookshop-art.js?v=2";
-import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,NODES,advance,walkTarget} from "./map2d.js?v=8";
+import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,NODES,advance,walkTarget} from "./map2d.js?v=9";
 (()=>{"use strict";
     const FORMAT=8, DB='quiet-bay-save', KEY='city';
     const cafeSite={id:'cafe',name:'Кофейня',home:[5,11.2],roof:'#c98165'};
@@ -176,7 +176,7 @@ import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,NODES,advance,walkTarget} 
     details.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.cafe){coffeeAction(b.dataset.cafe);return;}if(b.dataset.action==='cafe'){selected='cafe';renderUI();notice('Помоги жителям открыть кофейню.');return;}if(b.dataset.action==='guide')showGuide();else if(b.dataset.action==='bookshop')showBookshop();else if(b.dataset.action==='focus'){let c=cat(selected);focusCity(c.x,c.y);}else if(b.dataset.action)assign(cat(selected),b.dataset.action);else if(b.dataset.upgrade)improve(b.dataset.upgrade);});
     function close(){overlay.hidden=true;dialog.classList.remove('bookshop');}
     function show(html){dialog.classList.remove('bookshop');dialog.innerHTML=html;overlay.hidden=false;}
-    function showGuide(){show(`<h2>Добро пожаловать в бухту</h2><p>Коснись кота или домика, чтобы выбрать жителя. Коты сами работают, едят и отдыхают. Назначай им занятия, помогай с настроением и трать общие монеты на предметы для дома.</p><p>Перетаскивай город одним пальцем и меняй масштаб двумя. Выбери кота и коснись здания, чтобы он подошёл к входу по дорожке. Пауза остановит время. Прогресс хранится в Safari на этом устройстве.</p><p>Кент теперь мэр: пока без собственной ратуши он работает на центральной площади. Лев — доктор: коснись розовой больницы, чтобы отправить жителя к входу и открыть приём пациентов.</p><p>Коснись дома Цитеры, чтобы зайти в её книжную лавку и помочь посетителям. Кофейню Рыжего открой через поручения в панели Беллы.</p><button data-close>Играть</button>`);}
+    function showGuide(){show(`<h2>Добро пожаловать в бухту</h2><p>Коснись кота или домика, чтобы выбрать жителя. Коты сами работают, едят и отдыхают. Назначай им занятия, помогай с настроением и трать общие монеты на предметы для дома.</p><p>Перетаскивай город одним пальцем и меняй масштаб двумя. Выбери кота и коснись здания, чтобы он подошёл к входу по дорожке. Пауза остановит время. Прогресс хранится в Safari на этом устройстве.</p><p>Кент — мэр и работает в ратуше с часами возле главной площади. Лев — доктор: коснись розовой больницы, чтобы отправить жителя к входу и открыть приём пациентов.</p><p>Коснись дома Цитеры, чтобы зайти в её книжную лавку и помочь посетителям. Кофейню Рыжего открой через поручения в панели Беллы.</p><button data-close>Играть</button>`);}
     document.getElementById('settings').onclick=()=>show(`<h2>Город и сохранение</h2><p>Игра сохраняется автоматически в Safari. Для переноса на другое устройство экспортируй файл JSON и импортируй его там.</p><button id="export">Экспортировать сохранение</button><button id="import">Импортировать файл</button><button id="restore">Вернуть предыдущую копию</button><button id="restoreBefore2D">Копия до перехода в 2D</button><button id="restoreBeforePaths">Копия до новых маршрутов</button><button id="help">Как играть</button><button data-close>Закрыть</button><small>Не очищай данные Safari до экспорта. Формат сохранения: ${FORMAT}.</small>`);
     document.getElementById('pause').onclick=()=>{city.paused=!city.paused;notice(city.paused?'Город на паузе.':'Город снова живёт.');changed();};
     dialog.addEventListener('click',e=>{
