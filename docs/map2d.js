@@ -51,6 +51,39 @@ export const HOME_POINTS={kent:NODES.kent,mia:NODES.mia,lev:NODES.lev,citera:NOD
 export const WORK_POINTS={kent:NODES.townhall,mia:NODES.observatory,lev:NODES.hospital,citera:NODES.citera,ryzhiy:NODES.cafe,bella:NODES.square};
 export const SITE_POINTS={cafe:NODES.cafe,restaurant:NODES.restaurant,hospital:NODES.hospital,post:NODES.post,observatory:NODES.observatory,market:NODES.market,greenhouse:NODES.greenhouse,townhall:NODES.townhall};
 export const BUILDING_POINTS={...HOME_POINTS,...SITE_POINTS,townhouse:NODES.townhouse,residence:NODES.residence,lighthouse:NODES.lighthouse,marina:NODES.marina};
+// The gameplay layer has one named touch target for every occupied house,
+// workplace or destination. Ordinary unoccupied residences deliberately have
+// no target. All coordinates are normalized to the full illustrated island.
+export const LOCATIONS=[
+  {id:'observatory',u:.315,v:.140,rx:.037,ry:.052},
+  {id:'mia',u:.391,v:.177,rx:.052,ry:.052},
+  {id:'kent',u:.350,v:.293,rx:.048,ry:.049},
+  {id:'lev',u:.483,v:.405,rx:.044,ry:.046},
+  {id:'hospital',u:.437,v:.335,rx:.044,ry:.052},
+  {id:'townhall',u:.569,v:.238,rx:.050,ry:.065},
+  {id:'greenhouse',u:.659,v:.163,rx:.043,ry:.049},
+  {id:'market',u:.711,v:.233,rx:.060,ry:.043},
+  {id:'ryzhiy',u:.659,v:.324,rx:.041,ry:.044},
+  {id:'cafe',u:.708,v:.367,rx:.039,ry:.042},
+  {id:'restaurant',u:.352,v:.453,rx:.070,ry:.066},
+  // The blue-roof post office is below/right of a non-interactive residence.
+  {id:'post',u:.724,v:.579,rx:.044,ry:.052},
+  {id:'citera',u:.568,v:.528,rx:.054,ry:.052},
+  {id:'bella',u:.325,v:.619,rx:.055,ry:.051},
+  {id:'lighthouse',u:.293,v:.745,rx:.041,ry:.056},
+  {id:'marina',u:.684,v:.680,rx:.051,ry:.051},
+  {id:'pier',u:.732,v:.818,rx:.038,ry:.062},
+  {id:'pond',u:.454,v:.573,rx:.049,ry:.040}
+];
+export const LOCATION_POINTS={...HOME_POINTS,...SITE_POINTS,lighthouse:NODES.lighthouse,marina:NODES.marina,pier:NODES.pier,pond:NODES.pondNorth};
+export function locationAt(u,v){
+  let nearest=null,best=Infinity;
+  for(const spot of LOCATIONS){const dx=(u-spot.u)/spot.rx,dy=(v-spot.v)/spot.ry;
+    if(Math.abs(dx)>1||Math.abs(dy)>1)continue;
+    const score=dx*dx+dy*dy;if(score<best){best=score;nearest=spot.id;}
+  }
+  return nearest;
+}
 const distance=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
 export function nearest(p){return Object.keys(NODES).reduce((a,b)=>distance(p,NODES[a])<distance(p,NODES[b])?a:b);}
 export function route(from,to){
@@ -71,7 +104,7 @@ export function advance(cat,dt){
   if(r.index===r.points.length){cat.x=cat.target[0];cat.y=cat.target[1];}
 }
 
-export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onCafe,onVisit,onNotice}){
+export function createMap({canvas,catArt,getCity,getSelected,onSelect,onLocation,onNotice}){
   const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw Error('Canvas 2D недоступен');
   const camera={x:WIDTH/2,y:HEIGHT/2,scale:1,min:.1,max:1.15};
   const images=new Map(),tiles=new Map(),details=new Map(),pointers=new Map();let width=0,height=0,dpr=1,overview=null,dirty=true,last=0,gesture=null,hitCats=[];
@@ -170,24 +203,8 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onC
     for(const button of resident.children)button.classList.toggle('active',button.dataset.resident===selected);
   }
   function pick(x,y){const hit=[...hitCats].reverse().find(h=>Math.abs(x-h.x)<h.w/2&&Math.abs(y-h.y)<h.h/2);if(hit){onSelect(hit.id);dirty=true;return;}
-    const p=worldAt(x,y),u=p[0]/WIDTH,v=p[1]/HEIGHT;
-    const buildings=[
-      ['bella',.325,.619,.055,.051],['citera',.568,.528,.055,.055],
-      ['kent',.350,.293,.048,.048],['mia',.370,.170,.057,.052],
-      ['lev',.483,.405,.044,.044],['ryzhiy',.659,.324,.043,.047],
-      ['observatory',.314,.145,.036,.045],['townhouse',.503,.230,.042,.047],
-      ['townhall',.569,.234,.052,.063],['greenhouse',.659,.163,.043,.045],
-      ['market',.711,.233,.063,.042],['cafe',.708,.367,.040,.042],
-      ['restaurant',.352,.453,.073,.070],['hospital',.437,.335,.044,.049],
-      ['residence',.650,.466,.047,.043],['post',.678,.544,.043,.038],
-      ['marina',.684,.680,.050,.050],['lighthouse',.293,.745,.040,.054]
-    ];
-    for(const [id,hx,hy,rx,ry] of buildings)if(Math.abs(u-hx)<rx&&Math.abs(v-hy)<ry){
-      if(HOME_POINTS[id])onHome(id,BUILDING_POINTS[id]);
-      else if(id==='cafe')onCafe(BUILDING_POINTS[id]);
-      else onVisit(id,BUILDING_POINTS[id]);
-      dirty=true;return;
-    }
+    const p=worldAt(x,y),id=locationAt(p[0]/WIDTH,p[1]/HEIGHT);
+    if(id){onLocation(id,[...LOCATION_POINTS[id]]);dirty=true;}
   }
   canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size===1)gesture={x:e.clientX,y:e.clientY,moved:false,multi:false};else if(gesture)gesture.multi=true;});
   canvas.addEventListener('pointermove',e=>{const previous=pointers.get(e.pointerId);if(!previous)return;const before=[...pointers.values()];pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});const after=[...pointers.values()];if(gesture&&Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)>7)gesture.moved=true;

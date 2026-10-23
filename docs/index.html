@@ -46,6 +46,18 @@
     .dialog button:first-of-type { background:#f2bc86; }
     .dialog small { color:#647979; }
     .dialog.bookshop { width:min(100%,440px); padding:14px; }
+    .dialog.location,.dialog.places { width:min(100%,420px); }
+    .locationHead { display:flex;align-items:center;gap:13px;margin-bottom:13px; }
+    .locationIcon { display:grid;place-items:center;flex:none;width:60px;height:60px;border-radius:17px;background:linear-gradient(145deg,#ffe7bb,#cfdfca);font-size:33px;box-shadow:inset 0 1px 0 #ffffffba; }
+    .locationType {font-size:11px;color:#608078;font-weight:750;text-transform:uppercase;letter-spacing:.07em;}
+    .locationHead h2 { margin:4px 0;line-height:1.15; }
+    .locationDesc { margin:0 0 13px; padding:13px 14px;background:#edf2e9;border-radius:14px;color:#45625b; }
+    .locationHint {display:block;margin:12px 3px 0;line-height:1.45;}
+    .placeGroup {margin:14px 0;}
+    .placeGroup h3 {margin:0 2px 6px;font-size:13px;color:#657b75;}
+    .dialog .placeItem {display:flex;align-items:center;gap:10px;text-align:left;padding:10px 12px;background:#eaf0e8;}
+    .placeItem span:first-child {font-size:20px;}
+    .placeItem span:last-child {font-weight:700;}
     .bookInterior { display:block; width:100%; aspect-ratio:1.31; object-fit:cover; border-radius:15px; background:#493b32; margin:10px 0; }
     .shopStatus { display:block; padding:8px 10px; border-radius:10px; background:#eee8d7; color:#594a3e; font-size:12px; }
     #file { display:none; }
@@ -62,11 +74,11 @@
   <canvas id="world" aria-label="Карта города Тихая бухта"></canvas>
   <div id="catLabels" aria-hidden="true"></div>
   <header class="top">
-    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.3.7 · 2D</small></div>
+    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.3.8 · 2D</small></div>
     <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Сохранения и помощь">☰</button></div>
   </header>
-  <div class="hint">Перетаскивай город · двумя пальцами меняй масштаб</div>
-  <div class="mapTools" aria-label="Масштаб карты"><button id="fitMap">Весь остров</button><button id="zoomOut" aria-label="Отдалить">−</button><button id="zoomIn" aria-label="Приблизить">+</button></div>
+  <div class="hint">Коснись здания · двумя пальцами меняй масштаб</div>
+  <div class="mapTools" aria-label="Карта и места"><button id="places">Места</button><button id="fitMap">Весь остров</button><button id="zoomOut" aria-label="Отдалить">−</button><button id="zoomIn" aria-label="Приблизить">+</button></div>
   <div id="mapLoading" role="status">Загружаем остров…</div>
   <section class="sheet" id="sheet"><div class="grab"></div><div id="residents" aria-label="Выбрать жителя"></div><div id="details"></div><p id="message" role="status" aria-live="polite"></p></section>
   <div class="overlay" id="overlay" hidden><div class="dialog" id="dialog"></div></div>
@@ -74,7 +86,7 @@
   <script type="module">
 import {CAT_ART} from "./cats-art.js?v=1";
 import {BOOKSHOP_ART} from "./bookshop-art.js?v=2";
-import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,NODES,advance,walkTarget} from "./map2d.js?v=11";
+import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,LOCATION_POINTS,LOCATIONS,NODES,advance,walkTarget} from "./map2d.js?v=12";
 (()=>{"use strict";
     const FORMAT=8, DB='quiet-bay-save', KEY='city';
     const cafeSite={id:'cafe',name:'Кофейня',home:[5,11.2],roof:'#c98165'};
@@ -107,6 +119,28 @@ import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,NODES,advance,walkTarget} 
     for(const d of defs){d.home=[...HOME_POINTS[d.id]];d.work=[...WORK_POINTS[d.id]];}
     cafeSite.home=[...NODES.cafe];for(const d of scenicSites){if(SITE_POINTS[d.id])d.home=[...SITE_POINTS[d.id]];}
     const byId=Object.fromEntries(defs.map(d=>[d.id,d]));
+    // A single location catalogue powers direct taps and the accessible list.
+    // Interiors and richer mechanics can later attach to these stable IDs.
+    const locationInfo={
+      bella:{name:'Дом Беллы',icon:'🏡',type:'Дом жителя',owner:'bella',description:'Дом у моря, где Белла отдыхает после прогулок по бухте.'},
+      kent:{name:'Дом Кента',icon:'🏠',type:'Дом жителя',owner:'kent',description:'Тихий дом мэра. Кент любит порядок и знает каждый уголок острова.'},
+      mia:{name:'Дом Мии',icon:'🪻',type:'Дом жителя',owner:'mia',description:'Уютный дом с сиреневой глицинией. Рядом находится обсерватория Мии.'},
+      lev:{name:'Дом Льва',icon:'🏠',type:'Дом жителя',owner:'lev',description:'Дом доктора Льва. Отсюда он отправляется помогать жителям в больнице.'},
+      citera:{name:'Книжная лавка Цитеры',icon:'📚',type:'Книжный магазин',owner:'citera',description:'Цитера подбирает книги для гостей и получает заказы.'},
+      ryzhiy:{name:'Дом Рыжего',icon:'🏠',type:'Дом жителя',owner:'ryzhiy',description:'Дом пекаря Рыжего, который обожает вкусные завтраки и свою кофейню.'},
+      townhall:{name:'Ратуша',icon:'🏛️',type:'Городское здание',worker:'kent',description:'Здание с часами, где Кент работает мэром и следит за жизнью бухты.'},
+      cafe:{name:'Кофейня Рыжего',icon:'☕',type:'Городское заведение',worker:'ryzhiy',description:'Место встреч жителей. Здесь можно открыть кофейню, выполнять поручения и принимать заказы.'},
+      restaurant:{name:'Ресторан',icon:'🍽️',type:'Городское заведение',description:'Солнечная терраса и столики для будущих встреч и ужинов.'},
+      hospital:{name:'Больница',icon:'🏥',type:'Городское здание',worker:'lev',description:'Доктор Лев принимает жителей и помогает восстановить силы.'},
+      post:{name:'Почта',icon:'✉️',type:'Городское здание',description:'Сюда приходят письма и посылки для жителей Тихой бухты.'},
+      observatory:{name:'Обсерватория',icon:'🔭',type:'Особое место',worker:'mia',description:'Мия наблюдает за звёздами через телескоп на высокой скале.'},
+      market:{name:'Рынок',icon:'🧺',type:'Городское заведение',description:'Прилавки с фруктами, выпечкой, цветами и другими товарами.'},
+      greenhouse:{name:'Оранжерея',icon:'🌿',type:'Особое место',description:'Стеклянная теплица, где растут цветы, пряные травы и растения.'},
+      lighthouse:{name:'Маяк',icon:'⚓',type:'Место для прогулок',description:'Старинный маяк на берегу, откуда открывается вид на море.'},
+      marina:{name:'Лодочный домик',icon:'⛵',type:'Место для прогулок',description:'Домик на воде, рядом с лодками и деревянным причалом.'},
+      pier:{name:'Пирс',icon:'🛶',type:'Место для прогулок',description:'Деревянный причал для прогулок и наблюдения за волнами.'},
+      pond:{name:'Пруд',icon:'🪷',type:'Место для прогулок',description:'Тихий зелёный уголок с водными растениями и дорожками.'}
+    };
     const activities={work:'работает',rest:'отдыхает',eat:'ест',play:'играет',walk:'гуляет'};
     const canvas=document.getElementById('world');
     const details=document.getElementById('details'), msg=document.getElementById('message');
@@ -172,13 +206,58 @@ import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,NODES,advance,walkTarget} 
       if(doctor.xp>=doctor.level*18&&doctor.level<100){doctor.xp-=doctor.level*18;doctor.level++;}
       changed();showHospital(`${byId[id].name} получил помощь доктора Льва. +22 бодрости, +10 настроения.`);
     }
+    function currentVisitor(){return selected==='cafe'?'bella':selected;}
+    function showLocation(id){
+      if(id==='citera'){showBookshop();return;}
+      if(id==='hospital'){showHospital();return;}
+      const place=locationInfo[id];if(!place)return;
+      const visitor=currentVisitor(),visitorName=byId[visitor].name;
+      let actions='';
+      if(place.owner){
+        const ownerName=byId[place.owner].name;
+        actions=`<button data-location-home="${id}">🏠 Позвать ${ownerName} домой</button><button data-location-manage="${id}">${id==='bella'?'Открыть карточку Беллы':'Управлять домом и улучшениями'}</button>`;
+      }else{
+        if(id==='cafe')actions+='<button data-location-cafe>☕ Открыть дела кофейни</button>';
+        if(place.worker)actions+=`<button data-location-work="${id}">💼 Отправить ${byId[place.worker].name} на работу</button>`;
+        actions+=`<button data-location-visit="${id}">🚶 Отправить ${visitorName} сюда</button>`;
+      }
+      show(`<div class="locationHead"><div class="locationIcon">${place.icon}</div><div><span class="locationType">${place.type}</span><h2>${place.name}</h2></div></div><p class="locationDesc">${place.description}</p>${actions}<button data-close>Вернуться к карте</button><small class="locationHint">${place.owner?'Улучшения дома доступны в карточке жителя.':`Выбран для прогулки: ${visitorName}. Чтобы отправить другого жителя, сначала выбери его в нижней панели.`}</small>`);
+      dialog.classList.add('location');
+    }
+    function showPlaces(){
+      const groups=[
+        ['Дома жителей',['bella','kent','mia','lev','citera','ryzhiy']],
+        ['Городские заведения',['townhall','cafe','restaurant','hospital','post','market','greenhouse','observatory']],
+        ['У моря и в парке',['lighthouse','marina','pier','pond']]
+      ];
+      const entries=groups.map(([title,ids])=>`<section class="placeGroup"><h3>${title}</h3>${ids.map(id=>`<button class="placeItem" data-location-open="${id}"><span>${locationInfo[id].icon}</span><span>${locationInfo[id].name}</span></button>`).join('')}</section>`).join('');
+      show(`<h2>Места Тихой бухты</h2><p>Выбери здание или коснись его на карте. Обычные пустые жилые дома не открываются.</p>${entries}<button data-close>Вернуться к карте</button>`);
+      dialog.classList.add('places');
+    }
+    function sendToLocation(id,resident,activity){
+      const entrance=LOCATION_POINTS[id],c=cat(resident);if(!entrance||!c)return;
+      c.activity=activity;c.target=[...entrance];c.phase=0;selected=resident;
+      close();changed();focusCity(...entrance);
+      notice(`${byId[resident].name} ${activity==='rest'?'возвращается домой':activity==='work'?'идёт на работу':'идёт к месту «'+locationInfo[id].name+'»'} по дорожке.${city.paused?' Город на паузе.':''}`);
+    }
     function renderUI(){if(!city)return;document.getElementById('money').textContent=`🪙 ${city.coins}`;document.getElementById('pause').textContent=city.paused?'▶':'Ⅱ';if(selected==='cafe'){renderCafe();return;}let c=cat(selected),d=byId[selected];let bella=c.id==='bella';details.innerHTML=`<div class="row"><div class="avatar">${d.symbol}</div><div><h1>${d.name} <span style="font-size:12px;font-weight:400">${bella?'':`· уровень ${c.level}`}</span></h1><p class="sub">${d.job} · ${activities[c.activity]}</p></div></div><div class="stats">${bella?'<span class="stat">Гуляет и навещает друзей</span>':`<span class="stat">🥣 ${Math.round(c.hunger)}%</span><span class="stat">💤 ${Math.round(c.energy)}%</span><span class="stat">♡ ${Math.round(c.mood)}%</span><span class="stat">✦ ${Math.floor(c.xp)}/${c.level*18} опыта</span>`}</div><div class="actions">${bella?'<button class="action primary" data-action="cafe">☕ Кофейня</button><button class="action" data-action="guide">Как играть</button><button class="action" data-action="focus">Показать на карте</button>':`<button class="action primary" data-action="work">Работать · +монеты</button><button class="action" data-action="rest">Отдыхать · +бодрость</button><button class="action" data-action="eat">Кормить · +сытость</button><button class="action" data-action="play">Играть · +настроение</button><button class="action" data-action="walk">Гулять</button>${c.id==='citera'?'<button class="action primary" data-action="bookshop">📚 Войти в книжную лавку</button>':''}<button class="action" data-action="focus">Показать на карте</button><button class="action" data-upgrade="bed" ${c.upgrades.bed>=3?'disabled':''}>🛏 Кровать ${c.upgrades.bed}/3 · ${homeCost(c,'bed')} 🪙</button><button class="action" data-upgrade="bowl" ${c.upgrades.bowl>=3?'disabled':''}>🥣 Миска ${c.upgrades.bowl}/3 · ${homeCost(c,'bowl')} 🪙</button><button class="action" data-upgrade="toy" ${c.upgrades.toy>=3?'disabled':''}>🧶 Игрушки ${c.upgrades.toy}/3 · ${homeCost(c,'toy')} 🪙</button>`}</div>`;}
     details.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.cafe){coffeeAction(b.dataset.cafe);return;}if(b.dataset.action==='cafe'){selected='cafe';renderUI();notice('Помоги жителям открыть кофейню.');return;}if(b.dataset.action==='guide')showGuide();else if(b.dataset.action==='bookshop')showBookshop();else if(b.dataset.action==='focus'){let c=cat(selected);focusCity(c.x,c.y);}else if(b.dataset.action)assign(cat(selected),b.dataset.action);else if(b.dataset.upgrade)improve(b.dataset.upgrade);});
-    function close(){overlay.hidden=true;dialog.classList.remove('bookshop');}
-    function show(html){dialog.classList.remove('bookshop');dialog.innerHTML=html;overlay.hidden=false;}
-    function showGuide(){show(`<h2>Добро пожаловать в бухту</h2><p>Коснись кота или домика, чтобы выбрать жителя. Коты сами работают, едят и отдыхают. Назначай им занятия, помогай с настроением и трать общие монеты на предметы для дома.</p><p>Перетаскивай город одним пальцем и меняй масштаб двумя. Выбери кота и коснись здания, чтобы он подошёл к входу по дорожке. Пауза остановит время. Прогресс хранится в Safari на этом устройстве.</p><p>Кент — мэр и работает в ратуше с часами возле главной площади. Лев — доктор: коснись розовой больницы, чтобы отправить жителя к входу и открыть приём пациентов.</p><p>Коснись дома Цитеры, чтобы зайти в её книжную лавку и помочь посетителям. Кофейню Рыжего открой через поручения в панели Беллы.</p><button data-close>Играть</button>`);}
+    function close(){overlay.hidden=true;dialog.classList.remove('bookshop','location','places');}
+    function show(html){dialog.classList.remove('bookshop','location','places');dialog.innerHTML=html;overlay.hidden=false;}
+    function showGuide(){show(`<h2>Добро пожаловать в бухту</h2><p>Коснись кота, чтобы выбрать жителя. Коты сами работают, едят и отдыхают. Назначай занятия, помогай с настроением и улучшай их дома.</p><p>Коснись здания на карте, чтобы открыть его окно. Там можно отправить жителя к входу по дорожке, открыть существующие занятия или управление домом. Кнопка «Места» покажет все доступные локации. Обычные жилые дома без жителей не открываются.</p><p>Перетаскивай город одним пальцем, меняй масштаб двумя. Пауза останавливает время; сохранения хранятся в Safari.</p><p>Кент работает в ратуше, Мия — в обсерватории, Лев лечит жителей в больнице. В книжной лавке Цитеры уже доступны заказы, а кофейню Рыжего можно открыть через поручения.</p><button data-close>Играть</button>`);}
+    document.getElementById('places').onclick=showPlaces;
     document.getElementById('settings').onclick=()=>show(`<h2>Город и сохранение</h2><p>Игра сохраняется автоматически в Safari. Для переноса на другое устройство экспортируй файл JSON и импортируй его там.</p><button id="export">Экспортировать сохранение</button><button id="import">Импортировать файл</button><button id="restore">Вернуть предыдущую копию</button><button id="restoreBefore2D">Копия до перехода в 2D</button><button id="restoreBeforePaths">Копия до новых маршрутов</button><button id="help">Как играть</button><button data-close>Закрыть</button><small>Не очищай данные Safari до экспорта. Формат сохранения: ${FORMAT}.</small>`);
     document.getElementById('pause').onclick=()=>{city.paused=!city.paused;notice(city.paused?'Город на паузе.':'Город снова живёт.');changed();};
+    dialog.addEventListener('click',e=>{
+      const button=e.target.closest('button');if(!button)return;
+      const d=button.dataset;
+      if(d.locationOpen){e.stopPropagation();focusCity(...LOCATION_POINTS[d.locationOpen]);showLocation(d.locationOpen);return;}
+      if(d.locationHome){e.stopPropagation();const owner=locationInfo[d.locationHome].owner;sendToLocation(d.locationHome,owner,owner==='bella'?'walk':'rest');return;}
+      if(d.locationManage){e.stopPropagation();selected=locationInfo[d.locationManage].owner;close();renderUI();notice('Открыта карточка жителя и улучшения дома.');return;}
+      if(d.locationWork){e.stopPropagation();sendToLocation(d.locationWork,locationInfo[d.locationWork].worker,'work');return;}
+      if(d.locationVisit){e.stopPropagation();sendToLocation(d.locationVisit,currentVisitor(),'walk');return;}
+      if(button.hasAttribute('data-location-cafe')){e.stopPropagation();selected='cafe';close();renderUI();focusCity(...NODES.cafe);notice('Открыты дела кофейни Рыжего.');}
+    },true);
     dialog.addEventListener('click',e=>{
       const patientButton=e.target.closest('button[data-patient]');
       if(patientButton)hospitalAction(patientButton.dataset.patient);
@@ -193,7 +272,7 @@ import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,NODES,advance,walkTarget} 
     async function start(){
       try{db=await openDB();const saved=await read(KEY);await preserveOldMap(saved);city=valid(saved)?sanitize(saved):initial();if(saved&&!valid(saved))notice('Сохранение повреждено или создано другой версией. Начат новый город.');else if(saved){offline();if(saved.version<FORMAT)notice('Коты вернулись на дорожки. Монеты, уровни и улучшения сохранены.');}else notice('Коснись кота или выбери жителя в панели.');await write();}
       catch(err){city=city||initial();notice('Автосохранение недоступно. Экспортируй прогресс через ☰.');}
-      try{map=createMap({canvas,catArt:CAT_ART,getCity:()=>city,getSelected:()=>selected,onSelect:id=>{selected=id;renderUI();notice('Выбран житель: '+byId[id].name+'.');},onHome:(id,entrance)=>{selected=id;const c=cat(id);c.activity='walk';c.target=[...entrance];c.phase=0;changed();if(id==='citera')showBookshop();else notice('Дом '+byId[id].name+'. Житель идёт к входу.');},onCafe:entrance=>{const c=cat(selected==='cafe'?'ryzhiy':selected);c.activity='walk';c.target=[...entrance];c.phase=0;selected='cafe';changed();},onVisit:(id,entrance)=>{const c=cat(selected==='cafe'?'ryzhiy':selected);c.activity='walk';c.target=[...entrance];c.phase=0;changed();if(id==='hospital')showHospital();else notice(byId[c.id].name+' идёт к зданию по дорожке.');},onNotice:notice});renderUI();requestAnimationFrame(frame);}
+      try{map=createMap({canvas,catArt:CAT_ART,getCity:()=>city,getSelected:()=>selected,onSelect:id=>{selected=id;renderUI();notice('Выбран житель: '+byId[id].name+'.');},onLocation:id=>showLocation(id),onNotice:notice});renderUI();requestAnimationFrame(frame);}
       catch(err){notice('Не удалось открыть карту: '+err.message);}
       setInterval(()=>{if(dirty)write().catch(()=>{})},15000);
       document.addEventListener('visibilitychange',()=>{if(document.hidden&&dirty)write().catch(()=>{});lastFrame=performance.now();});
