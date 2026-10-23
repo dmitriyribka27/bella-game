@@ -119,6 +119,7 @@ import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,LOCATION_POINTS,LOCATIONS,
     for(const d of defs){d.home=[...HOME_POINTS[d.id]];d.work=[...WORK_POINTS[d.id]];}
     cafeSite.home=[...NODES.cafe];for(const d of scenicSites){if(SITE_POINTS[d.id])d.home=[...SITE_POINTS[d.id]];}
     const byId=Object.fromEntries(defs.map(d=>[d.id,d]));
+    const nameAccusative={kent:'Кента',mia:'Мию',lev:'Льва',citera:'Цитеру',ryzhiy:'Рыжего',bella:'Беллу'};
     // A single location catalogue powers direct taps and the accessible list.
     // Interiors and richer mechanics can later attach to these stable IDs.
     const locationInfo={
@@ -160,7 +161,42 @@ import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,LOCATION_POINTS,LOCATIONS,
     function targetFor(c,a){let d=byId[c.id];if(a==='rest'||a==='eat')return [...d.home];if(a==='work')return [...d.work];if(a==='play')return [...NODES.square];return walkTarget();}
     function assign(c,a,announce=true){c.activity=a;c.target=targetFor(c,a);c.phase=0;if(announce){notice(`${byId[c.id].name}: ${activities[a]}. ${a==='work'?'Заработает монеты и опыт после работы.':a==='rest'?'Восстановит бодрость дома.':a==='eat'?'Восполнит сытость дома.':a==='play'?'Поднимет настроение.':'Идёт на прогулку.'}`);changed();}}
     function auto(c){if(c.id==='bella')return;if(c.hunger<30)assign(c,'eat',false);else if(c.energy<24)assign(c,'rest',false);else if(c.mood<25)assign(c,'play',false);else {let a=Math.random();assign(c,a<.62?'work':a<.83?'walk':'play',false);}dirty=true;}
-    function simulate(dt){if(city.paused)return;time+=dt;for(let c of city.cats){let dx=c.target[0]-c.x,dy=c.target[1]-c.y,dist=Math.hypot(dx,dy);if(dist>.03){advance(c,dt);continue;}c.phase+=dt;if(c.id==='bella'){if(c.phase>7)assign(c,'walk',false);continue;}c.hunger=clamp(c.hunger-dt*.18,0,100);c.energy=clamp(c.energy-dt*(c.activity==='rest'?-1.5:.16),0,100);if(c.activity==='eat'){c.hunger=clamp(c.hunger+dt*(1.7+c.upgrades.bowl*.6),0,100);if(c.phase>9)auto(c);}else if(c.activity==='rest'){if(c.phase>12||c.energy>=95)auto(c);}else if(c.activity==='play'){c.mood=clamp(c.mood+dt*(1.5+c.upgrades.toy*.5),0,100);if(c.phase>10)auto(c);}else if(c.activity==='work'){if(c.phase>11){let reward=5+c.level+Math.floor(c.mood/40);city.coins+=reward;c.xp+=4;c.mood=clamp(c.mood-2,0,100);if(c.xp>=c.level*18){c.xp-=c.level*18;c.level++;notice(`${byId[c.id].name} достиг${['mia','citera'].includes(c.id)?'ла':''} уровня ${c.level}!`);}else if(selected===c.id)notice(`${byId[c.id].name} заработал ${reward} монет и 4 опыта.`);auto(c);renderUI();}}else if(c.phase>8){c.mood=clamp(c.mood+5,0,100);auto(c);}}}
+    function simulate(dt){
+      if(city.paused)return;
+      time+=dt;
+      for(const c of city.cats){
+        const dist=Math.hypot(c.target[0]-c.x,c.target[1]-c.y);
+        if(dist>.03){advance(c,dt);continue;}
+        c.phase+=dt;
+        if(c.id==='bella'){if(c.phase>7)assign(c,'walk',false);continue;}
+        c.hunger=clamp(c.hunger-dt*.18,0,100);
+        c.energy=clamp(c.energy-dt*(c.activity==='rest'?-1.5:.16),0,100);
+        if(c.activity==='eat'){
+          c.hunger=clamp(c.hunger+dt*(1.7+c.upgrades.bowl*.6),0,100);
+          if(c.phase>9)auto(c);
+        }else if(c.activity==='rest'){
+          if(c.phase>12||c.energy>=95)auto(c);
+        }else if(c.activity==='play'){
+          c.mood=clamp(c.mood+dt*(1.5+c.upgrades.toy*.5),0,100);
+          if(c.phase>10)auto(c);
+        }else if(c.activity==='work'){
+          if(c.phase>11){
+            const reward=5+c.level+Math.floor(c.mood/40);
+            city.coins+=reward;c.xp+=4;c.mood=clamp(c.mood-2,0,100);
+            const female=['mia','citera'].includes(c.id);
+            if(c.xp>=c.level*18){
+              c.xp-=c.level*18;c.level++;
+              notice(`${byId[c.id].name} достиг${female?'ла':''} уровня ${c.level}!`);
+            }else if(selected===c.id){
+              notice(`${byId[c.id].name} заработал${female?'а':''} ${reward} монет и 4 опыта.`);
+            }
+            auto(c);renderUI();
+          }
+        }else if(c.phase>8){
+          c.mood=clamp(c.mood+5,0,100);auto(c);
+        }
+      }
+    }
     function offline(){let elapsed=clamp((Date.now()-city.savedAt)/1000,0,4*3600);let blocks=Math.min(24,Math.floor(elapsed/600));if(!blocks)return;let gain=city.paused?0:blocks*city.cats.filter(c=>c.id!=='bella').length*3;city.coins+=gain;notice(gain?`Пока тебя не было, жители принесли ${gain} монет. Начислено не больше чем за 4 часа.`:'Город был на паузе.');dirty=true;}
     function homeCost(c,k){return {bed:20,bowl:15,toy:18}[k]*(c.upgrades[k]+1);}
     function improve(k){let c=cat(selected),cost=homeCost(c,k);if(city.coins<cost){notice(`Нужно ещё ${cost-city.coins} монет.`);return;}city.coins-=cost;c.upgrades[k]++;let names={bed:'Кровать',bowl:'Миска',toy:'Игрушки'};notice(`${byId[c.id].name}: ${names[k].toLowerCase()}, уровень ${c.upgrades[k]}. ${k==='bed'?'Отдых теперь быстрее.':k==='bowl'?'Еда восполняется быстрее.':'Игра лучше поднимает настроение.'}`);changed();}
@@ -211,17 +247,17 @@ import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,LOCATION_POINTS,LOCATIONS,
       if(id==='citera'){showBookshop();return;}
       if(id==='hospital'){showHospital();return;}
       const place=locationInfo[id];if(!place)return;
-      const visitor=currentVisitor(),visitorName=byId[visitor].name;
+      const visitor=currentVisitor(),visitorName=nameAccusative[visitor];
       let actions='';
       if(place.owner){
-        const ownerName=byId[place.owner].name;
+        const ownerName=nameAccusative[place.owner];
         actions=`<button data-location-home="${id}">🏠 Позвать ${ownerName} домой</button><button data-location-manage="${id}">${id==='bella'?'Открыть карточку Беллы':'Управлять домом и улучшениями'}</button>`;
       }else{
         if(id==='cafe')actions+='<button data-location-cafe>☕ Открыть дела кофейни</button>';
-        if(place.worker)actions+=`<button data-location-work="${id}">💼 Отправить ${byId[place.worker].name} на работу</button>`;
+        if(place.worker)actions+=`<button data-location-work="${id}">💼 Отправить ${nameAccusative[place.worker]} на работу</button>`;
         actions+=`<button data-location-visit="${id}">🚶 Отправить ${visitorName} сюда</button>`;
       }
-      show(`<div class="locationHead"><div class="locationIcon">${place.icon}</div><div><span class="locationType">${place.type}</span><h2>${place.name}</h2></div></div><p class="locationDesc">${place.description}</p>${actions}<button data-close>Вернуться к карте</button><small class="locationHint">${place.owner?'Улучшения дома доступны в карточке жителя.':`Выбран для прогулки: ${visitorName}. Чтобы отправить другого жителя, сначала выбери его в нижней панели.`}</small>`);
+      show(`<div class="locationHead"><div class="locationIcon">${place.icon}</div><div><span class="locationType">${place.type}</span><h2>${place.name}</h2></div></div><p class="locationDesc">${place.description}</p>${actions}<button data-close>Вернуться к карте</button><small class="locationHint">${place.owner?'Улучшения дома доступны в карточке жителя.':`Выбран для прогулки: ${byId[visitor].name}. Чтобы отправить другого жителя, сначала выбери его в нижней панели.`}</small>`);
       dialog.classList.add('location');
     }
     function showPlaces(){
