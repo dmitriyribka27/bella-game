@@ -49,35 +49,34 @@
     .bookInterior { display:block; width:100%; aspect-ratio:1.31; object-fit:cover; border-radius:15px; background:#493b32; margin:10px 0; }
     .shopStatus { display:block; padding:8px 10px; border-radius:10px; background:#eee8d7; color:#594a3e; font-size:12px; }
     #file { display:none; }
+    .mapTools{position:absolute;z-index:2;right:12px;bottom:calc(min(31%,260px) + 14px);display:flex;gap:5px}
+    .mapTools button{border:1px solid #fff9;background:#fff8ebed;color:#29474a;border-radius:12px;padding:9px 12px;min-height:42px;font-weight:700;box-shadow:0 3px 12px #21454735}
+    #mapLoading{position:absolute;z-index:2;left:14px;right:14px;top:42%;padding:14px;border-radius:16px;background:#fff8ebed;text-align:center;font-size:13px}
+    #mapLoading[hidden]{display:none}
+    #residents{display:flex;gap:5px;overflow-x:auto;margin:0 0 9px;padding:2px 0;scrollbar-width:none}
+    #residents button{border:0;border-radius:10px;padding:6px 9px;background:#e4eee5;color:#315357;white-space:nowrap;font-size:11px}
+    #residents button.active{background:#f2bc86;color:#674733}
   </style>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
 </head>
 <body>
   <canvas id="world" aria-label="Карта города Тихая бухта"></canvas>
   <div id="catLabels" aria-hidden="true"></div>
   <header class="top">
-    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · прототип 0.2 · 3D</small></div>
+    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.3 · 2D</small></div>
     <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Сохранения и помощь">☰</button></div>
   </header>
   <div class="hint">Перетаскивай город · двумя пальцами меняй масштаб</div>
-  <section class="sheet" id="sheet"><div class="grab"></div><div id="details"></div><p id="message" role="status" aria-live="polite"></p></section>
+  <div class="mapTools" aria-label="Масштаб карты"><button id="fitMap">Весь остров</button><button id="zoomOut" aria-label="Отдалить">−</button><button id="zoomIn" aria-label="Приблизить">+</button></div>
+  <div id="mapLoading" role="status">Загружаем остров…</div>
+  <section class="sheet" id="sheet"><div class="grab"></div><div id="residents" aria-label="Выбрать жителя"></div><div id="details"></div><p id="message" role="status" aria-live="polite"></p></section>
   <div class="overlay" id="overlay" hidden><div class="dialog" id="dialog"></div></div>
   <input id="file" type="file" accept="application/json,.json">
   <script type="module">
-import * as T from "three";
 import {CAT_ART} from "./cats-art.js?v=1";
-import {BEACH_ART} from "./beach-art.js?v=1";
-import {SITE_ART as BASE_SITE_ART} from "./site-art.js?v=1";
-import {QUARTER_ART} from "./quarter-art.js?v=1";
-import {SEASIDE_ART} from "./seaside-art.js?v=1";
-const SITE_ART={...BASE_SITE_ART,...QUARTER_ART,...SEASIDE_ART};
-import {PROMENADE_PALM} from "./promenade-art.js?v=1";
 import {BOOKSHOP_ART} from "./bookshop-art.js?v=2";
-import {createEnvironment} from "./environment.js?v=4";
-import {OrbitControls} from "three/addons/controls/OrbitControls.js";
-import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js";
+import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,NODES,advance,walkTarget} from "./map2d.js?v=1";
 (()=>{"use strict";
-    const FORMAT=5, DB='quiet-bay-save', KEY='city';
+    const FORMAT=6, DB='quiet-bay-save', KEY='city';
     const cafeSite={id:'cafe',name:'Кофейня',home:[5,11.2],roof:'#c98165'};
     const scenicSites=[
       {id:'bookshop',name:'Городская читальня',home:[3.7,6],roof:'#b37f75',wall:'#f1dcc5',floors:2},
@@ -105,6 +104,8 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
       {id:'ryzhiy',name:'Рыжий',job:'пекарь',color:'#d98546',roof:'#d2946a',home:[2.1,12.4],work:[5,11.2],face:'ryzhiy',symbol:'🥐'},
       {id:'bella',name:'Белла',job:'хозяйка города',color:'#fff8f0',roof:'#e8a0ae',home:[9,13],work:[8.3,8.2],face:'bella',symbol:'♡'}
     ];
+    for(const d of defs){d.home=[...HOME_POINTS[d.id]];d.work=[...WORK_POINTS[d.id]];}
+    cafeSite.home=[...NODES.cafe];for(const d of scenicSites){if(SITE_POINTS[d.id])d.home=[...SITE_POINTS[d.id]];}
     const byId=Object.fromEntries(defs.map(d=>[d.id,d]));
     const activities={work:'работает',rest:'отдыхает',eat:'ест',play:'играет',walk:'гуляет'};
     const canvas=document.getElementById('world');
@@ -114,24 +115,24 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
     let lastFrame=performance.now(), saveTimer=0, dirty=false, time=0;
     function initial(){return {version:FORMAT,coins:30,paused:false,savedAt:Date.now(),coffee:{built:false,plan:false,delivery:false,recipe:false,style:null,orders:0},books:{orders:0,nextAt:0},cats:defs.map(d=>({id:d.id,x:d.home[0],y:d.home[1],target:[...d.home],activity:d.id==='bella'?'walk':'work',hunger:80,energy:80,mood:75,xp:0,level:1,phase:0,upgrades:{bed:0,bowl:0,toy:0}}))};}
     function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
-    function valid(s){return s&&[1,2,3,4,FORMAT].includes(s.version)&&Number.isFinite(s.coins)&&s.coins>=0&&(s.version<5||s.books&&Number.isInteger(s.books.orders)&&Number.isFinite(s.books.nextAt))&&Array.isArray(s.cats)&&s.cats.length===defs.length&&defs.every(d=>{let c=s.cats.find(x=>x.id===d.id);return c&&[c.x,c.y,c.hunger,c.energy,c.mood,c.xp,c.level].every(Number.isFinite)&&c.upgrades&&['bed','bowl','toy'].every(k=>Number.isInteger(c.upgrades[k])&&c.upgrades[k]>=0&&c.upgrades[k]<=3);});}
-    function sanitize(s){let out=initial();out.coins=clamp(Math.floor(s.coins),0,10000000);out.paused=!!s.paused;out.savedAt=Number.isFinite(s.savedAt)?s.savedAt:Date.now();if(s.version>=2&&s.coffee&&typeof s.coffee==='object'){let v=s.coffee;out.coffee={built:!!v.built,plan:!!v.plan,delivery:!!v.delivery,recipe:!!v.recipe,style:['coral','mint','blue'].includes(v.style)?v.style:null,orders:clamp(Number.isFinite(v.orders)?Math.floor(v.orders):0,0,100000)};}if(s.version>=5&&s.books&&typeof s.books==='object'){out.books={orders:clamp(Math.floor(s.books.orders),0,100000),nextAt:clamp(s.books.nextAt,0,Date.now()+86400000)};}out.cats=defs.map(d=>{let v=s.cats.find(x=>x.id===d.id),c=out.cats.find(x=>x.id===d.id);return {...c,x:s.version<4?d.home[0]:clamp(v.x,0,20.5),y:s.version<4?d.home[1]:clamp(v.y,0,15),target:s.version<4?[...d.home]:s.version<5&&d.id==='citera'&&v.activity==='work'?[...d.work]:Array.isArray(v.target)&&v.target.length===2&&v.target.every(Number.isFinite)?v.target.map(z=>clamp(z,0,20.5)):[...d.home],activity:Object.hasOwn(activities,v.activity)?v.activity:'walk',hunger:clamp(v.hunger,0,100),energy:clamp(v.energy,0,100),mood:clamp(v.mood,0,100),xp:clamp(v.xp,0,1000000),level:clamp(Math.floor(v.level),1,100),phase:clamp(Number(v.phase)||0,0,30),upgrades:{bed:v.upgrades.bed,bowl:v.upgrades.bowl,toy:v.upgrades.toy}};});return out;}
+    function valid(s){return s&&[1,2,3,4,5,FORMAT].includes(s.version)&&Number.isFinite(s.coins)&&s.coins>=0&&(s.version<5||s.books&&Number.isInteger(s.books.orders)&&Number.isFinite(s.books.nextAt))&&Array.isArray(s.cats)&&s.cats.length===defs.length&&defs.every(d=>{let c=s.cats.find(x=>x.id===d.id);return c&&[c.x,c.y,c.hunger,c.energy,c.mood,c.xp,c.level].every(Number.isFinite)&&c.upgrades&&['bed','bowl','toy'].every(k=>Number.isInteger(c.upgrades[k])&&c.upgrades[k]>=0&&c.upgrades[k]<=3);});}
+    function sanitize(s){let out=initial();out.coins=clamp(Math.floor(s.coins),0,10000000);out.paused=!!s.paused;out.savedAt=Number.isFinite(s.savedAt)?s.savedAt:Date.now();if(s.version>=2&&s.coffee&&typeof s.coffee==='object'){let v=s.coffee;out.coffee={built:!!v.built,plan:!!v.plan,delivery:!!v.delivery,recipe:!!v.recipe,style:['coral','mint','blue'].includes(v.style)?v.style:null,orders:clamp(Number.isFinite(v.orders)?Math.floor(v.orders):0,0,100000)};}if(s.version>=5&&s.books&&typeof s.books==='object'){out.books={orders:clamp(Math.floor(s.books.orders),0,100000),nextAt:clamp(s.books.nextAt,0,Date.now()+86400000)};}out.cats=defs.map(d=>{let v=s.cats.find(x=>x.id===d.id),c=out.cats.find(x=>x.id===d.id);return {...c,x:s.version<4?d.home[0]:clamp(v.x,0,20.5),y:s.version<4?d.home[1]:clamp(v.y,0,15),target:s.version<4?[...d.home]:s.version<5&&d.id==='citera'&&v.activity==='work'?[...d.work]:Array.isArray(v.target)&&v.target.length===2&&v.target.every(Number.isFinite)?v.target.map(z=>clamp(z,0,20.5)):[...d.home],activity:Object.hasOwn(activities,v.activity)?v.activity:'walk',hunger:clamp(v.hunger,0,100),energy:clamp(v.energy,0,100),mood:clamp(v.mood,0,100),xp:clamp(v.xp,0,1000000),level:clamp(Math.floor(v.level),1,100),phase:clamp(Number(v.phase)||0,0,30),upgrades:{bed:v.upgrades.bed,bowl:v.upgrades.bowl,toy:v.upgrades.toy}};});if(s.version<6){for(const c of out.cats){const d=byId[c.id];c.x=d.home[0];c.y=d.home[1];c.target=c.activity==='work'?[...d.work]:c.activity==='play'?[...NODES.square]:[...d.home];c.phase=0;}}return out;}
     async function openDB(){return new Promise((resolve,reject)=>{let r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore('saves');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
     function read(key){return new Promise((resolve,reject)=>{let t=db.transaction('saves','readonly'),r=t.objectStore('saves').get(key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
     function write(){if(!db||!city)return Promise.resolve();city.savedAt=Date.now();let snapshot=JSON.parse(JSON.stringify(city));dirty=false;return new Promise((resolve,reject)=>{let t=db.transaction('saves','readwrite'),s=t.objectStore('saves');s.get(KEY).onsuccess=e=>{if(e.target.result)s.put(e.target.result,'previous');s.put(snapshot,KEY);};t.oncomplete=resolve;t.onerror=()=>{dirty=true;reject(t.error);};});}
-    function changed(){dirty=true;renderUI();clearTimeout(saveTimer);saveTimer=setTimeout(()=>write().catch(()=>notice('Не удалось сохранить. Экспортируй копию через ☰.')),900);}
+    function changed(){dirty=true;map?.invalidate();renderUI();clearTimeout(saveTimer);saveTimer=setTimeout(()=>write().catch(()=>notice('Не удалось сохранить. Экспортируй копию через ☰.')),900);}
     function notice(t){msg.textContent=t;}
     function cat(id){return city.cats.find(c=>c.id===id);}
-    function targetFor(c,a){let d=byId[c.id];if(a==='rest'||a==='eat')return [...d.home];if(a==='work')return [...d.work];if(a==='play')return [5.7,5.1];return [2+Math.random()*16,2+Math.random()*11];}
+    function targetFor(c,a){let d=byId[c.id];if(a==='rest'||a==='eat')return [...d.home];if(a==='work')return [...d.work];if(a==='play')return [...NODES.square];return walkTarget();}
     function assign(c,a,announce=true){c.activity=a;c.target=targetFor(c,a);c.phase=0;if(announce){notice(`${byId[c.id].name}: ${activities[a]}. ${a==='work'?'Заработает монеты и опыт после работы.':a==='rest'?'Восстановит бодрость дома.':a==='eat'?'Восполнит сытость дома.':a==='play'?'Поднимет настроение.':'Идёт на прогулку.'}`);changed();}}
     function auto(c){if(c.id==='bella')return;if(c.hunger<30)assign(c,'eat',false);else if(c.energy<24)assign(c,'rest',false);else if(c.mood<25)assign(c,'play',false);else {let a=Math.random();assign(c,a<.62?'work':a<.83?'walk':'play',false);}dirty=true;}
-    function simulate(dt){if(city.paused)return;time+=dt;for(let c of city.cats){let dx=c.target[0]-c.x,dy=c.target[1]-c.y,dist=Math.hypot(dx,dy);if(dist>.03){let step=Math.min(dist,dt*(.30));c.x+=dx/dist*step;c.y+=dy/dist*step;continue;}c.phase+=dt;if(c.id==='bella'){if(c.phase>7)assign(c,'walk',false);continue;}c.hunger=clamp(c.hunger-dt*.18,0,100);c.energy=clamp(c.energy-dt*(c.activity==='rest'?-1.5:.16),0,100);if(c.activity==='eat'){c.hunger=clamp(c.hunger+dt*(1.7+c.upgrades.bowl*.6),0,100);if(c.phase>9)auto(c);}else if(c.activity==='rest'){if(c.phase>12||c.energy>=95)auto(c);}else if(c.activity==='play'){c.mood=clamp(c.mood+dt*(1.5+c.upgrades.toy*.5),0,100);if(c.phase>10)auto(c);}else if(c.activity==='work'){if(c.phase>11){let reward=5+c.level+Math.floor(c.mood/40);city.coins+=reward;c.xp+=4;c.mood=clamp(c.mood-2,0,100);if(c.xp>=c.level*18){c.xp-=c.level*18;c.level++;notice(`${byId[c.id].name} достиг${['mia','citera'].includes(c.id)?'ла':''} уровня ${c.level}!`);}else if(selected===c.id)notice(`${byId[c.id].name} заработал ${reward} монет и 4 опыта.`);auto(c);renderUI();}}else if(c.phase>8){c.mood=clamp(c.mood+5,0,100);auto(c);}}}
+    function simulate(dt){if(city.paused)return;time+=dt;for(let c of city.cats){let dx=c.target[0]-c.x,dy=c.target[1]-c.y,dist=Math.hypot(dx,dy);if(dist>.03){advance(c,dt);continue;}c.phase+=dt;if(c.id==='bella'){if(c.phase>7)assign(c,'walk',false);continue;}c.hunger=clamp(c.hunger-dt*.18,0,100);c.energy=clamp(c.energy-dt*(c.activity==='rest'?-1.5:.16),0,100);if(c.activity==='eat'){c.hunger=clamp(c.hunger+dt*(1.7+c.upgrades.bowl*.6),0,100);if(c.phase>9)auto(c);}else if(c.activity==='rest'){if(c.phase>12||c.energy>=95)auto(c);}else if(c.activity==='play'){c.mood=clamp(c.mood+dt*(1.5+c.upgrades.toy*.5),0,100);if(c.phase>10)auto(c);}else if(c.activity==='work'){if(c.phase>11){let reward=5+c.level+Math.floor(c.mood/40);city.coins+=reward;c.xp+=4;c.mood=clamp(c.mood-2,0,100);if(c.xp>=c.level*18){c.xp-=c.level*18;c.level++;notice(`${byId[c.id].name} достиг${['mia','citera'].includes(c.id)?'ла':''} уровня ${c.level}!`);}else if(selected===c.id)notice(`${byId[c.id].name} заработал ${reward} монет и 4 опыта.`);auto(c);renderUI();}}else if(c.phase>8){c.mood=clamp(c.mood+5,0,100);auto(c);}}}
     function offline(){let elapsed=clamp((Date.now()-city.savedAt)/1000,0,4*3600);let blocks=Math.min(24,Math.floor(elapsed/600));if(!blocks)return;let gain=city.paused?0:blocks*city.cats.filter(c=>c.id!=='bella').length*3;city.coins+=gain;notice(gain?`Пока тебя не было, жители принесли ${gain} монет. Начислено не больше чем за 4 часа.`:'Город был на паузе.');dirty=true;}
     function homeCost(c,k){return {bed:20,bowl:15,toy:18}[k]*(c.upgrades[k]+1);}
     function improve(k){let c=cat(selected),cost=homeCost(c,k);if(city.coins<cost){notice(`Нужно ещё ${cost-city.coins} монет.`);return;}city.coins-=cost;c.upgrades[k]++;let names={bed:'Кровать',bowl:'Миска',toy:'Игрушки'};notice(`${byId[c.id].name}: ${names[k].toLowerCase()}, уровень ${c.upgrades[k]}. ${k==='bed'?'Отдых теперь быстрее.':k==='bowl'?'Еда восполняется быстрее.':'Игра лучше поднимает настроение.'}`);changed();}
     function cafeReady(){let c=city.coffee;return c.plan&&c.delivery&&c.recipe&&c.style;}
     function renderCafe(){let c=city.coffee,done=[c.plan,c.delivery,c.recipe,!!c.style].filter(Boolean).length;details.innerHTML=`<div class="row"><div class="avatar">☕</div><div><h1>Кофейня Рыжего</h1><p class="sub">${c.built?'Открыта · заказов выполнено: '+c.orders:'Подготовка к открытию · '+done+'/4 поручений'}</p></div></div><div class="stats"><span class="stat">${c.built?'Рыжий печёт, Цитера подбирает книги, Лев организует':'Общая цель города'}</span>${c.style?'<span class="stat">Оформление: '+({coral:'коралловое',mint:'мятное',blue:'морское'}[c.style])+'</span>':''}</div><div class="actions">${c.built?`<button class="action primary" data-cafe="order">Выполнить заказ · +8 🪙</button><button class="action" data-cafe="focus">Показать кофейню</button>`:`<button class="action" data-cafe="plan" ${c.plan?'disabled':''}>📋 План Льва ${c.plan?'✓':''}</button><button class="action" data-cafe="delivery" ${c.delivery?'disabled':''}>📚 Книжный уголок Цитеры ${c.delivery?'✓':''}</button><button class="action" data-cafe="recipe" ${c.recipe?'disabled':''}>🥐 Рецепт Рыжего ${c.recipe?'✓':''}</button><button class="action" data-cafe="style">🎨 Оформление ${c.style?'✓':''}</button><button class="action primary" data-cafe="build" ${!cafeReady()||city.coins<80?'disabled':''}>Открыть · 80 🪙</button><button class="action" data-cafe="focus">Показать на карте</button>`}</div>`;}
-    function coffeeAction(a){let c=city.coffee;if(a==='focus'){focusCity(...cafeSite.home);return;}if(a==='plan'&&!c.plan){c.plan=true;cat('lev').xp+=6;notice('Лев составил план открытия. Осталось организовать доставку, рецепт и оформление.');changed();return;}if(a==='delivery'&&!c.delivery)show('<h2>Книжный уголок Цитеры</h2><p>Цитера принесла книги для гостей кофейни. Где устроить книжную полку?</p><button data-quest="delivery" data-answer="yes">В кофейне, рядом с уютными столиками</button><button data-quest="delivery" data-answer="no">На складе вдали от посетителей</button><button data-close>Позже</button>');if(a==='recipe'&&!c.recipe)show('<h2>Первый рецепт Рыжего</h2><p>Нужна сладкая булочка к открытию. Что добавим в тесто?</p><button data-quest="recipe" data-answer="yes">Корицу и немного сахара</button><button data-quest="recipe" data-answer="no">Соль и морскую воду</button><button data-close>Позже</button>');if(a==='style')show('<h2>Белла выбирает оформление</h2><p>Цвет крыши и вывески будет виден на карте.</p><button data-style="coral">Коралловое</button><button data-style="mint">Мятное</button><button data-style="blue">Морское</button><button data-close>Позже</button>');if(a==='build'){if(!cafeReady()||city.coins<80)return;city.coins-=80;c.built=true;notice('Кофейня открыта! Коснись её снова, чтобы выполнять заказы посетителей.');changed();}if(a==='order'&&c.built){let names=['Булочка с корицей','Ягодный чай','Какао'],n=c.orders%3;show(`<h2>Заказ посетителя</h2><p>Гость просит: <b>${names[n]}</b>. Что подать?</p>${names.map((name,i)=>`<button data-order="${i}">${name}</button>`).join('')}<button data-close>Позже</button>`);}}
+    function coffeeAction(a){let c=city.coffee;if(a==='focus'){focusCity(...cafeSite.home);return;}if(a==='plan'&&!c.plan){c.plan=true;cat('lev').xp+=6;notice('Лев составил план открытия. Осталось организовать доставку, рецепт и оформление.');changed();return;}if(a==='delivery'&&!c.delivery)show('<h2>Книжный уголок Цитеры</h2><p>Цитера принесла книги для гостей кофейни. Где устроить книжную полку?</p><button data-quest="delivery" data-answer="yes">В кофейне, рядом с уютными столиками</button><button data-quest="delivery" data-answer="no">На складе вдали от посетителей</button><button data-close>Позже</button>');if(a==='recipe'&&!c.recipe)show('<h2>Первый рецепт Рыжего</h2><p>Нужна сладкая булочка к открытию. Что добавим в тесто?</p><button data-quest="recipe" data-answer="yes">Корицу и немного сахара</button><button data-quest="recipe" data-answer="no">Соль и морскую воду</button><button data-close>Позже</button>');if(a==='style')show('<h2>Белла выбирает оформление</h2><p>Выбор сохраняется в прогрессе кофейни; её подробное оформление проработаем отдельно.</p><button data-style="coral">Коралловое</button><button data-style="mint">Мятное</button><button data-style="blue">Морское</button><button data-close>Позже</button>');if(a==='build'){if(!cafeReady()||city.coins<80)return;city.coins-=80;c.built=true;notice('Кофейня открыта! Коснись её снова, чтобы выполнять заказы посетителей.');changed();}if(a==='order'&&c.built){let names=['Булочка с корицей','Ягодный чай','Какао'],n=c.orders%3;show(`<h2>Заказ посетителя</h2><p>Гость просит: <b>${names[n]}</b>. Что подать?</p>${names.map((name,i)=>`<button data-order="${i}">${name}</button>`).join('')}<button data-close>Позже</button>`);}}
     const bookRequests=[
       {wish:'историю про море и маяки',books:['Морские истории','Атлас созвездий','Пироги и булочки'],right:0},
       {wish:'книгу о звёздах для Мии',books:['Морские истории','Атлас созвездий','Пироги и булочки'],right:1},
@@ -154,565 +155,24 @@ import {RoundedBoxGeometry} from "three/addons/geometries/RoundedBoxGeometry.js"
     function close(){overlay.hidden=true;dialog.classList.remove('bookshop');}
     function show(html){dialog.classList.remove('bookshop');dialog.innerHTML=html;overlay.hidden=false;}
     function showGuide(){show(`<h2>Добро пожаловать в бухту</h2><p>Коснись кота или домика, чтобы выбрать жителя. Коты сами работают, едят и отдыхают. Назначай им занятия, помогай с настроением и трать общие монеты на предметы для дома.</p><p>Перетаскивай город одним пальцем и меняй масштаб двумя. Пауза остановит время. Прогресс хранится в Safari на этом устройстве.</p><p>Коснись дома Цитеры, чтобы зайти в её книжную лавку и помочь посетителям. Кофейню Рыжего открой через поручения в панели Беллы.</p><button data-close>Играть</button>`);}
-    document.getElementById('settings').onclick=()=>show(`<h2>Город и сохранение</h2><p>Игра сохраняется автоматически в Safari. Для переноса на другое устройство экспортируй файл JSON и импортируй его там.</p><button id="export">Экспортировать сохранение</button><button id="import">Импортировать файл</button><button id="restore">Вернуть предыдущую копию</button><button id="help">Как играть</button><button data-close>Закрыть</button><small>Не очищай данные Safari до экспорта. Формат сохранения: ${FORMAT}.</small>`);
+    document.getElementById('settings').onclick=()=>show(`<h2>Город и сохранение</h2><p>Игра сохраняется автоматически в Safari. Для переноса на другое устройство экспортируй файл JSON и импортируй его там.</p><button id="export">Экспортировать сохранение</button><button id="import">Импортировать файл</button><button id="restore">Вернуть предыдущую копию</button><button id="restoreBefore2D">Копия до перехода в 2D</button><button id="help">Как играть</button><button data-close>Закрыть</button><small>Не очищай данные Safari до экспорта. Формат сохранения: ${FORMAT}.</small>`);
     document.getElementById('pause').onclick=()=>{city.paused=!city.paused;notice(city.paused?'Город на паузе.':'Город снова живёт.');changed();};
-    dialog.onclick=async e=>{let t=e.target,c=city.coffee;if(t.dataset.book!==undefined){bookAction(Number(t.dataset.book));return;}if(t.hasAttribute('data-book-refresh')){showBookshop();return;}if(t.dataset.quest){if(t.dataset.answer!=='yes'){dialog.querySelector('p').textContent='Этот вариант не подходит. Попробуй ещё раз.';return;}c[t.dataset.quest]=true;cat(t.dataset.quest==='recipe'?'ryzhiy':'citera').xp+=6;close();notice(t.dataset.quest==='recipe'?'Рыжий придумал первую булочку.':'Цитера устроила книжный уголок в кофейне.');changed();return;}if(t.dataset.style){c.style=t.dataset.style;close();notice('Белла выбрала оформление кофейни. Цвет крыши появится после открытия.');changed();return;}if(t.dataset.order!==undefined){if(Number(t.dataset.order)!==c.orders%3){dialog.querySelector('p').textContent='Это другой заказ. Гость подождёт, попробуй ещё раз.';return;}c.orders++;city.coins+=8;cat('ryzhiy').xp+=3;close();notice(`Заказ выполнен! +8 монет. Всего заказов: ${c.orders}.`);changed();return;}let id=t.id;if(e.target.hasAttribute('data-close'))close();if(id==='help')showGuide();if(id==='import')document.getElementById('file').click();if(id==='export'){await write().catch(()=>{});let blob=new Blob([JSON.stringify(city,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='tihaya-buhta-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);close();notice('Копия сохранения загружена. Сохрани файл в «Файлы».');}if(id==='restore'){let prev=await read('previous').catch(()=>null);if(!prev||!valid(prev)){notice('Предыдущей исправной копии пока нет.');close();return;}if(confirm('Заменить текущий город предыдущей копией?')){city=sanitize(prev);city.savedAt=Date.now();changed();notice('Предыдущая копия восстановлена.');}close();}};
+    dialog.onclick=async e=>{let t=e.target,c=city.coffee;if(t.dataset.book!==undefined){bookAction(Number(t.dataset.book));return;}if(t.hasAttribute('data-book-refresh')){showBookshop();return;}if(t.dataset.quest){if(t.dataset.answer!=='yes'){dialog.querySelector('p').textContent='Этот вариант не подходит. Попробуй ещё раз.';return;}c[t.dataset.quest]=true;cat(t.dataset.quest==='recipe'?'ryzhiy':'citera').xp+=6;close();notice(t.dataset.quest==='recipe'?'Рыжий придумал первую булочку.':'Цитера устроила книжный уголок в кофейне.');changed();return;}if(t.dataset.style){c.style=t.dataset.style;close();notice('Белла выбрала оформление кофейни. Выбранный стиль сохранён для дальнейшего оформления кофейни.');changed();return;}if(t.dataset.order!==undefined){if(Number(t.dataset.order)!==c.orders%3){dialog.querySelector('p').textContent='Это другой заказ. Гость подождёт, попробуй ещё раз.';return;}c.orders++;city.coins+=8;cat('ryzhiy').xp+=3;close();notice(`Заказ выполнен! +8 монет. Всего заказов: ${c.orders}.`);changed();return;}let id=t.id;if(e.target.hasAttribute('data-close'))close();if(id==='help')showGuide();if(id==='import')document.getElementById('file').click();if(id==='export'){await write().catch(()=>{});let blob=new Blob([JSON.stringify(city,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='tihaya-buhta-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);close();notice('Копия сохранения загружена. Сохрани файл в «Файлы».');}if(id==='restore'||id==='restoreBefore2D'){let prev=await read(id==='restoreBefore2D'?'before-map-2d-v1':'previous').catch(()=>null);if(!prev||!valid(prev)){notice('Предыдущей исправной копии пока нет.');close();return;}if(confirm('Заменить текущий город предыдущей копией?')){city=sanitize(prev);city.savedAt=Date.now();changed();notice('Предыдущая копия восстановлена.');}close();}};
     document.getElementById('file').onchange=async e=>{let f=e.target.files[0];e.target.value='';if(!f)return;if(f.size>200000){notice('Файл слишком большой.');close();return;}try{let data=JSON.parse(await f.text());if(!valid(data))throw Error('Неверный формат или версия файла.');if(!confirm('Заменить текущий город содержимым этого файла?'))return;city=sanitize(data);city.savedAt=Date.now();changed();close();notice('Город восстановлен из файла.');}catch(err){close();notice(`Не удалось импортировать: ${err.message}`);}};
 
-    let environment,renderer,scene,world,camera,controls,raycaster,pointer,catLabels=new Map(),catMeshes=new Map(),homes=new Map(),coffeeMesh=null,coffeeState='',renderReady=false,needsRender=true,waveTexture=null,tideFoam=null;
-    const S=1.35;
-    const spot=(x,y)=>[(x-10)*S,(y-7.5)*S];
-    const material=(color,roughness=.86,more={})=>new T.MeshStandardMaterial({color,roughness,...more});
-    const mats={sand:material('#d8c29d'),grass:material('#89a98e'),wood:material('#ba8b68'),dark:material('#765f57'),stone:material('#b4aea0'),light:material('#ffda96',.3,{emissive:'#cb783d',emissiveIntensity:.8})};
-    function rounded(parent,w,h,d,x,y,z,color,r=.08,shadow=true){let m=new T.Mesh(new RoundedBoxGeometry(w,h,d,3,Math.min(r,w/3,h/3,d/3)),typeof color==='string'?material(color):color);m.position.set(x,y,z);m.castShadow=shadow;m.receiveShadow=true;parent.add(m);return m;}
-    function sphere(parent,r,x,y,z,color,seg=10){let m=new T.Mesh(new T.SphereGeometry(r,seg,8),typeof color==='string'?material(color):color);m.position.set(x,y,z);m.castShadow=true;parent.add(m);return m;}
-    function cylinder(parent,rt,rb,h,x,y,z,color,n=12){let m=new T.Mesh(new T.CylinderGeometry(rt,rb,h,n),typeof color==='string'?material(color):color);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
-    function cap(parent,w,depth,y,color,kind='hip'){let m;if(kind==='flat'){m=rounded(parent,w,.18,depth,0,y,0,color,.05);return m;}m=new T.Mesh(new T.ConeGeometry(w*(kind==='steep'?.72:.68),kind==='steep'?1.04:.71,4),typeof color==='string'?material(color):color);m.rotation.y=Math.PI/4;m.scale.z=depth/w;m.position.y=y;m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
-    function glow(parent,x,y,z,r=.07){sphere(parent,r,x,y,z,'#ffe8b5',8);let l=new T.PointLight('#ffd9a4',1.0,2.6,2);l.position.set(x,y,z);parent.add(l);}
-    function plaque(parent,text,y,z,color='#765d54'){let c=document.createElement('canvas');c.width=256;c.height=72;let q=c.getContext('2d');q.fillStyle=color;q.beginPath();q.roundRect(0,0,256,72,13);q.fill();q.fillStyle='#fff5e2';q.textAlign='center';q.textBaseline='middle';q.font='bold 34px system-ui';q.fillText(text,128,38);let tex=new T.CanvasTexture(c);tex.colorSpace=T.SRGBColorSpace;let m=new T.Mesh(new T.PlaneGeometry(1.52,.43),new T.MeshBasicMaterial({map:tex,transparent:true,side:T.DoubleSide}));m.position.set(0,y,z);parent.add(m);}
-    const glass=material('#ffdbab',.3,{emissive:'#d98644',emissiveIntensity:.7});
-    function window3(parent,x,y,z,w=.36,h=.46){rounded(parent,w,h,.05,x,y,z,glass,.045,false);rounded(parent,w+.07,.05,.075,x,y-h*.51,z+.02,'#f4e5cc',.018,false);}
-
-    function fir(x,z,size=1){let g=new T.Group();g.position.set(x,.43,z);world.add(g);cylinder(g,.09,.13,.9*size,0,.45*size,0,'#7e6957',7);for(let j=0;j<3;j++){let m=new T.Mesh(new T.ConeGeometry((.54-j*.11)*size,.9*size,7),material(j%2?'#497a67':'#547f6c'));m.position.y=(.79+j*.36)*size;m.castShadow=true;g.add(m)}return g;}
-    let palmTexture=null;
-    function palm(x,z,height=3.05){
-      if(!palmTexture){palmTexture=new T.TextureLoader().load(PROMENADE_PALM.src,()=>{needsRender=true});palmTexture.colorSpace=T.SRGBColorSpace}
-      let tree=new T.Sprite(new T.SpriteMaterial({map:palmTexture,transparent:true,alphaTest:.035,depthWrite:false,toneMapped:false}));
-      tree.center.set(.5,0);tree.position.set(x,.59,z);tree.scale.set(height*PROMENADE_PALM.aspect/world.scale.x,height,1);
-      world.add(tree);
-    }
-
-    function mountain(x,z,size=1){let g=new T.Group();g.position.set(x,-.1,z);world.add(g);let m=new T.Mesh(new T.ConeGeometry(1.5*size,2.6*size,5),material('#648382'));m.position.y=1.0*size;m.rotation.y=.4;m.castShadow=true;g.add(m);let snow=new T.Mesh(new T.ConeGeometry(.53*size,.7*size,5),material('#d7dccb'));snow.position.y=2.37*size;snow.rotation.y=.4;g.add(snow)}
-    const beachTextureCache=new Map();
-    const siteTextureCache=new Map();
-    let beachShadowTexture=null;
-    function siteTexture(kind){
-      let texture=siteTextureCache.get(kind);
-      if(!texture){
-        texture=new T.TextureLoader().load(SITE_ART[kind].src,()=>{needsRender=true});
-        texture.colorSpace=T.SRGBColorSpace;siteTextureCache.set(kind,texture);
-      }
-      return texture;
-    }
-    function siteFigure(parent,kind,height){
-      let art=SITE_ART[kind],sprite=new T.Sprite(new T.SpriteMaterial({
-        map:siteTexture(kind),transparent:true,alphaTest:.035,depthWrite:false,toneMapped:false
-      }));
-      sprite.center.set(.5,0);sprite.position.y=.035;
-      sprite.scale.set(height*art.aspect/world.scale.x,height,1);
-      parent.add(sprite);return sprite;
-    }
-    let bookshopTexture=null;
-    function bookshopFigure(parent){
-      if(!bookshopTexture){bookshopTexture=new T.TextureLoader().load(BOOKSHOP_ART.exterior.src,()=>{needsRender=true});bookshopTexture.colorSpace=T.SRGBColorSpace;}
-      let figure=new T.Sprite(new T.SpriteMaterial({map:bookshopTexture,transparent:true,alphaTest:.035,depthWrite:false,toneMapped:false}));
-      figure.center.set(.5,0);figure.position.y=.04;figure.scale.set(3.55*BOOKSHOP_ART.exterior.aspect/world.scale.x,3.55,1);
-      parent.add(figure);
-    }
-    function sandTexture(){
-      // A 256px seamless WebP tile derived from the approved sandy material.
-      let tex=new T.TextureLoader().load('data:image/webp;base64,UklGRkQFAABXRUJQVlA4IDgFAACwMQCdASoAAQABPm02lUmkIqcooCmREA2JaWzy/7yThBWygEWX6JEJrZ4Ivj/9U6Oz9S7kflHTA5sv+89u3wiA92jrxV/+tH3q0++3pmX+Rk9gFbUuJKBIseSNoGa+0pzFPuWFevIkSSyZ50IGEYqRTsyMXeE6i6IAs+/Z9zOfYvYJg45Amo2vMm1cCo+Qt9NR6z7NQua9zC5j0GY4EoJLCrR+8BAy5unkClRK80LvMwuk1QL8rjEdaqto7H2trIpM5PYzBxKS5nJkM/1F8GpJt2qeC5cjLr6nkpBIJrUji2hEJmgF8eMD1NzAdwelO4rRw1OfDZkyyRyKLDJWyPYtRMybpvdpRAxqp5SSHI5S0q6pp5wOD4jeBgtMciBKRSeuH1MZ5KRF0uWKQNoTJAhuO/SSLgy/TvCrr63ARV3H6tMcSiBLjN6dACjaNHWTzuPbndhl2tlsqleXs18j4YlXV9QUmdqCy1d6Napr599mB873gHmeZWHdBLsAupZOjFMbdhbRMPURYFBJu36oSk7kvXKt4ZQAAP702LfUv/3HxT4i7gf9tsub8MDkQd47+2BLQMjsAOcqEnthzemshafIBG4yYTVdSmMOHdkaohvSvyqzI9FtYMSgO10R2s+StdwXmlLlThkPJM9eLyJj8jEcf973d+y7A2xrWxXFW14N4xNhr15jD5ZuYeWr2UWHKiVfPt0BxZl3k42hAnv2RCb1DKmGj8WKBwF4CRY/OYF7VNCkv17TEKx6XdphyQQ2OnMEwL4xbyW9Rga16YNlXnlwwBq1I9HchISBEGty/N976reCv0yeyJEfzVK3ux42UD4gedWEJNzak+7/2XyFrL1X17AZt2Mos80LznrRPeutsHktZzb516gfgi5YkMH5QuM+K66SmlZm/Dhm7OKJsbOijLG/Ey8rAYqEnIp3pxuwi2p56l5+0OFN3/l4+aFv+yK6kpz1K4lx1SqDkEWWHaUsl2Fo4vBvEV1n2r+0GcT/8xBh0bhTmgVlA6beX6QYLFb4c96k86ZuegBdtFuioCxc62LZe0fC/xwFg7ZKHs5wofVGgvAReOGMCKnJr3GMTBiCRQXLF2oJdRZWaIp6RaZPMnnqKbfCPoxttNlrZtQllg27YMafztKUgpprhYerTXjYrkXd4kmN4jz4hkoDwo6iJkeYU0HO2z/sjW5nHEFquJROJWZwtFVJ6AauEQJgCDIM4Djd85jYKZGcAl8bRDTFbqIKmBHoieWvyrBMIGXkjFZugUqNlklwRAMOY+5zwN/2UmB6UT4V6kkOWJsK3vCCTnpbhByQOe0CeQIeMEjXjH7Hfbm8+mNfSa+Vgh6LeM0SLugKDeYiESH4Wkm0tJChdZesG+2jr+0SmxikDTpqGasnNleJR8BaH732OfD1O6fdweiC/kPWfpG9o1FI46FGr8mr+ZUeLDalMA4jl0TX8QIk8GPgChxdr94gWw9rgiuQRe5WBXNHjx7pkhyRzVVEqjrOirxKgVke4Y3nlOalR3Nlo5tt+hIC7VTIqwU1C8QeB0VdlofA7AzSLEvIPpEcr56SJPOqMp0IgHeZeZsEnZx+edhhBWPb9ILj3u6IeYHY3F3I/w6PBlv3TO4QHgQn2RyIC2QK8nT3m5IMIEUKmd9oWXijKKPHoq7OcK+8S7rlv8oMNmKRlzwvw2kqUwbkOIQ2G+sCS1wP8gYF3QBULP0GARK+4J6fA9fOcyaFJr5B9CFYFQG6VM6PzoRe4rNGNAc3b2GNG5aIwQC7ER2BUO85C1XjAAAA',()=>{needsRender=true});
-      tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.colorSpace=T.SRGBColorSpace;return tex;
-    }
-    function coastRibbon(samples,rows,mat){
-      let vertices=[],uv=[],indices=[];
-      for(let i=0;i<=samples;i++){
-        let x=-14.7+29.4*i/samples,z=shorelineZ(x);
-        let tip=.08+.92*Math.min(1,i/8,(samples-i)/8);
-        for(let j=0;j<rows.length;j++){
-          let r=rows[j],zz=z+r[0]*(r[0]>0?tip:1);
-          vertices.push(x,r[1]+.013*Math.sin(x*1.7+j),zz);
-          uv.push(x,zz);
-          if(i<samples&&j<rows.length-1){
-            let a=i*rows.length+j,b=(i+1)*rows.length+j;
-            indices.push(a,b,a+1,b,b+1,a+1);
-          }
-        }
-      }
-      let g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(vertices,3));
-      g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(indices);g.computeVertexNormals();
-      return new T.Mesh(g,mat);
-    }
-    let coastlineSamples=[];
-    function shorelineZ(x){
-      for(let i=1;i<coastlineSamples.length;i++){
-        if(coastlineSamples[i].x>=x){
-          let a=coastlineSamples[i-1],b=coastlineSamples[i],t=(x-a.x)/(b.x-a.x||1);
-          return a.y+(b.y-a.y)*t;
-        }
-      }
-      return coastlineSamples[x<0?0:coastlineSamples.length-1].y;
-    }
-    function beachLanternPost(x,z){
-      // Weathered timber, a curved brass arm and a warm six-sided glass lantern.
-      let post=new T.Group();post.position.set(x,.46,z);world.add(post);
-      cylinder(post,.077,.105,2.1,0,1.05,0,'#866550',10);
-      cylinder(post,.12,.12,.16,0,.13,0,'#9a7255',10);
-      cylinder(post,.13,.105,.12,0,2.16,0,'#a17a5d',10);
-      sphere(post,.105,0,2.25,0,'#e7c996',10).castShadow=false;
-      let arm=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3([
-        new T.Vector3(0,2.01,0),new T.Vector3(.14,2.18,.13),new T.Vector3(.36,2.18,.28)
-      ]),8,.032,6,false),material('#967052',.6));
-      post.add(arm);
-      cylinder(post,.026,.026,.13,.36,2.09,.28,'#8d674e',7);
-      let glass=material('#ffd6a0',.38,{emissive:'#ec9650',emissiveIntensity:1.25});
-      cylinder(post,.145,.115,.31,.36,1.88,.28,glass,6).castShadow=false;
-      cylinder(post,.17,.17,.045,.36,1.69,.28,'#7e604c',6);
-      let top=new T.Mesh(new T.ConeGeometry(.19,.17,6),material('#956d52',.72));
-      top.position.set(.36,2.065,.28);post.add(top);
-      for(let i=0;i<6;i++){
-        let a=i*Math.PI/3;
-        cylinder(post,.012,.012,.32,.36+Math.cos(a)*.133,1.88,.28+Math.sin(a)*.133,'#82624b',5);
-      }
-      return post;
-    }
-    function addBeachFurniture(kind,x,z,height){
-      const art=BEACH_ART[kind];let texture=beachTextureCache.get(kind);
-      if(!texture){
-        texture=new T.TextureLoader().load(art.src,()=>{needsRender=true});
-        texture.colorSpace=T.SRGBColorSpace;beachTextureCache.set(kind,texture);
-      }
-      let group=new T.Group();group.position.set(x,.59,z);world.add(group);
-      let sprite=new T.Sprite(new T.SpriteMaterial({map:texture,transparent:true,alphaTest:.025,depthWrite:false,toneMapped:false}));
-      sprite.center.set(.5,0);sprite.position.y=.025;
-      sprite.scale.set(height*art.aspect/world.scale.x,height,1);group.add(sprite);
-      if(!beachShadowTexture){
-        let c=document.createElement('canvas');c.width=c.height=64;let q=c.getContext('2d');
-        let gradient=q.createRadialGradient(32,32,2,32,32,31);
-        gradient.addColorStop(0,'rgba(94,62,32,.24)');gradient.addColorStop(1,'rgba(94,62,32,0)');
-        q.fillStyle=gradient;q.fillRect(0,0,64,64);beachShadowTexture=new T.CanvasTexture(c);
-      }
-      let shadow=new T.Mesh(new T.PlaneGeometry(height*art.aspect/world.scale.x*.94,kind==='poufs'?1.05:.86),
-        new T.MeshBasicMaterial({map:beachShadowTexture,transparent:true,depthWrite:false}));
-      shadow.rotation.x=-Math.PI/2;shadow.position.y=.014;group.add(shadow);
-      return group;
-    }
-    function sceneBase(){scene=new T.Scene();world=new T.Group();world.scale.set(1.58,1,1.58);scene.add(world);scene.background=new T.Color('#167987');scene.fog=new T.Fog('#4b9294',65,145);
-      renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.16;
-      environment=createEnvironment(world,renderer,()=>{needsRender=true});mats.grass=environment.grassMaterial;
-      // A repeating, slowly drifting water texture gives the whole bay visible wavelets.
-      let waves=document.createElement('canvas');waves.width=512;waves.height=512;
-      let wavePaint=waves.getContext('2d');wavePaint.fillStyle='#137f8e';wavePaint.fillRect(0,0,512,512);
-      for(let i=0;i<130;i++){let x=(i*317.31)%560-30,y=(i*199.67)%512,len=10+(i*43)%53;
-        wavePaint.beginPath();wavePaint.moveTo(x,y);
-        wavePaint.quadraticCurveTo(x+len*.46,y-2-(i%4),x+len,y+(i%3)-1);
-        wavePaint.strokeStyle=i%7===0?'rgba(245,218,173,.21)':i%3?'rgba(191,231,222,.25)':'rgba(65,151,161,.39)';
-        wavePaint.lineWidth=i%7===0?2.6:1.2+(i%3)*.55;wavePaint.stroke();
-      }
-      waveTexture=new T.CanvasTexture(waves);waveTexture.wrapS=waveTexture.wrapT=T.RepeatWrapping;
-      waveTexture.repeat.set(12,12);waveTexture.colorSpace=T.SRGBColorSpace;
-      // Broad low-contrast caustics reuse the existing tiny canvas, with no downloaded sea image.
-      for(let i=0;i<75;i++){
-        let x=(i*137.37)%512,y=(i*227.89)%512;
-        wavePaint.beginPath();wavePaint.moveTo(x-21,y-7);
-        wavePaint.bezierCurveTo(x-8,y+5,x+7,y-8,x+24,y+7);
-        wavePaint.strokeStyle='rgba(192,245,223,.075)';wavePaint.lineWidth=2+(i%3);wavePaint.stroke();
-      }
-      waveTexture.needsUpdate=true;
-      let water=new T.Mesh(new T.PlaneGeometry(180,180),new T.MeshStandardMaterial({map:waveTexture,roughness:.54,metalness:.08}));
-      water.rotation.x=-Math.PI/2;water.position.y=-.75;scene.add(water);
-      // The coast is a continuous curved island, with its stone sides above the sea.
-      let coast=new T.Shape();coast.moveTo(-16.2,-9.9);
-      coast.bezierCurveTo(-14.7,-12,-9.8,-11.7,-5.4,-12);
-      coast.bezierCurveTo(-1,-12.4,3.5,-11.7,8.2,-12);
-      coast.bezierCurveTo(13,-12.1,16.6,-10.7,17.1,-7.8);
-      coast.bezierCurveTo(17.6,-3,16.8,2.2,16.4,6.5);
-      coast.bezierCurveTo(16.1,10.4,15,13.45,11.4,13.9);
-      coast.bezierCurveTo(6.5,15,3,14.2,-.4,14.55);
-      coast.bezierCurveTo(-5.4,15.2,-8.8,13.8,-13,13.9);
-      coast.bezierCurveTo(-16.5,13.15,-17.2,9.2,-17.1,5);
-      coast.bezierCurveTo(-17.3,.4,-16.4,-5,-16.2,-9.9);
-      let shore=new T.Mesh(new T.ExtrudeGeometry(coast,{depth:.86,steps:1,bevelEnabled:true,bevelSegments:2,bevelSize:.13,bevelThickness:.08,curveSegments:6}),[mats.grass,material('#5d7773')]);
-      shore.rotation.x=Math.PI/2;shore.position.y=.44;shore.receiveShadow=true;world.add(shore);
-      const edge=coast.getSpacedPoints(160);
-      coastlineSamples=edge.filter(p=>p.y>12&&p.x>=-15.2&&p.x<=15.2).sort((a,b)=>a.x-b.x);
-      for(let i=0;i<edge.length;i+=2){let p=edge[i];if(p.y>11.5)continue;
-        let a=Math.atan2(p.y,p.x),x=p.x+Math.cos(a)*.38,z=p.y+Math.sin(a)*.38;
-        let foam=rounded(world,.37+(i%4)*.1,.008,.024,x,-.733,z,i%5?'#a3d5d0':'#dcf0dc',.004,false);foam.rotation.y=a;
-      }
-      let sun=new T.DirectionalLight('#ffd7ac',2.45);sun.position.set(-12,16,13);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-48,right:48,top:48,bottom:-48,near:.5,far:85});sun.shadow.bias=-.0001;sun.shadow.normalBias=.025;sun.shadow.radius=4;scene.add(sun);
-      scene.add(new T.HemisphereLight('#fff0da','#758c83',1.22));scene.add(new T.AmbientLight('#ffddae',.29));
-      camera=new T.OrthographicCamera(-10,10,10,-10,.1,120);camera.position.set(23,27,46);
-      controls=new OrbitControls(camera,canvas);controls.enableRotate=false;controls.enableDamping=true;controls.dampingFactor=.1;controls.screenSpacePanning=true;controls.minZoom=.34;controls.maxZoom=3.1;controls.touches.ONE=T.TOUCH.PAN;controls.touches.TWO=T.TOUCH.DOLLY_PAN;controls.target.set(0,0,15.5);controls.update();controls.addEventListener('change',()=>needsRender=true);
-      raycaster=new T.Raycaster();pointer=new T.Vector2();
-      // Rounded wooded hills frame the back and upper sides without snow peaks.
-      for(let i=0;i<12;i++){let x=-14.1+i*2.55,z=-10.45+(i%4)*.12;
-        let mound=sphere(world,1,x,.55,z,i%3===0?'#6d9476':i%3===1?'#83a583':'#789b78',16);
-        mound.scale.set(1.75+(i%3)*.27,.72+(i%4)*.13,1.32+(i%3)*.16);
-      }
-      for(let [x,z] of [[-15.1,-7],[-15.1,-3.8],[15,-7],[15,-4.2]]){
-        let mound=sphere(world,1,x,.51,z,'#80a187',16);mound.scale.set(1.12,.58,1.65);
-      }
-      for(let i=0;i<32;i++){let side=i%3,x=side===0?-15:side===1?15:-13.4+(i*4.31)%26.8;
-        let z=side===2?-9.25+(i%3)*.3:-7.5+(i*1.51)%12.8;fir(x,z,.36+(i%4)*.09)}
-      // Fine reusable sand grain: one 256px procedural texture for the level beach and the slope.
-      let grain=sandTexture(),sandMat=material('#fff6e7',.94,{map:grain,side:T.DoubleSide});
-      // A shallow, organic slope covers the former vertical green seawall.
-      let bank=coastRibbon(72,[[-1.3,.625],[-.4,.625],[.7,.605],[1.5,.15],[2.15,-.735]],sandMat);
-      bank.receiveShadow=true;world.add(bank);
-      // The water becomes clear turquoise beside the sand, then fades into the bay.
-      let shallowCanvas=document.createElement('canvas');shallowCanvas.width=8;shallowCanvas.height=128;
-      let shallowPaint=shallowCanvas.getContext('2d'),seaBlend=shallowPaint.createLinearGradient(0,0,0,128);
-      seaBlend.addColorStop(0,'rgba(218,226,181,.84)');seaBlend.addColorStop(.22,'rgba(112,208,187,.74)');
-      seaBlend.addColorStop(.7,'rgba(61,181,179,.36)');seaBlend.addColorStop(1,'rgba(34,148,158,0)');
-      shallowPaint.fillStyle=seaBlend;shallowPaint.fillRect(0,0,8,128);
-      let shallowTex=new T.CanvasTexture(shallowCanvas);shallowTex.colorSpace=T.SRGBColorSpace;
-      let positions=[],uv=[],colors=[],idx=[];
-      for(let i=0;i<=68;i++){
-        let x=-14.7+29.4*i/68,z=shorelineZ(x)+2.12;
-        let edgeFade=Math.min(1,i/6,(68-i)/6);
-        for(let j=0;j<=4;j++){positions.push(x,-.714,z+j*.76);uv.push(i/68,1-j/4);colors.push(1,1,1,edgeFade);
-          if(i<68&&j<4){let a=i*5+j,b=(i+1)*5+j;idx.push(a,a+1,b,a+1,b+1,b)}}
-      }
-      let shallows=new T.BufferGeometry();shallows.setAttribute('position',new T.Float32BufferAttribute(positions,3));
-      shallows.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
-      shallows.setAttribute('color',new T.Float32BufferAttribute(colors,4));shallows.setIndex(idx);shallows.computeVertexNormals();
-      world.add(new T.Mesh(shallows,new T.MeshBasicMaterial({map:shallowTex,vertexColors:true,transparent:true,depthWrite:false,side:T.DoubleSide})));
-      // Two thin broken wavelets follow the curved waterline; animate only their position.
-      tideFoam=new T.Group();world.add(tideFoam);
-      for(let row=0;row<2;row++){
-        let vertices=[],indices=[];
-        for(let i=0;i<=94;i++){
-          let x=-14.6+29.2*i/94,z=shorelineZ(x)+2.15+row*.49+.085*Math.sin(x*1.45+row*2);
-          let w=(.055+row*.02)*(i%19<3||i<5||i>89?.03:1);
-          vertices.push(x,-.688,z-w,x,-.688,z+w);
-          if(i<94){let a=i*2;indices.push(a,a+1,a+2,a+1,a+3,a+2)}
-        }
-        let g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(vertices,3));g.setIndex(indices);g.computeVertexNormals();
-        tideFoam.add(new T.Mesh(g,new T.MeshBasicMaterial({color:row?'#c8f1e4':'#fff8e6',transparent:true,opacity:row?.35:.69,depthWrite:false,side:T.DoubleSide})));
-      }
-      // Broad, gently curved sandy beach.
-      let beach=new T.Shape();beach.moveTo(-14.7,9.05);
-      beach.bezierCurveTo(-9.2,9.4,5.6,9.35,14.3,9.05);
-      beach.lineTo(13.9,12.82);
-      beach.bezierCurveTo(9.5,14.0,3.9,14.12,-.2,14.03);
-      beach.bezierCurveTo(-5.2,14.15,-10.8,13.4,-14.7,12.6);beach.closePath();
-      // A shallow solid layer sits above the island surface so the green ground cannot cover it.
-      let sand=new T.Mesh(new T.ExtrudeGeometry(beach,{depth:.07,steps:1,bevelEnabled:false,curveSegments:20}),
-        [sandMat,material('#e3bb82',1,{side:T.DoubleSide})]);
-      sand.rotation.x=Math.PI/2;sand.position.y=.59;sand.receiveShadow=true;world.add(sand);
-      for(let i=0;i<125;i++){let x=-13.8+(i*9.71)%27.6,z=10.2+(i*2.73)%3.35;
-        let dot=sphere(world,.016+(i%4)*.007,x,.617,z,i%3?'#f7dfb3':'#d6a971',6);dot.castShadow=false}
-      for(let i=0;i<17;i++){let x=-12+(i*5.73)%24,z=11.1+(i*1.37)%2.4;
-        let shell=sphere(world,.055,x,.617,z,i%2?'#fff0cf':'#e8a79a',7);shell.scale.set(1,.38,.7);shell.castShadow=false}
-      // Softly worn sandstone slabs, bronze lamps and detailed wooden seating.
-      environment.promenade();
-      for(let i=0;i<18;i++){let x=-12.8+i*1.42;sphere(world,.033+(i%3)*.008,x,.625,12.8+(i%3)*.15,i%2?'#eee1c0':'#f9e8c9',7)}
-      environment.paths([...defs,...scenicSites,cafeSite],spot);
-      environment.avenueFurniture();
-      // The approved stone-edged pond replaces the old flat green rectangle.
-      const pondGarden=new T.Group();pondGarden.position.set(1.35,.54,3.45);world.add(pondGarden);
-      siteFigure(pondGarden,'pond_garden',2.85);
-      environment.trees();
-      environment.quarter();
-      for(let [x,z,h] of [[-12.6,8.35,3.05],[-9.15,8.35,2.86],[-6.1,8.35,2.99],[-.55,8.32,2.9],[4.15,10.45,2.87],[8.15,8.36,2.94],[15.05,8.34,2.96]])palm(x,z,h);
-      // Approved beach artwork: alternating scalloped parasols, cushioned loungers and wicker lamps.
-      for(let [kind,x,z] of [
-        ['sage',-11,11.15],['peach',-7.9,11.25],
-        ['sage',-3.25,11.2],['peach',.45,11.25],
-        ['sage',8.05,11.2],['peach',11.8,11.3]
-      ])addBeachFurniture(kind,x,z,2.55);
-      // Three calm seating corners with tactile beanbags, a rug and warm lanterns.
-      for(let [x,z] of [[-9.5,12.9],[-2.35,12.95],[11,12.85]]){
-        addBeachFurniture('poufs',x,z,1.55);
-        let lanternLight=new T.PointLight('#ffc88d',.7,3.3,2);lanternLight.position.set(x,1.55,z);world.add(lanternLight);
-      }
-      // Soft light strings define two seating corners without blocking the sea view.
-      for(let [left,right] of [[-12.3,-7.5],[7.7,12.5]]){
-        for(let x of [left,right])beachLanternPost(x,12.9);
-        let lightPoints=[];for(let i=0;i<=16;i++){let t=i/16,x=left+(right-left)*t,y=2.64-.24*Math.sin(t*Math.PI);
-          lightPoints.push(new T.Vector3(x,y,12.9));
-          if(i%2===1){let bulb=sphere(world,.065,x,y-.08,12.9,'#ffd1a0',8);
-            bulb.material.emissive=new T.Color('#cf8147');bulb.material.emissiveIntensity=1.25}
-        }
-        world.add(new T.Line(new T.BufferGeometry().setFromPoints(lightPoints),new T.LineBasicMaterial({color:'#a68168'})));
-        let warm=new T.PointLight('#ffd39b',1.3,4.8,2);warm.position.set((left+right)/2,2.35,12.9);world.add(warm);
-      }
-      // Lighthouse at the western tip of the beach.
-      let lighthouse=new T.Group();lighthouse.position.set(-14.55,.49,11.35);world.add(lighthouse);
-      cylinder(lighthouse,.9,1.08,.28,0,.1,0,'#bdac91',12);
-      cylinder(lighthouse,.54,.79,3.4,0,1.88,0,'#f5e5cf',16);
-      for(let y of [.8,2.2])cylinder(lighthouse,.56+(2.2-y)*.06,.61+(2.2-y)*.05,.25,0,y,0,'#c98575',16);
-      for(let a of [0,Math.PI/2,Math.PI,3*Math.PI/2]){
-        let x=Math.cos(a)*.57,z=Math.sin(a)*.57;
-        rounded(lighthouse,.19,.42,.1,x,2.58,z,'#ffe5ac',.025,false);
-      }
-      cylinder(lighthouse,.77,.78,.13,0,3.66,0,'#bb8975',16);
-      cylinder(lighthouse,.37,.38,.52,0,3.97,0,material('#f9e8bd',.35,{emissive:'#efab70',emissiveIntensity:1.35}),12);
-      for(let i=0;i<12;i++){let a=i*Math.PI/6;
-        cylinder(lighthouse,.026,.026,.42,Math.cos(a)*.66,3.96,Math.sin(a)*.66,'#937667',6)}
-      let roof=new T.Mesh(new T.ConeGeometry(.71,.55,12),material('#b87468'));roof.position.y=4.5;roof.castShadow=true;lighthouse.add(roof);
-      let beacon=new T.PointLight('#ffcf9b',1.6,6,2);beacon.position.set(0,4.02,0);lighthouse.add(beacon);
-      // Wooden pier extends out into the surrounding water.
-      for(let i=0;i<35;i++)rounded(world,2.15,.13,.19,5.5,.55,13.2+i*.18,i%2?'#b88761':'#c49a72',.025);
-      for(let z of [13.3,15,17.2,19.3])for(let x of [4.42,6.58])cylinder(world,.08,.12,.83,x,.27,z,'#947057',8);
-      // Fishing rods lean over the edge of the pier; thin lines end at colored floats.
-      for(let [x,z,dir] of [[4.43,17.2,-1],[6.57,18,1],[4.43,18.75,-1]]){
-        let base=new T.Vector3(x,.88,z),middle=new T.Vector3(x+dir*.3,1.91,z+.47);
-        let tip=new T.Vector3(x+dir*1.13,2.37,z+1.72);
-        let rod=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3([base,middle,tip]),12,.026,6,false),material('#84634f'));
-        world.add(rod);
-        cylinder(world,.085,.08,.09,x,.84,z,'#a5795b',9);
-        let float=new T.Vector3(x+dir*1.4,-.65,z+2.17);
-        world.add(new T.Line(new T.BufferGeometry().setFromPoints([tip,float]),new T.LineBasicMaterial({color:'#dfd6c4',transparent:true,opacity:.85})));
-        let buoy=sphere(world,.085,float.x,float.y,float.z,'#df7e66',9);buoy.castShadow=false;
-        sphere(world,.043,float.x,float.y+.075,float.z,'#fff1d6',7).castShadow=false;
-      }
-      for(let [x,z] of [[4.42,15.35],[6.58,17.75]]){cylinder(world,.055,.07,.85,x,.97,z,'#745e53',8);
-        let lamp=sphere(world,.1,x,1.44,z,'#ffe1ae',8);lamp.material.emissive=new T.Color('#d69457');lamp.material.emissiveIntensity=1.65}
-      // Sea ripples around the entire island and warmer reflections beside the pier.
-      for(let i=0;i<125;i++){let x=-23+(i*11.77)%46,z=-19+(i*6.91)%44;
-        if(x>-18&&x<18&&z>-13.3&&z<15)continue;
-        let glint=rounded(world,.25+(i%5)*.11,.009,.019,x,-.735,z,i%6?'#a6d7d4':'#f3cfaa',.005,false);
-        glint.rotation.y=(i%3)*.17}
-      let boat=new T.Group();boat.position.set(9,-.48,21.2);world.add(boat);
-      let hull=new T.Mesh(new T.CapsuleGeometry(.37,1.25,4,9),material('#49798e',.44));hull.rotation.z=Math.PI/2;hull.scale.set(1.1,.6,1);boat.add(hull);
-      rounded(boat,.84,.35,.56,0,.27,0,'#d9ac88',.09);rounded(boat,1.04,.06,.68,0,.48,0,'#695e65',.035);
-      // Two yachts stay at anchor in the bay, with a rope and buoy by each bow.
-      function anchoredYacht(x,z,hasSail){
-        let yacht=new T.Group();yacht.position.set(x,-.49,z);yacht.rotation.y=hasSail?.14:-.2;world.add(yacht);
-        let keel=sphere(yacht,1,0,.1,0,'#395f72',18);keel.scale.set(1.7,.32,.62);
-        let whiteHull=sphere(yacht,1,0,.33,0,'#f6ecda',18);whiteHull.scale.set(1.72,.3,.7);
-        rounded(yacht,2.6,.12,1.02,0,.54,0,'#f5e7d2',.16);
-        rounded(yacht,.98,.58,.83,-.25,.86,0,'#f2e9dc',.15);
-        rounded(yacht,.83,.25,.09,-.25,.97,.46,'#81aeb7',.06,false);
-        for(let a of [-.6,.2,.8])sphere(yacht,.085,a,.46,.62,'#83aab2',9).castShadow=false;
-        for(let side of [-1,1]){
-          cylinder(yacht,.025,.028,.42,1.02,.78,side*.39,'#c6b7a0',6);
-          cylinder(yacht,.025,.028,.42,-1.02,.78,side*.39,'#c6b7a0',6);
-          rounded(yacht,2.16,.03,.03,0,1,side*.39,'#e8dac7',.012,false);
-        }
-        if(hasSail){
-          cylinder(yacht,.052,.07,2.65,.08,1.9,0,'#b89a76',9);
-          let triangle=new T.BufferGeometry();
-          triangle.setAttribute('position',new T.Float32BufferAttribute([.16,3.12,.04,.2,.82,.04,1.46,.85,.04],3));
-          triangle.computeVertexNormals();
-          let sail=new T.Mesh(triangle,material('#fff5e5',.92,{side:T.DoubleSide}));sail.castShadow=true;yacht.add(sail);
-        }else{
-          rounded(yacht,1.28,.13,1.01,-.28,1.25,0,'#e4c7a5',.09);
-          cylinder(yacht,.025,.035,.56,-.45,1.54,0,'#ac9075',6);
-        }
-        let ropeEnd=new T.Vector3(-2.4,-.15,.25);
-        yacht.add(new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(-1.42,.41,0),ropeEnd]),
-          new T.LineBasicMaterial({color:'#d4bd9c'})));
-        let buoy=sphere(yacht,.18,ropeEnd.x,ropeEnd.y,ropeEnd.z,'#e17f6a',10);buoy.castShadow=false;
-        sphere(yacht,.07,ropeEnd.x,ropeEnd.y+.17,ropeEnd.z,'#fff1d5',8).castShadow=false;
-      }
-      anchoredYacht(-8,20.6,true);anchoredYacht(13,22.3,false);
-      for(let [x,z] of [[-12,5.75],[-7.3,9.6],[-3,5.75],[3.9,9.6],[10.3,5.75],[13.8,9.6]])
-        environment.lantern(x,z,1.94,z>8?.72:.54,x===-12||x===10.3);
-
-    }
-
-    function addBuilding(d){let p=spot(...d.home),g=new T.Group();g.position.set(p[0],.47,p[1]);g.userData.pick=d.id;world.add(g);let id=d.id;
-      let home=id.startsWith('residence'),office=id.startsWith('office');
-      if(id==='restaurant'){
-        if(beachShadowTexture){
-          const shadow=new T.Mesh(new T.PlaneGeometry(3.2,2.05),new T.MeshBasicMaterial({map:beachShadowTexture,transparent:true,opacity:.25,depthWrite:false}));
-          shadow.rotation.x=-Math.PI/2;shadow.position.set(.1,.065,.12);g.add(shadow);
-        }
-        siteFigure(g,'restaurant',4.05);
-        return;
-      }
-      // Approved block: garden details and warm light are baked into two shared textures.
-      // Return before primitive construction so old walls, roof and mailbox cannot show through.
-      if(id==='residence_east'||id==='post'){
-        if(beachShadowTexture){
-          const shadow=new T.Mesh(new T.PlaneGeometry(id==='post'?2.8:2.6,1.65),
-            new T.MeshBasicMaterial({map:beachShadowTexture,transparent:true,opacity:.26,depthWrite:false}));
-          shadow.rotation.x=-Math.PI/2;shadow.position.set(.1,.025,.08);g.add(shadow);
-        }
-        // Match the shop's scale; align both front steps to the shared courtyard.
-        const figure=siteFigure(g,id,id==='residence_east'?3.65:3.15);
-        figure.center.set(.5,.055);
-        return;
-      }
-      if(id==='marina'||id==='residence_far'){
-        siteFigure(g,id,id==='marina'?3.68:3.65);
-        let warm=new T.PointLight('#ffc786',id==='marina'?.57:.48,3.1,2);
-        warm.position.set(0,1.27,.85);g.add(warm);
-        return;
-      }
-      if(id==='observatory'){cylinder(g,1.13,1.17,1.35,0,.69,0,'#e0dfd1',16);let dome=new T.Mesh(new T.SphereGeometry(1.17,20,10,0,Math.PI*2,0,Math.PI/2),material('#8da6ae',.57));dome.position.y=1.35;dome.castShadow=true;g.add(dome);rounded(g,.94,.2,.36,.45,1.7,.47,'#b4c7c1',.07);sphere(g,.1,0,2.49,0,'#f6dfac');return}
-      if(id==='greenhouse'){rounded(g,2.65,.11,2.05,0,.1,0,'#78977f',.08);for(let x of [-1.18,0,1.18])for(let z of [-.9,.9])cylinder(g,.035,.045,1.45,x,.82,z,'#85aa9c',7);let glassMat=material('#c9ede0',.13,{transparent:true,opacity:.43,side:T.DoubleSide,depthWrite:false});rounded(g,2.4,1.4,1.9,0,.82,0,glassMat,.07,false);cap(g,2.65,2.13,1.86,glassMat);for(let x of [-.7,.3,.75])sphere(g,.3,x,.5,0,'#6ba477');return}
-      if(id==='market'){for(let i=-1;i<=1;i++){let stall=new T.Group();stall.position.x=i*1.18;g.add(stall);rounded(stall,1,.14,.8,0,.55,.05,'#a77d60',.06);for(let x of [-.43,.43])cylinder(stall,.035,.04,1,x,1.07,-.25,'#8b735e',6);rounded(stall,1.15,.1,1,0,1.58,0,i%2?'#f2c389':'#d9907e',.04);for(let x of [-.25,.12,.33])sphere(stall,.12,x,.72,.22,i%2?'#e8a974':'#8da96f',8)}plaque(g,'РЫНОК',1.17,1.17,'#946954');return}
-      let cfg={
-        bookshop:{w:2.72,d:2.25,h:1.9,roof:'#bd8375',walls:'#e6cfb3',kind:'steep',text:'ЧИТАЛЬНЯ'},
-        post:{w:2.35,d:2.05,h:1.7,roof:'#78a7a7',walls:'#ecdec2',kind:'hip',text:'ПОЧТА'},
-        restaurant:{w:3.0,d:2.4,h:1.68,roof:'#b4766d',walls:'#eacbac',kind:'steep',text:'РЕСТОРАН'},
-        hotel:{w:2.45,d:2.2,h:3.55,roof:'#d19377',walls:'#f0d7b8',kind:'steep',text:'ОТЕЛЬ'},
-        townhall:{w:2.5,d:2.35,h:2.25,roof:'#8da6a2',walls:'#e9d9bd',kind:'steep',text:'РАТУША'},
-        club:{w:2.35,d:2.08,h:1.9,roof:'#ac7871',walls:'#d9c7b0',kind:'flat',text:'КЛУБ'},
-        office_west:{w:2.22,d:2.0,h:2.18,roof:'#7a9b9b',walls:'#e4dfd0',kind:'flat',text:'БЮРО'},
-        office_east:{w:2.35,d:2.15,h:3.05,roof:'#9295aa',walls:'#dce1d8',kind:'flat',text:'ОФИС'},
-        residence_hill:{w:2.1,d:1.9,h:2.0,roof:'#b68473',walls:'#e8d3ba',kind:'steep'},
-        residence_east:{w:2.2,d:2.0,h:2.9,roof:'#8e9ea3',walls:'#e6d2bb',kind:'flat'},
-        residence_coast:{w:2.12,d:1.95,h:1.87,roof:'#c6997d',walls:'#efdcc4',kind:'steep'},
-      }[id];if(!cfg)return;
-      rounded(g,cfg.w+.18,.17,cfg.d+.19,0,.09,0,'#b4a18c',.09);
-      rounded(g,cfg.w,cfg.h,cfg.d,0,.22+cfg.h/2,0,cfg.walls,.12);
-      let roofY=cfg.h+.54;if(cfg.kind==='flat'){cap(g,cfg.w+.26,cfg.d+.22,roofY,cfg.roof,'flat');for(let x of [-cfg.w*.43,cfg.w*.43])rounded(g,.1,.28,cfg.d,x,roofY+.14,0,cfg.roof,.025)}
-      else cap(g,cfg.w+.48,cfg.d+.42,roofY,cfg.roof,cfg.kind);
-      let front=cfg.d/2+.045,faces=home||office?2:Math.max(1,Math.ceil(cfg.h/1.07));
-      for(let f=0;f<faces;f++){let wy=.8+f*1.05;if(wy>cfg.h+.15)continue;
-        for(let x of [-cfg.w*.28,cfg.w*.28])window3(g,x,wy,front,office?.46:.36,office?.61:.48);
-      }
-      rounded(g,.5,.82,.09,-.02,.62,front+.07,office?'#76979b':'#977869',.06);
-      if(cfg.text)plaque(g,cfg.text,Math.min(cfg.h-.25,id==='hotel'?2.11:1.48),front+.14,id==='post'?'#5d8480':'#806158');
-      if(id==='bookshop'){rounded(g,1.34,.82,.07,-.55,.93,front+.1,'#779894',.045);for(let i=0;i<5;i++)rounded(g,.13,.53,.1,-1.04+i*.23,.94,front+.19,['#eab580','#a8ac9e','#d9a08a','#869a9c','#d6c48f'][i],.025);rounded(g,1.65,.16,.5,-.43,1.74,front+.29,'#d89b7e',.06)}
-      if(id==='post'){rounded(g,.35,.71,.37,1.51,.46,.73,'#ca8171',.06);rounded(g,.49,.08,.05,1.51,.65,.98,'#f2ddbc',.016)}
-      if(id==='restaurant'){rounded(g,3.25,.15,1.38,0,.19,2.02,'#b98d6a',.08);for(let x of [-1.4,1.4]){cylinder(g,.12,.15,.51,x,.37,2.13,'#8d6f5a');cylinder(g,.23,.24,.055,x,.66,2.13,'#e5c49e')}rounded(g,2.4,.15,1.0,0,1.59,front+.34,'#d58d76',.06);for(let i=-2;i<=2;i++)rounded(g,.17,.1,.97,i*.41,1.49,front+.34,i%2?'#f5d8b4':'#d8947d',.02)}
-      if(id==='hotel'){for(let y of [1.2,2.25,3.29]){rounded(g,cfg.w+.14,.085,.44,0,y,front+.25,'#b98e7d',.04);for(let x of [-.9,0,.9])rounded(g,.045,.25,.045,x,y+.16,front+.46,'#796c63',.013)}}
-      if(id==='townhall'){rounded(g,.78,.82,.77,0,cfg.h+.72,0,'#e4d4ba',.07);cap(g,1.04,.98,cfg.h+1.2,'#829f9a','steep');sphere(g,.21,0,cfg.h+.83,.42,'#f7ebc9');}
-      if(id==='club'){rounded(g,.5,.85,.4,0,cfg.h+.58,0,'#dbbbab',.2);cylinder(g,.22,.22,.64,1.52,.54,1.35,'#a85e5c',9)}
-      if(office){for(let f=0;f<faces;f++)rounded(g,.6,.54,.04,0,.87+f*1.04,front+.08,'#a1c5c8',.045,false);if(id==='office_west')rounded(g,1.35,.29,1.03,0,roofY+.24,-.1,'#c0d5c5',.08)}
-      if(home){for(let f=0;f<faces;f++)if(f>0){rounded(g,cfg.w*.87,.09,.45,0,.62+f*1.06,front+.25,'#b69579',.04);for(let x of [-.69,.07,.68])sphere(g,.14,x,.7+f*1.06,front+.35,'#76a47b',8)}if(id==='residence_coast')rounded(g,.84,.78,.68,-1.12,.55,.18,'#a8c7bd',.09)}
-      for(let xx of [-cfg.w*.45,cfg.w*.48]){sphere(g,.27,xx,.27,front+.4,'#628e70',9);sphere(g,.14,xx+.08,.49,front+.35,'#a4b98d',8)}
-    }
-
-    function addHome(d){let [x,z]=spot(...d.home),g=new T.Group();g.position.set(x,.47,z);g.userData.pick=d.id;world.add(g);homes.set(d.id,g);
-      if(d.id==='bella'){
-        if(beachShadowTexture){
-          const shadow=new T.Mesh(new T.PlaneGeometry(2.6,1.65),new T.MeshBasicMaterial({map:beachShadowTexture,transparent:true,opacity:.25,depthWrite:false}));
-          shadow.rotation.x=-Math.PI/2;shadow.position.set(.08,.065,.1);g.add(shadow);
-        }
-        siteFigure(g,'bella_home',3.0);
-        g.userData.upgradeSignature='';
-        return;
-      }
-      if(d.id==='citera'){
-        if(beachShadowTexture){
-          let shadow=new T.Mesh(new T.PlaneGeometry(2.9,1.6),new T.MeshBasicMaterial({map:beachShadowTexture,transparent:true,opacity:.28,depthWrite:false}));
-          shadow.rotation.x=-Math.PI/2;shadow.position.set(.12,.04,.25);g.add(shadow);
-        }
-        bookshopFigure(g);
-        let warm=new T.PointLight('#ffd29c',.54,3,2);warm.position.set(0,1.32,1.15);g.add(warm);
-        return;
-      }
-      let colors={kent:['#c8bdb2','#8e716d'],mia:['#e8eee7','#8a9fac'],lev:['#eee1c9','#948275'],citera:['#e3d5da','#ae899c'],ryzhiy:['#f2d5b8','#c98b6b'],bella:['#f6e2d5','#e7a0b2']}[d.id];
-      let w=d.id==='lev'?2.15:1.9,height=d.id==='mia'?1.45:1.52;rounded(g,w+.15,.15,1.9,0,.08,0,'#b9a78d',.06);
-      rounded(g,w,height,1.75,0,.2+height/2,0,colors[0],.13);
-      cap(g,w+.36,2.02,height+.53,colors[1],d.id==='mia'||d.id==='bella'||d.id==='ryzhiy'?'steep':d.id==='lev'?'flat':'hip');
-      window3(g,.47,.96,.92,.34,.44);rounded(g,.5,.78,.07,-.44,.62,.92,'#866c61',.055);
-      if(d.id==='kent'){for(let i=0;i<3;i++)rounded(g,.04,.5,.04,-1.36+i*.27,.36,.87,'#937d69',.013);cylinder(g,.13,.15,.54,1.12,.28,1.08,'#6d6e6d',9)}
-      if(d.id==='mia'){for(let i=0;i<5;i++)sphere(g,.045,-.67+i*.32,2.1+(i%2)*.08,-.42,'#ffdda0',7);sphere(g,.16,0,2.19,0,'#d9e7e5')}
-      if(d.id==='lev'){rounded(g,1.14,.12,.55,0,1.38,1.08,'#d8be9c',.06);for(let x of [-.51,.51])cylinder(g,.045,.05,1.02,x,.83,1.25,'#ad927a',8)}
-      if(d.id==='citera'){rounded(g,.35,.38,.2,1.17,.36,.81,'#be827e',.04);rounded(g,.1,.8,.09,-.2,2.02,0,'#ded3d2',.03)}
-      if(d.id==='ryzhiy'){rounded(g,.27,.7,.31,-.62,2.1,-.38,'#ba8065',.06);rounded(g,1.1,.12,.57,-.34,1.38,1.11,'#dba27e',.06)}
-      if(d.id==='bella'){sphere(g,.22,.47,1.61,1.05,'#f5afb9');sphere(g,.12,.68,1.74,1.03,'#f7c4c5');rounded(g,.67,.43,.34,.62,.46,1.03,'#eac5c4',.1)}
-      for(let q of [-1,1])sphere(g,.23,q*1.01,.28,.88,'#83a882',8);
-      g.userData.upgradeSignature='';
-    }
-    function updateHomes(){for(let d of defs){let g=homes.get(d.id),c=cat(d.id),sign=['bed','bowl','toy'].map(k=>c.upgrades[k]).join(',');if(g.userData.upgradeSignature===sign)continue;
-      if(g.userData.upgrades){g.remove(g.userData.upgrades);g.userData.upgrades.traverse(o=>{if(o.geometry)o.geometry.dispose()})}
-      let extras=new T.Group();g.add(extras);g.userData.upgrades=extras;g.userData.upgradeSignature=sign;
-      if(c.upgrades.bed)sphere(extras,.13,1.13,.4,-.6,'#ffe3b1');
-      if(c.upgrades.bowl)cylinder(extras,.18,.18,.08,-.9,.15,1.4,'#f2c49b',12);
-      if(c.upgrades.toy)sphere(extras,.15,.97,.26,1.41,'#d99daf');
-    }}
-    function makeCafe(){let [x,z]=spot(...cafeSite.home),g=new T.Group();g.position.set(x,.47,z);g.userData.pick='cafe';world.add(g);
-      let c=city.coffee;cylinder(g,1.62,1.64,.17,0,.13,0,'#b88c69',18);
-      if(c.built){cylinder(g,.89,.9,1.07,0,.77,0,'#cf9d79',18);for(let i=0;i<11;i++){let a=i*Math.PI*2/11;rounded(g,.045,.77,.05,Math.cos(a)*.88,.87,Math.sin(a)*.88,'#e2b38d',.016)}
-        cylinder(g,1.1,1.07,.15,0,1.41,0,'#e2b088',18);
-        let roofColor={coral:'#c78576',mint:'#81a59a',blue:'#839db5'}[c.style]||'#c78576';let canopy=new T.Mesh(new T.ConeGeometry(1.55,.88,20),material(roofColor));canopy.position.y=1.95;canopy.castShadow=true;g.add(canopy);
-        for(let i=0;i<9;i++){let a=i*Math.PI*2/9;let bulb=sphere(g,.047,Math.cos(a)*1.31,1.5,Math.sin(a)*1.31,'#ffdfa2',8);bulb.castShadow=false}
-        plaque(g,'КОФЕ',.96,.94,'#795b53');for(let bx of [-1.15,1.15]){cylinder(g,.15,.17,.55,bx,.4,1.05,'#ad8066');cylinder(g,.22,.22,.06,bx,.69,1.05,'#d9b18b')}
-      }else{for(let i=0;i<4;i++){let a=i*Math.PI/2+.8;let px=Math.cos(a)*1.25,pz=Math.sin(a)*1.25;cylinder(g,.055,.065,.78,px,.51,pz,'#8c705a',8)}
-        rounded(g,1.4,.19,.66,0,.49,0,'#d9b893',.06);cylinder(g,.4,.42,.28,-.33,.29,.7,'#9d765c');rounded(g,.49,.6,.09,.67,.7,-.28,'#d7c5aa',.05);plaque(g,'☕',.65,.77,'#947761')}
-      coffeeMesh=g;coffeeState=[c.built,c.style].join('/');
-    }
-    function updateCafe(){let sign=[city.coffee.built,city.coffee.style].join('/');if(sign!==coffeeState){if(coffeeMesh){world.remove(coffeeMesh);coffeeMesh.traverse(o=>{if(o.geometry)o.geometry.dispose()})}makeCafe();needsRender=true}}
-    let catShadowTexture=null;
-    function addCat(d){
-      let g=new T.Group();g.userData.pick=d.id;world.add(g);
-      const art=CAT_ART[d.id],height={kent:1.95,mia:1.95,lev:1.95,citera:1.9,ryzhiy:1.85,bella:2.1}[d.id];
-      let texture=new T.TextureLoader().load(art.src,()=>{needsRender=true});
-      texture.colorSpace=T.SRGBColorSpace;
-      let figure=new T.Sprite(new T.SpriteMaterial({map:texture,transparent:true,alphaTest:.035,depthWrite:false,toneMapped:false}));
-      figure.center.set(.5,0);figure.position.y=.08;
-      // Compensate for the terrain's horizontal scale to preserve the artwork's proportions.
-      figure.scale.set(height*art.aspect/world.scale.x,height,1);g.add(figure);g.userData.figure=figure;
-      if(!catShadowTexture){
-        let c=document.createElement('canvas');c.width=c.height=64;let q=c.getContext('2d');
-        let gradient=q.createRadialGradient(32,32,3,32,32,31);
-        gradient.addColorStop(0,'rgba(36,57,48,.3)');gradient.addColorStop(1,'rgba(36,57,48,0)');
-        q.fillStyle=gradient;q.fillRect(0,0,64,64);catShadowTexture=new T.CanvasTexture(c);
-      }
-      let shadow=new T.Mesh(new T.PlaneGeometry(.95,.68),new T.MeshBasicMaterial({map:catShadowTexture,transparent:true,depthWrite:false}));
-      shadow.rotation.x=-Math.PI/2;shadow.position.y=.055;g.add(shadow);
-      let ring=new T.Mesh(new T.RingGeometry(.39,.45,32),new T.MeshBasicMaterial({color:'#ffedbd',side:T.DoubleSide,transparent:true,opacity:.9,depthWrite:false}));
-      ring.rotation.x=-Math.PI/2;ring.position.y=.065;g.add(ring);g.userData.ring=ring;catMeshes.set(d.id,g);
-      let tag=document.createElement('div');tag.className='catLabel';tag.textContent=d.name;
-      document.getElementById('catLabels').append(tag);catLabels.set(d.id,tag);
-    }
-    function updateLabels(){
-      if(!camera||!world)return;
-      let w=innerWidth,h=innerHeight,entries=[],occupied=[];
-      for(let c of city.cats){
-        let tag=catLabels.get(c.id),[x,z]=spot(c.x,c.y);
-        let p=new T.Vector3(x*world.scale.x,2.76,z*world.scale.z).project(camera);
-        let px=(p.x+1)*w/2,py=(1-p.y)*h/2;
-        let visible=p.z>-1&&p.z<1&&px>20&&px<w-20&&py>118&&py<h*.69;
-        tag.style.display=visible?'block':'none';
-        if(visible)entries.push({id:c.id,tag,px,py});
-      }
-      entries.sort((a,b)=>(b.id===selected)-(a.id===selected)||a.py-b.py);
-      for(let e of entries){
-        let width=e.tag.offsetWidth||60,height=e.tag.offsetHeight||26,placed=false;
-        for(let [dx,dy] of [[0,0],[0,-34],[0,-68],[-65,-16],[65,-16],[-65,-50],[65,-50],[0,-102]]){
-          let x=e.px+dx,y=e.py+dy,box={left:x-width/2-3,right:x+width/2+3,top:y-height-3,bottom:y+3};
-          if(box.left<6||box.right>w-6||box.top<114||box.bottom>h*.7)continue;
-          if(occupied.some(o=>box.left<o.right&&box.right>o.left&&box.top<o.bottom&&box.bottom>o.top))continue;
-          e.tag.style.left=x+'px';e.tag.style.top=y+'px';e.tag.classList.toggle('selected',selected===e.id);
-          occupied.push(box);placed=true;break;
-        }
-        if(!placed)e.tag.style.display='none';
-      }
-    }
-    function updateCats(){
-      for(let c of city.cats){
-        let g=catMeshes.get(c.id),[x,z]=spot(c.x,c.y);
-        let moving=Math.hypot(c.target[0]-c.x,c.target[1]-c.y)>.06&&!city.paused;
-        g.position.set(x,.48+(moving?Math.sin(time*8+c.x*3)*.018:0),z);
-        g.userData.figure.material.rotation=moving?Math.sin(time*8+c.x*3)*.018:0;
-        g.userData.ring.visible=selected===c.id;
-      }
-    }
-
-    function focusCity(x,y){if(!controls)return;let [wx,wz]=spot(x,y),delta=new T.Vector3(wx*world.scale.x-controls.target.x,0,wz*world.scale.z-controls.target.z);controls.target.add(delta);camera.position.add(delta);controls.update();needsRender=true}
-    function resize3D(){if(!renderer)return;let w=innerWidth,h=innerHeight;document.body.style.setProperty('--screen-w',w+'px');document.body.style.setProperty('--screen-h',h+'px');let size=27;camera.left=-size*w/h/2;camera.right=size*w/h/2;camera.top=size/2;camera.bottom=-size/2;camera.updateProjectionMatrix();renderer.setSize(w,h,false);needsRender=true}
-    function init3D(){sceneBase();for(let d of scenicSites)addBuilding(d);
-      for(let [x,z,height] of [[6.9,7.65,1.72],[10.62,7.9,1.7],[14.9,5.15,1.5]]){
-        let garden=new T.Group();garden.position.set(x,.48,z);world.add(garden);siteFigure(garden,'garden',height);
-      }
-      for(let d of defs){addHome(d);addCat(d)}makeCafe();updateHomes();updateCats();resize3D();
-      let touches=new Map(),blocked=false;canvas.addEventListener('pointerdown',e=>{touches.set(e.pointerId,{x:e.clientX,y:e.clientY,moved:false});if(touches.size>1)blocked=true});
-      canvas.addEventListener('pointermove',e=>{let p=touches.get(e.pointerId);if(p&&Math.hypot(e.clientX-p.x,e.clientY-p.y)>9)p.moved=true});
-      canvas.addEventListener('pointercancel',e=>{touches.delete(e.pointerId);if(!touches.size)blocked=false});
-      canvas.addEventListener('pointerup',e=>{let p=touches.get(e.pointerId);touches.delete(e.pointerId);if(!p||p.moved||blocked||touches.size){if(!touches.size)blocked=false;return}
-        let bounds=canvas.getBoundingClientRect();pointer.set(((e.clientX-bounds.left)/bounds.width)*2-1,-((e.clientY-bounds.top)/bounds.height)*2+1);raycaster.setFromCamera(pointer,camera);
-        let targets=[...catMeshes.values(),...homes.values(),...scenicSites.map(d=>world.children.find(o=>o.userData.pick===d.id)),coffeeMesh].filter(Boolean);
-        let hit=raycaster.intersectObjects(targets,true)[0];if(!hit)return;let node=hit.object;while(node&&!node.userData.pick)node=node.parent;if(!node)return;let id=node.userData.pick;
-        if(id==='citera'&&node===homes.get('citera')){showBookshop();needsRender=true;return;}
-        if(id==='cafe'||byId[id]){selected=id;renderUI();notice(id==='cafe'?'Кофейня выбрана.':byId[id].name+' выбран'+(['mia','citera','bella'].includes(id)?'а':'')+'.');needsRender=true}
-        else{let d=scenicSites.find(q=>q.id===id);if(d)notice(d.name+': пока это часть города. Жители и занятия уже доступны на карте.')}
-      });
-      renderReady=true;
-    }
-    let lastDraw=0,resizeTimer;
-    function frame(now){let dt=clamp((now-lastFrame)/1000,0,.1);lastFrame=now;if(waveTexture){waveTexture.offset.x=(now*.000007)%1;waveTexture.offset.y=(now*.000003)%1}if(tideFoam)tideFoam.position.z=.035*Math.sin(now*.0008);simulate(dt);controls.update();updateCafe();updateHomes();updateCats();
-      if(now-lastDraw>33||needsRender){renderer.render(scene,camera);updateLabels();needsRender=false;lastDraw=now}
-      requestAnimationFrame(frame);
-    }
-    async function start(){try{db=await openDB();let saved=await read(KEY);city=valid(saved)?sanitize(saved):initial();if(saved&&!valid(saved))notice('Сохранение повреждено или создано другой версией. Начат новый город.');else if(saved)offline();else notice('Коснись кота или дома. Коты заботятся о себе сами.');await write();}
-      catch(err){city=initial();notice('Хранилище Safari недоступно: игра работает, но сохранение может пропасть.')}
-      try{init3D();renderUI();requestAnimationFrame(frame)}
-      catch(err){notice('Не удалось открыть 3D: '+err.message+'. Можно вернуться к прежней версии карты.');document.querySelector('.hint').innerHTML='<a href="./legacy-2d.html" style="color:#fff">Открыть прежнюю 2D-версию</a>';}
+    let map=null;
+    function focusCity(x,y){map?.focus(x,y);}
+    function frame(now){const dt=clamp((now-lastFrame)/1000,0,.1);lastFrame=now;simulate(dt);map?.render(now);requestAnimationFrame(frame);}
+    async function preserveOldMap(saved){if(!saved||saved.version>=6||await read('before-map-2d-v1'))return;await new Promise((resolve,reject)=>{const tx=db.transaction('saves','readwrite');tx.objectStore('saves').put(saved,'before-map-2d-v1');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});}
+    async function start(){
+      try{db=await openDB();const saved=await read(KEY);await preserveOldMap(saved);city=valid(saved)?sanitize(saved):initial();if(saved&&!valid(saved))notice('Сохранение повреждено или создано другой версией. Начат новый город.');else if(saved){offline();if(saved.version<6)notice('Новый 2D-остров готов. Монеты, уровни и улучшения сохранены.');}else notice('Коснись кота или выбери жителя в панели.');await write();}
+      catch(err){city=city||initial();notice('Автосохранение недоступно. Экспортируй прогресс через ☰.');}
+      try{map=createMap({canvas,catArt:CAT_ART,getCity:()=>city,getSelected:()=>selected,onSelect:id=>{selected=id;renderUI();notice('Выбран житель: '+byId[id].name+'.');},onHome:id=>{selected=id;renderUI();if(id==='citera')showBookshop();else notice('Дом '+byId[id].name+'. Подробную локацию проработаем отдельно.');},onCafe:()=>{selected='cafe';renderUI();},onNotice:notice});renderUI();requestAnimationFrame(frame);}
+      catch(err){notice('Не удалось открыть карту: '+err.message);}
       setInterval(()=>{if(dirty)write().catch(()=>{})},15000);
-      document.addEventListener('visibilitychange',()=>{if(document.hidden&&dirty)write().catch(()=>{})});
+      document.addEventListener('visibilitychange',()=>{if(document.hidden&&dirty)write().catch(()=>{});lastFrame=performance.now();});
     }
-    window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(resize3D,250)});start();
-
+    start();
 })();
   </script>
 </body>
