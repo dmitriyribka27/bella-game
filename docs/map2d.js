@@ -105,9 +105,15 @@ export function advance(cat,dt){
 }
 
 export function createMap({canvas,catArt,getCity,getSelected,onSelect,onLocation,onNotice}){
-  const ctx=canvas.getContext('2d',{alpha:false});if(!ctx)throw Error('Canvas 2D недоступен');
+  // The island illustration is expensive to composite at Retina resolution.
+  // Keep it on a persistent canvas; the transparent foreground holds only cats.
+  const background=document.getElementById('mapBackground');
+  const mapCtx=background?.getContext('2d',{alpha:false});
+  const ctx=canvas.getContext('2d',{alpha:true});
+  if(!ctx||!mapCtx)throw Error('Canvas 2D недоступен');
   const camera={x:WIDTH/2,y:HEIGHT/2,scale:1,min:.1,max:1.15};
-  const images=new Map(),tiles=new Map(),details=new Map(),pointers=new Map();let width=0,height=0,dpr=1,overview=null,dirty=true,last=0,gesture=null,hitCats=[];
+  const images=new Map(),tiles=new Map(),details=new Map(),pointers=new Map();let width=0,height=0,dpr=1,catDpr=1,overview=null,dirty=true,sceneDirty=true,last=0,gesture=null,hitCats=[];
+  function invalidateScene(){sceneDirty=true;dirty=true;}
   const detailPatches=[
     // Kent's residence, Lev's cottage, and the former pink residential building
     // repurposed as the hospital. Later patches protect the restaurant facade.
@@ -159,33 +165,33 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onLocation
   function worldAt(x,y){const c=center();return [camera.x+(x-c[0])/camera.scale,camera.y+(y-c[1])/camera.scale];}
   function screenAt(x,y){const c=center();return [(x-camera.x)*camera.scale+c[0],(y-camera.y)*camera.scale+c[1]];}
   function clampCamera(){const r=region(),hw=width/(camera.scale*2),hh=(r.bottom-r.top)/(camera.scale*2);camera.x=Math.max(-hw*.1,Math.min(WIDTH+hw*.1,camera.x));camera.y=Math.max(-hh*.1,Math.min(HEIGHT+hh*.1,camera.y));}
-  function resize(){width=innerWidth;height=innerHeight;dpr=Math.min(devicePixelRatio||1,3);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);canvas.style.width=width+'px';canvas.style.height=height+'px';const r=region();camera.min=Math.min(width/WIDTH,(r.bottom-r.top)/HEIGHT)*.94;camera.scale=Math.max(camera.min,Math.min(camera.max,camera.scale));dirty=true;}
-  function fit(){resize();camera.x=WIDTH/2;camera.y=HEIGHT/2;camera.scale=camera.min;dirty=true;}
-  function zoom(factor,x=width/2,y=center()[1]){const anchor=worldAt(x,y);camera.scale=Math.max(camera.min,Math.min(camera.max,camera.scale*factor));const after=worldAt(x,y);camera.x+=anchor[0]-after[0];camera.y+=anchor[1]-after[1];clampCamera();dirty=true;}
-  function focus(x,y){camera.x=x/20.5*WIDTH;camera.y=y/15*HEIGHT;camera.scale=Math.max(camera.scale,Math.min(.55,camera.min*4.5));clampCamera();dirty=true;}
-  function tile(row,col){const key=row+'-'+col;let t=tiles.get(key);if(!t){t={image:null,loading:true,used:performance.now(),retryAt:0};tiles.set(key,t);const img=new Image();img.onload=()=>{t.image=img;t.loading=false;dirty=true;};img.onerror=()=>{t.loading=false;t.retryAt=performance.now()+15000;};img.src='./assets/island-v1/map-'+key+'.webp';}t.used=performance.now();return t;}
+  function resize(){width=innerWidth;height=innerHeight;dpr=Math.min(devicePixelRatio||1,3);catDpr=Math.min(devicePixelRatio||1,2);background.width=Math.round(width*dpr);background.height=Math.round(height*dpr);background.style.width=width+'px';background.style.height=height+'px';canvas.width=Math.round(width*catDpr);canvas.height=Math.round(height*catDpr);canvas.style.width=width+'px';canvas.style.height=height+'px';const r=region();camera.min=Math.min(width/WIDTH,(r.bottom-r.top)/HEIGHT)*.94;camera.scale=Math.max(camera.min,Math.min(camera.max,camera.scale));invalidateScene();}
+  function fit(){resize();camera.x=WIDTH/2;camera.y=HEIGHT/2;camera.scale=camera.min;invalidateScene();}
+  function zoom(factor,x=width/2,y=center()[1]){const anchor=worldAt(x,y);camera.scale=Math.max(camera.min,Math.min(camera.max,camera.scale*factor));const after=worldAt(x,y);camera.x+=anchor[0]-after[0];camera.y+=anchor[1]-after[1];clampCamera();invalidateScene();}
+  function focus(x,y){camera.x=x/20.5*WIDTH;camera.y=y/15*HEIGHT;camera.scale=Math.max(camera.scale,Math.min(.55,camera.min*4.5));clampCamera();invalidateScene();}
+  function tile(row,col){const key=row+'-'+col;let t=tiles.get(key);if(!t){t={image:null,loading:true,used:performance.now(),retryAt:0};tiles.set(key,t);const img=new Image();img.onload=()=>{t.image=img;t.loading=false;invalidateScene();};img.onerror=()=>{t.loading=false;t.retryAt=performance.now()+15000;};img.src='./assets/island-v1/map-'+key+'.webp';}t.used=performance.now();return t;}
   function drawMap(){
-    const sea=ctx.createRadialGradient(width/2,height*.43,0,width/2,height*.43,Math.max(width,height)*.82);
-    sea.addColorStop(0,'#0989aa');sea.addColorStop(1,'#07546f');ctx.fillStyle=sea;ctx.fillRect(0,0,width,height);
-    ctx.save();const c=center();ctx.translate(c[0],c[1]);ctx.scale(camera.scale,camera.scale);ctx.translate(-camera.x,-camera.y);
-    ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';if(overview)ctx.drawImage(overview,0,0,WIDTH,HEIGHT);
+    const sea=mapCtx.createRadialGradient(width/2,height*.43,0,width/2,height*.43,Math.max(width,height)*.82);
+    sea.addColorStop(0,'#0989aa');sea.addColorStop(1,'#07546f');mapCtx.fillStyle=sea;mapCtx.fillRect(0,0,width,height);
+    mapCtx.save();const c=center();mapCtx.translate(c[0],c[1]);mapCtx.scale(camera.scale,camera.scale);mapCtx.translate(-camera.x,-camera.y);
+    mapCtx.imageSmoothingEnabled=true;mapCtx.imageSmoothingQuality='high';if(overview)mapCtx.drawImage(overview,0,0,WIDTH,HEIGHT);
     const used=new Set();if(camera.scale*dpr>.41){const a=worldAt(0,0),b=worldAt(width,height);for(let row=0;row<3;row++)for(let col=0;col<3;col++){
       const x=col*1280,y=Math.floor(row*HEIGHT/3),h=Math.floor((row+1)*HEIGHT/3)-y;
       if(x+1280<a[0]||x>b[0]||y+h<a[1]||y>b[1])continue;
-      const key=row+'-'+col;used.add(key);let t=tiles.get(key);if(t&&!t.image&&!t.loading&&performance.now()>t.retryAt){tiles.delete(key);t=null;}t=t||tile(row,col);t.used=performance.now();if(t.image)ctx.drawImage(t.image,x,y,1280,h);
+      const key=row+'-'+col;used.add(key);let t=tiles.get(key);if(t&&!t.image&&!t.loading&&performance.now()>t.retryAt){tiles.delete(key);t=null;}t=t||tile(row,col);t.used=performance.now();if(t.image)mapCtx.drawImage(t.image,x,y,1280,h);
     }}
     for(const [key,t] of [...tiles].sort((a,b)=>a[1].used-b[1].used)){if(tiles.size<=6)break;if(!used.has(key)&&!t.loading){if(t.image)t.image.src='';tiles.delete(key);}}
     // Detail art has its own resolution and is loaded only when its quarter is in view.
     const density=camera.scale*dpr;
-    if(density>.7){const a=worldAt(0,0),b=worldAt(width,height);ctx.globalAlpha=Math.min(1,Math.max(0,(density-.7)/.45));
+    if(density>.7){const a=worldAt(0,0),b=worldAt(width,height);mapCtx.globalAlpha=Math.min(1,Math.max(0,(density-.7)/.45));
       for(const p of detailPatches){if(p.x+p.w<a[0]||p.x>b[0]||p.y+p.h<a[1]||p.y>b[1])continue;
         let state=details.get(p.name);
-        if(!state){state={image:null};details.set(p.name,state);const img=new Image();img.onload=()=>{state.image=img;dirty=true;};img.src='./assets/island-v1/'+(p.file||p.name+'-detail-v1.webp');}
-        if(state.image)ctx.drawImage(state.image,p.x,p.y,p.w,p.h);
+        if(!state){state={image:null};details.set(p.name,state);const img=new Image();img.onload=()=>{state.image=img;invalidateScene();};img.src='./assets/island-v1/'+(p.file||p.name+'-detail-v1.webp');}
+        if(state.image)mapCtx.drawImage(state.image,p.x,p.y,p.w,p.h);
       }
-      ctx.globalAlpha=1;
+      mapCtx.globalAlpha=1;
     }
-    ctx.restore();
+    mapCtx.restore();
   }
   function drawCats(now){
     hitCats=[];const city=getCity(),selected=getSelected(),r=region();for(const tag of labels.values())tag.style.display='none';
@@ -209,7 +215,7 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onLocation
   canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size===1)gesture={x:e.clientX,y:e.clientY,moved:false,multi:false};else if(gesture)gesture.multi=true;});
   canvas.addEventListener('pointermove',e=>{const previous=pointers.get(e.pointerId);if(!previous)return;const before=[...pointers.values()];pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});const after=[...pointers.values()];if(gesture&&Math.hypot(e.clientX-gesture.x,e.clientY-gesture.y)>7)gesture.moved=true;
     if(after.length===1){camera.x-=(e.clientX-previous.x)/camera.scale;camera.y-=(e.clientY-previous.y)/camera.scale;}else if(after.length===2){const a=[(before[0].x+before[1].x)/2,(before[0].y+before[1].y)/2],b=[(after[0].x+after[1].x)/2,(after[0].y+after[1].y)/2];const d0=Math.hypot(before[0].x-before[1].x,before[0].y-before[1].y),d1=Math.hypot(after[0].x-after[1].x,after[0].y-after[1].y);if(d0>5)zoom(d1/d0,a[0],a[1]);camera.x-=(b[0]-a[0])/camera.scale;camera.y-=(b[1]-a[1])/camera.scale;}
-    clampCamera();dirty=true;
+    clampCamera();invalidateScene();
   });
   const release=e=>{if(!pointers.has(e.pointerId))return;pointers.delete(e.pointerId);if(e.type==='pointerup'&&!pointers.size&&gesture&&!gesture.moved&&!gesture.multi)pick(e.clientX,e.clientY);if(!pointers.size)gesture=null;};
   for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,release);
@@ -225,8 +231,8 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onLocation
       g.addColorStop(0,edge===0?'#000':'#0000');g.addColorStop(1,edge===0?'#0000':'#000');
       s.fillStyle=g;if(axis==='x')s.fillRect(from,0,fade,h);else s.fillRect(0,from,w,fade);
     }
-    overview=soft;dirty=true;document.getElementById('mapLoading').hidden=true;
+    overview=soft;invalidateScene();document.getElementById('mapLoading').hidden=true;
   };overviewImage.onerror=()=>{document.getElementById('mapLoading').textContent='Карта не загрузилась. Обнови страницу при подключении к интернету.';onNotice('Не удалось загрузить карту. Прогресс сохранён.');};overviewImage.src='./assets/island-v1/overview.webp';
-  window.addEventListener('resize',resize);if(typeof ResizeObserver!=='undefined')new ResizeObserver(()=>{dirty=true;}).observe(sheet);fit();
-  return {focus,fit,render(now){if(document.hidden||getCity().paused&&!dirty)return;if(now-last<40&&!dirty)return;last=now;ctx.setTransform(dpr,0,0,dpr,0,0);drawMap();drawCats(now);dirty=false;},invalidate(){dirty=true;}};
+  window.addEventListener('resize',resize);if(typeof ResizeObserver!=='undefined')new ResizeObserver(invalidateScene).observe(sheet);fit();
+  return {focus,fit,render(now){if(document.hidden||getCity().paused&&!dirty)return;if(now-last<40&&!dirty)return;last=now;if(sceneDirty){mapCtx.setTransform(dpr,0,0,dpr,0,0);sceneDirty=false;drawMap();}ctx.setTransform(catDpr,0,0,catDpr,0,0);ctx.clearRect(0,0,width,height);drawCats(now);dirty=false;},invalidate(){dirty=true;}};
 }

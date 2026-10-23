@@ -11,7 +11,9 @@
     html { margin:0; width:100%; height:100%; overflow:hidden; overscroll-behavior:none; }
     body { margin:0; position:fixed; top:0; left:0; width:var(--screen-w,100vw); height:var(--screen-h,100dvh); overflow:hidden; overscroll-behavior:none; touch-action:none; }
     button { font:inherit; cursor:pointer; touch-action:manipulation; }
-    #world { position:absolute; inset:0; width:100%; height:100%; touch-action:none; background:#233c54; }
+    #mapBackground,#world { position:absolute; inset:0; width:100%; height:100%; }
+    #mapBackground { background:#233c54; pointer-events:none; }
+    #world { touch-action:none; }
     #catLabels{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
     .catLabel{position:absolute;transform:translate(-50%,-100%);padding:4px 9px;border-radius:14px;background:#fff9efdb;border:1px solid #fffdf3b8;box-shadow:0 3px 10px #2145474d;color:#29474a;font-family:ui-rounded,"Arial Rounded MT Bold",-apple-system,system-ui,sans-serif;font-size:12px;font-weight:650;letter-spacing:.01em;white-space:nowrap;text-shadow:0 1px #ffffffb8;backdrop-filter:blur(4px)}
     .catLabel.selected{background:#fff1d8ed;border-color:#f9dba7;color:#6a4c41}
@@ -71,10 +73,11 @@
   </style>
 </head>
 <body>
+  <canvas id="mapBackground" aria-hidden="true"></canvas>
   <canvas id="world" aria-label="Карта города Тихая бухта"></canvas>
   <div id="catLabels" aria-hidden="true"></div>
   <header class="top">
-    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.3.8 · 2D</small></div>
+    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.3.9 · 2D</small></div>
     <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Сохранения и помощь">☰</button></div>
   </header>
   <div class="hint">Коснись здания · двумя пальцами меняй масштаб</div>
@@ -86,7 +89,7 @@
   <script type="module">
 import {CAT_ART} from "./cats-art.js?v=1";
 import {BOOKSHOP_ART} from "./bookshop-art.js?v=2";
-import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,LOCATION_POINTS,LOCATIONS,NODES,advance,walkTarget} from "./map2d.js?v=12";
+import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,LOCATION_POINTS,LOCATIONS,NODES,advance,walkTarget} from "./map2d.js?v=13";
 (()=>{"use strict";
     const FORMAT=8, DB='quiet-bay-save', KEY='city';
     const cafeSite={id:'cafe',name:'Кофейня',home:[5,11.2],roof:'#c98165'};
