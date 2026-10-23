@@ -79,6 +79,15 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onHome,onC
     // Kent's residence, Lev's cottage, and the former pink residential building
     // repurposed as the hospital. Later patches protect the restaurant facade.
     {name:'kent-hospital-lev',x:1090,y:570,w:1120,h:780},
+    // Mia's wisteria-covered house and the nearby dome observatory. The full
+    // illustrated artwork is retained at 3x Retina resolution in six strips;
+    // straight whole-pixel boundaries avoid gaps on pinch zoom.
+    {name:'mia-observatory-hd-1',file:'mia-observatory-hd-1.webp',x:925,y:145,w:880,h:98},
+    {name:'mia-observatory-hd-2',file:'mia-observatory-hd-2.webp',x:925,y:243,w:880,h:99},
+    {name:'mia-observatory-hd-3',file:'mia-observatory-hd-3.webp',x:925,y:342,w:880,h:98},
+    {name:'mia-observatory-hd-4',file:'mia-observatory-hd-4.webp',x:925,y:440,w:880,h:98},
+    {name:'mia-observatory-hd-5',file:'mia-observatory-hd-5.webp',x:925,y:538,w:880,h:99},
+    {name:'mia-observatory-hd-6',file:'mia-observatory-hd-6.webp',x:925,y:637,w:880,h:98},
     {name:'restaurant',x:1080,y:960,w:580,h:460},
     {name:'bella',x:1030,y:1430,w:590,h:360},
     {name:'pond',x:1470,y:1315,w:450,h:350},
