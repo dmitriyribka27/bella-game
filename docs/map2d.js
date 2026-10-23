@@ -11,9 +11,8 @@ const points={
   kent:[.352,.355],kentCross:[.392,.379],office:[.443,.388],officeEast:[.490,.381],
   restaurant:[.363,.525],terrace:[.419,.523],pondNorth:[.469,.518],
   lowerCross:[.486,.479],lev:[.488,.440],midStairs:[.523,.401],
-  lowerSquare:[.484,.519],pondEast:[.498,.553],pondSouth:[.470,.609],
-  pondWest:[.406,.625],bookApproach:[.513,.566],citera:[.553,.588],
-  bellaNorth:[.356,.651],bella:[.333,.665],bellaGate:[.362,.686],
+  lowerSquare:[.484,.519],bookApproach:[.513,.566],citera:[.553,.588],
+  bella:[.333,.665],bellaGate:[.362,.686],
   promWest:[.418,.677],promMiddle:[.496,.635],promEast:[.616,.614],
   residence:[.695,.510],residenceFront:[.722,.513],
   post:[.672,.580],eastWalk:[.732,.555],east:[.754,.490],
@@ -31,13 +30,13 @@ const paths=[
   'market marketWalk marketStairs cafe ryzhiy squareEast square',
   'marketStairs eastStairs east eastWalk post promEast',
   'squareWest officeEast office kentCross kent',
-  'square squareSouth midStairs lev lowerCross lowerSquare pondEast pondSouth pondWest bellaNorth bella bellaGate',
+  'square squareSouth midStairs lev lowerCross lowerSquare',
   'lowerCross pondNorth terrace restaurant',
   'lowerSquare bookApproach citera',
   'citera promMiddle',
   'citera post eastWalk',
   'eastWalk residenceFront residence',
-  'bellaGate promWest promMiddle promEast',
+  'bella bellaGate promWest promMiddle promEast',
   'promWest lighthouseUpper lighthouseStairs lighthouse',
   'promEast promStairsEast marinaSide marina',
   'marina pier',
@@ -61,7 +60,7 @@ export function route(from,to){
   const ids=[end];while(ids[0]!==start){const p=prev[ids[0]];if(!p)throw Error('Disconnected island path');ids.unshift(p);}
   return ids.map(k=>[...NODES[k]]);
 }
-export function walkTarget(){const list=[...Object.values(BUILDING_POINTS),NODES.square,NODES.pondSouth,NODES.promMiddle,NODES.pier];return [...list[Math.floor(Math.random()*list.length)]];}
+export function walkTarget(){const list=[...Object.values(BUILDING_POINTS),NODES.square,NODES.promMiddle,NODES.pier];return [...list[Math.floor(Math.random()*list.length)]];}
 const routes=new WeakMap();
 export function advance(cat,dt){
   const key=cat.target.join(',');let r=routes.get(cat);
