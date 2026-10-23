@@ -78,7 +78,7 @@
     .bookGuestTrack[data-route="enter"]{animation:guestWalkIn 3.6s linear both;animation-delay:var(--route-delay,0ms);}
     .bookGuestTrack[data-route="counter"]{animation:guestToCounter 1.5s ease-in-out both;animation-delay:var(--route-delay,0ms);}
     .bookGuestTrack[data-route="counter"] .bookGuest,.bookGuestTrack[data-route="waiting"] .bookGuest,.bookGuestTrack[data-route="exit"] .bookGuest{left:57%;top:60%;}
-    .bookGuestTrack[data-route="exit"]{animation:guestWalkOut 2.5s ease-in both;}
+    .bookGuestTrack[data-route="exit"]{animation:guestWalkOut 2.5s ease-in both;animation-delay:var(--route-delay,0ms);}
     .bookGuestTrack[data-route="exit"] .bookGuest{pointer-events:none;}
     .bookScene[data-room="lounge"] .bookGuestLayer,.bookScene[data-room="bedroom"] .bookGuestLayer{display:none;}
     .bookScene[data-paused="true"] .bookGuestTrack{animation-play-state:paused;}
@@ -363,7 +363,7 @@ import {createBookVisitorMotion,syncBookVisitorMotion,focusBookVisitor,leaveBook
       syncBookVisitorMotion(bookMotion,vis.queue,now);
       const guestButtons=vis.queue.map(id=>{const v=BOOK_VISITOR_BY_ID[id],route=bookVisitorRoute(bookMotion,id,bookSelected,now),slot=bookMotion.slots.get(id);return `<div class="bookGuestTrack" data-slot="${slot}" data-route="${route.name}" style="--route-delay:${route.delay}ms"><button class="bookGuest" data-book-visitor="${id}" aria-label="Поговорить: ${v.name}">${bookGuestSprite(v)}<span>${v.name}</span></button></div>`;}).join('');
       const departure=activeBookDeparture(bookMotion,now);
-      const exitGuest=departure?`<div class="bookGuestTrack" data-route="exit" aria-hidden="true"><div class="bookGuest">${bookGuestSprite(BOOK_VISITOR_BY_ID[departure.id])}<span>${BOOK_VISITOR_BY_ID[departure.id].name}</span></div></div>`:'';
+      const exitGuest=departure?`<div class="bookGuestTrack" data-route="exit" style="--route-delay:-${Math.max(0,now-departure.at)}ms" aria-hidden="true"><div class="bookGuest">${bookGuestSprite(BOOK_VISITOR_BY_ID[departure.id])}<span>${BOOK_VISITOR_BY_ID[departure.id].name}</span></div></div>`:'';
       const roomTabs=[['all','Весь дом'],['bookshop','Лавка'],['lounge','Гостиная'],['bedroom','Спальня']].map(([id,label])=>`<button data-book-room="${id}" class="${bookRoom===id?'active':''}" aria-pressed="${bookRoom===id}">${label}</button>`).join('');
       let content='';
       if(bookTab==='supply'){
