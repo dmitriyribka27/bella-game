@@ -9,7 +9,7 @@ test('Mia home uses a compact high-detail illustration loaded on demand',()=>{
   assert.equal(art.toString('ascii',0,4),'RIFF');
   assert.equal(art.toString('ascii',8,12),'WEBP');
   assert.ok(art.byteLength>100_000&&art.byteLength<650_000);
-  assert.match(app,/function showMiaHome\(\)/);
+  assert.match(app,/function showMiaHome\(view='all'\)/);
   assert.match(app,/src="\.\/assets\/interiors\/mia-home-v1\.webp"/);
 });
 
@@ -22,8 +22,8 @@ test('Mia home opens from the map and the resident dashboard',()=>{
   assert.match(app,/dialog\.classList\.remove\([^\n]*'miaHomeDialog'[^\n]*\)/);
 });
 
-test('Mia home has four focus zones without changing saves or currency',()=>{
-  const start=app.indexOf('function showMiaHome(){');
+test('Mia home has four focus zones without directly changing saves or currency',()=>{
+  const start=app.indexOf("function showMiaHome(view='all'){");
   const end=app.indexOf('function showHomeStory(',start);
   assert.ok(start>=0&&end>start);
   const mia=app.slice(start,end);
@@ -32,7 +32,7 @@ test('Mia home has four focus zones without changing saves or currency',()=>{
   }
   assert.match(app,/data-mia-home-view="\$\{id\}"/);
   assert.match(app,/\['all','window','bedroom','treasures','terrace'\]\.includes\(view\)/);
-  assert.doesNotMatch(mia,/changed\(|unlockMemory\(|coins\s*[+\-]=|data-home-story/);
+  assert.doesNotMatch(mia,/changed\(|unlockMemory\(|coins\s*[+\-]=/);
   assert.match(app,/const FORMAT=13/);
   assert.match(app,/город Беллы · версия \d+\.\d+\.\d+ · 2D/);
 });

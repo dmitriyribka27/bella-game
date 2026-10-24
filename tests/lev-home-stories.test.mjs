@@ -17,7 +17,7 @@ test('Lev has three small replayable stories in distinct areas of his house',()=
     assert.ok(story.choices.every(choice=>choice.id&&choice.label&&choice.reaction));
     assert.match(app,new RegExp(`\\.levHomeHotspot\\[data-home-story="${story.id}"\\]`));
   }
-  assert.equal(HOME_STORIES.length,14);
+  assert.equal(HOME_STORIES.length,17);
   assert.match(app,/const hotSpots=LEV_HOME_STORIES\.map/);
   assert.match(app,/const scenes=LEV_HOME_STORIES\.map/);
 });
