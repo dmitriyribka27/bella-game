@@ -31,7 +31,7 @@ test('market scenery remains viewable without any quest actions',()=>{
   const market=app.slice(start,end);
   assert.doesNotMatch(market,/unlockMemory\(|changed\(|coins\s*[+\-]=|xp\s*[+\-]=|data-home-story/);
   assert.match(app,/const FORMAT=13/);
-  assert.match(app,/версия 0\.9\.11/);
+  assert.match(app,/город Беллы · версия \d+\.\d+\.\d+ · 2D/);
 });
 
 test('central market stall has touch-friendly buying and return actions',()=>{

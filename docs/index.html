@@ -55,6 +55,7 @@
     .dialog.postOfficeDialog { width:min(100%,660px); padding:14px; }
     .dialog.marketDialog { width:min(100%,660px); padding:14px; }
     .dialog.marketShopDialog { width:min(100%,520px); padding:16px; }
+    .dialog.greenhouseDialog { width:min(100%,660px); padding:14px; }
     .dialog.cafeOpeningDialog { width:min(100%,510px); padding:17px; }
     .dialog.homeStoryDialog,.dialog.familyAlbumDialog { width:min(100%,500px); padding:17px; }
     .cafeOpeningIntro { margin:5px 0 12px; color:#526b65; }
@@ -224,6 +225,16 @@
     .marketShopItem small { font-size:10px; font-weight:500; line-height:1.25; }
     .marketShopPrice { padding:3px 8px; margin-top:auto; border-radius:8px; background:#f5e1b8; font-size:12px; font-weight:800; }
     .marketShopResult { margin:10px 0; padding:12px; border:1px solid #bddbc2; border-radius:12px; background:#e7f1e2; color:#456e53; font-size:12px; line-height:1.5; }
+    .greenhouseScene { position:relative; width:100%; aspect-ratio:1586/992; margin:10px 0 9px; overflow:hidden; border-radius:17px; background:linear-gradient(145deg,#f3b891,#538e8a 65%,#3db9bf); }
+    .greenhouseCanvas { position:relative; width:100%; height:100%; transform-origin:center; transition:transform .35s ease; }
+    .greenhouseInterior { display:block; width:100%; height:100%; object-fit:contain; }
+    .greenhouseScene[data-view="tropical"] .greenhouseCanvas { transform:translate(20%,10%) scale(1.85); }
+    .greenhouseScene[data-view="flowers"] .greenhouseCanvas { transform:translate(-9%,19%) scale(1.85); }
+    .greenhouseScene[data-view="rest"] .greenhouseCanvas { transform:translate(-31%,-13%) scale(1.85); }
+    .greenhouseViews { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; margin:10px 0; }
+    .dialog .greenhouseViews button { width:auto; margin:0; padding:11px 6px; background:#e2eee5; font-size:12px; }
+    .dialog .greenhouseViews button.active { background:#d0e7c5; color:#3a6047; }
+    .greenhouseNote { padding:11px 12px; margin:10px 0; border-radius:12px; background:#e9f3e8; color:#476f59; font-size:12px; line-height:1.45; }
     .bookModeTabs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; padding:4px; border-radius:15px; background:#e6eae0; margin:11px 0; }
     .dialog .bookModeTabs button { margin:0; padding:12px 5px; font-size:12px; background:transparent; border-radius:12px; }
     .dialog .bookModeTabs button:first-of-type { background:transparent; }
@@ -255,7 +266,7 @@
     .memoryCard h3 { margin:0 0 6px; font-size:14px; }
     .memoryCard p { margin:0; font-size:12px; }
     .memoryCard small { display:block; margin-top:8px; font-size:10px; }
-    @media (prefers-reduced-motion:reduce) { .cafeCanvas,.ryzhiyHomeCanvas,.bellaHomeCanvas,.lighthouseCanvas,.boathouseCanvas,.postOfficeCanvas,.marketCanvas { transition:none; } .cafeGuestTrack{animation:none!important;} .cafeGuestTrack[data-route="enjoy"]{display:none;} }
+    @media (prefers-reduced-motion:reduce) { .cafeCanvas,.ryzhiyHomeCanvas,.bellaHomeCanvas,.lighthouseCanvas,.boathouseCanvas,.postOfficeCanvas,.marketCanvas,.greenhouseCanvas { transition:none; } .cafeGuestTrack{animation:none!important;} .cafeGuestTrack[data-route="enjoy"]{display:none;} }
     .dialog.location,.dialog.places { width:min(100%,420px); }
     .locationHead { display:flex;align-items:center;gap:13px;margin-bottom:13px; }
     .locationIcon { display:grid;place-items:center;flex:none;width:60px;height:60px;border-radius:17px;background:linear-gradient(145deg,#ffe7bb,#cfdfca);font-size:33px;box-shadow:inset 0 1px 0 #ffffffba; }
@@ -373,7 +384,7 @@
   <canvas id="world" aria-label="Карта города Тихая бухта"></canvas>
   <div id="catLabels" aria-hidden="true"></div>
   <header class="top">
-    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.9.11 · 2D</small></div>
+    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.9.12 · 2D</small></div>
     <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Сохранения и помощь">☰</button></div>
   </header>
   <div class="hint">Коснись здания · двумя пальцами меняй масштаб</div>
@@ -595,6 +606,12 @@ import {MARKET_SNACKS,buyMarketSnack} from "./market-snacks.js?v=1";
       const goods=MARKET_SNACKS.map(item=>`<button class="marketShopItem" data-market-buy="${item.id}" ${city.coins<item.price?'disabled':''}><span class="marketShopEmoji">${item.emoji}</span><strong>${item.name}</strong><small>${item.detail}</small><span class="marketShopPrice">${item.price} 🪙</span></button>`).join('');
       show(`<h2>🛍️ Любимый прилавок Беллы</h2><div class="marketShopHero"><span>🥐</span><div><strong>Вкусняшки с рынка</strong><small>Белла выбирает свои любимые продукты. На покупки можно потратить обычные монеты города.</small></div></div><p class="marketNote">В кошельке: 🪙 ${city.coins}. Здесь нет склада или заданий — только маленькие приятные покупки.</p><div class="marketShopGrid">${goods}</div>${message?`<div class="marketShopResult" role="status" aria-live="polite">${message}</div>`:''}<button data-market-shop-back>← Вернуться к центральному прилавку</button><button data-close>Вернуться в город</button>`);
       dialog.classList.add('marketShopDialog');
+    }
+    function showGreenhouse(){
+      const views=[['all','Вся оранжерея'],['tropical','Тропические растения'],['flowers','Орхидеи и цветы'],['rest','Садовая скамейка']]
+        .map(([id,label])=>`<button class="${id==='all'?'active':''}" data-greenhouse-view="${id}" aria-pressed="${id==='all'}">${label}</button>`).join('');
+      show(`<h2>🌿 Оранжерея у моря</h2><div class="greenhouseScene" id="greenhouseScene" data-view="all"><div class="greenhouseCanvas"><img class="greenhouseInterior" src="./assets/interiors/greenhouse-v1.webp" alt="Стеклянная оранжерея с бирюзовым металлическим каркасом: тропические растения, лимонные деревца, цветы, рассада и садовая скамейка; вокруг каменная терраса, фонари и море на закате" draggable="false" decoding="async"></div></div><div class="greenhouseViews" aria-label="Рассмотреть растения и уголки оранжереи">${views}</div><p class="greenhouseNote">🌺 Здесь пахнет зеленью и цветами. Можно рассмотреть растения, отдохнуть у садовой скамейки и полюбоваться морем — никаких заданий и наград.</p><button data-close>Вернуться в город</button>`);
+      dialog.classList.add('greenhouseDialog');
     }
     function showHomeStory(id,choiceId=null,justUnlocked=false){
       const story=HOME_STORY_BY_ID[id];if(!story)return;
@@ -848,6 +865,7 @@ import {MARKET_SNACKS,buyMarketSnack} from "./market-snacks.js?v=1";
         if(id==='marina')actions+='<button data-location-boathouse-enter>🚪 Войти в лодочный домик</button>';
         if(id==='post')actions+='<button data-location-post-office-enter>🚪 Войти на почту</button>';
         if(id==='market')actions+='<button data-location-market-enter>🧺 Рассмотреть рынок</button>';
+        if(id==='greenhouse')actions+='<button data-location-greenhouse-enter>🌿 Войти в оранжерею</button>';
         if(place.worker)actions+=`<button data-location-work="${id}">💼 Отправить ${nameAccusative[place.worker]} на работу</button>`;
         actions+=`<button data-location-visit="${id}">🚶 Отправить ${visitorName} сюда</button>`;
       }
@@ -873,8 +891,8 @@ import {MARKET_SNACKS,buyMarketSnack} from "./market-snacks.js?v=1";
     function renderUI(){if(!city)return;document.getElementById('money').textContent=`🪙 ${city.coins}`;document.getElementById('pause').textContent=city.paused?'▶':'Ⅱ';if(selected==='cafe'){renderCafe();return;}let c=cat(selected),d=byId[selected];let bella=c.id==='bella';details.innerHTML=`<div class="row"><div class="avatar">${d.symbol}</div><div><h1>${d.name} <span style="font-size:12px;font-weight:400">${bella?'':`· уровень ${c.level}`}</span></h1><p class="sub">${d.job} · ${activities[c.activity]}</p></div></div><div class="stats">${bella?'<span class="stat">Гуляет и навещает друзей</span>':`<span class="stat">🥣 ${Math.round(c.hunger)}%</span><span class="stat">💤 ${Math.round(c.energy)}%</span><span class="stat">♡ ${Math.round(c.mood)}%</span><span class="stat">✦ ${Math.floor(c.xp)}/${c.level*18} опыта</span>`}</div><div class="actions">${bella?'<button class="action primary" data-action="bella-home">🏡 Дом Беллы</button><button class="action" data-action="cafe">☕ Кофейня</button><button class="action" data-action="guide">Как играть</button><button class="action" data-action="focus">Показать на карте</button>':`<button class="action primary" data-action="work">Работать · +монеты</button><button class="action" data-action="rest">Отдыхать · +бодрость</button><button class="action" data-action="eat">Кормить · +сытость</button><button class="action" data-action="play">Играть · +настроение</button><button class="action" data-action="walk">Гулять</button>${c.id==='citera'?'<button class="action primary" data-action="bookshop">📚 Войти в книжную лавку</button>':''}${c.id==='ryzhiy'?'<button class="action primary" data-action="ryzhiy-home">🏡 Войти в дом Рыжего</button>':''}<button class="action" data-action="focus">Показать на карте</button><button class="action" data-upgrade="bed" ${c.upgrades.bed>=3?'disabled':''}>🛏 Кровать ${c.upgrades.bed}/3 · ${homeCost(c,'bed')} 🪙</button><button class="action" data-upgrade="bowl" ${c.upgrades.bowl>=3?'disabled':''}>🥣 Миска ${c.upgrades.bowl}/3 · ${homeCost(c,'bowl')} 🪙</button><button class="action" data-upgrade="toy" ${c.upgrades.toy>=3?'disabled':''}>🧶 Игрушки ${c.upgrades.toy}/3 · ${homeCost(c,'toy')} 🪙</button>`}</div>`;}
     details.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.cafe){coffeeAction(b.dataset.cafe);return;}if(b.dataset.action==='cafe'){selected='cafe';renderUI();notice('Помоги жителям открыть кофейню.');return;}if(b.dataset.action==='guide')showGuide();else if(b.dataset.action==='bookshop')showBookshop();else if(b.dataset.action==='ryzhiy-home')showRyzhiyHome();else if(b.dataset.action==='bella-home')showBellaHome();else if(b.dataset.action==='focus'){let c=cat(selected);focusCity(c.x,c.y);}else if(b.dataset.action)assign(cat(selected),b.dataset.action);else if(b.dataset.upgrade)improve(b.dataset.upgrade);});
     function cleanupCafeScene(){clearTimeout(cafeRefillTimer);clearTimeout(cafeDepartTimer);cafeDeparting=null;cafeSeen.clear();}
-    function close(){bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;bookMode='shop';bookRoom='bookshop';cleanupCafeScene();overlay.hidden=true;dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','lighthouseDialog','boathouseDialog','postOfficeDialog','marketDialog','marketShopDialog','homeStoryDialog','familyAlbumDialog');}
-    function show(html){if(dialog.classList.contains('cafeInteriorDialog'))cleanupCafeScene();dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','lighthouseDialog','boathouseDialog','postOfficeDialog','marketDialog','marketShopDialog','homeStoryDialog','familyAlbumDialog');dialog.innerHTML=html;overlay.hidden=false;}
+    function close(){bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;bookMode='shop';bookRoom='bookshop';cleanupCafeScene();overlay.hidden=true;dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','lighthouseDialog','boathouseDialog','postOfficeDialog','marketDialog','marketShopDialog','greenhouseDialog','homeStoryDialog','familyAlbumDialog');}
+    function show(html){if(dialog.classList.contains('cafeInteriorDialog'))cleanupCafeScene();dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','lighthouseDialog','boathouseDialog','postOfficeDialog','marketDialog','marketShopDialog','greenhouseDialog','homeStoryDialog','familyAlbumDialog');dialog.innerHTML=html;overlay.hidden=false;}
     function showGuide(){show(`<h2>Добро пожаловать в бухту</h2><p>Коснись кота, чтобы выбрать жителя. Коты сами работают, едят и отдыхают. Назначай занятия, помогай с настроением и улучшай их дома.</p><p>Коснись здания на карте, чтобы открыть его окно. Там можно отправить жителя к входу по дорожке, открыть существующие занятия или управление домом. Кнопка «Места» покажет все доступные локации. Обычные жилые дома без жителей не открываются.</p><p>Перетаскивай город одним пальцем, меняй масштаб двумя. Пауза останавливает жизнь котов; сохранения хранятся в Safari.</p><p>Кент работает в ратуше, Мия — в обсерватории, Лев лечит жителей в больнице. В лавке Цитеры гости входят через дверь, подходят к полкам, а при начале беседы идут к кассе. После покупки они уходят с книгой. На вкладке «Витрина» можно рассматривать обложки и проверять остатки. В «Закупках» пополняй склад: доставка займёт немного реального времени, даже если выйти из игры. Когда двое гостей заговорят у полок, присоединяйся к их небольшой истории. Кофейню Рыжего можно открыть через поручения.</p><p>В доме Рыжего нажимай на камин, кухню и кровать. В здании Цитеры выбери «Личные комнаты» и исследуй диван и книгу у кровати. В доме Беллы можно открыть три истории, касаясь шариков, стеллажа и кровати. Первый выбор сохраняет воспоминание в семейном альбоме. Альбом можно открыть через меню ☰; сценки можно повторять без штрафов. А в маяк, лодочный домик, на почту и рынок можно просто зайти и рассматривать декорации без заданий.</p><button data-close>Играть</button>`);}
     // Only the open interior mounts its image; none of these controls run in the map animation loop.
     details.addEventListener('click',e=>{
@@ -966,6 +984,19 @@ import {MARKET_SNACKS,buyMarketSnack} from "./market-snacks.js?v=1";
       if(button.hasAttribute('data-location-boathouse-enter')){e.stopImmediatePropagation();showBoathouse();return;}
       if(button.hasAttribute('data-location-post-office-enter')){e.stopImmediatePropagation();showPostOffice();return;}
       if(button.hasAttribute('data-location-market-enter')){e.stopImmediatePropagation();showMarket();return;}
+      if(button.hasAttribute('data-location-greenhouse-enter')){e.stopImmediatePropagation();showGreenhouse();return;}
+      if(button.dataset.greenhouseView!==undefined){
+        e.stopImmediatePropagation();
+        const view=button.dataset.greenhouseView,scene=document.getElementById('greenhouseScene');
+        if(!scene||!['all','tropical','flowers','rest'].includes(view))return;
+        scene.dataset.view=view;
+        for(const option of dialog.querySelectorAll('[data-greenhouse-view]')){
+          const active=option.dataset.greenhouseView===view;
+          option.classList.toggle('active',active);
+          option.setAttribute('aria-pressed',String(active));
+        }
+        return;
+      }
       if(button.hasAttribute('data-market-shop-open')){e.stopImmediatePropagation();showMarketShop();return;}
       if(button.hasAttribute('data-market-shop-back')){e.stopImmediatePropagation();showMarket('bakery');return;}
       if(button.dataset.marketBuy!==undefined){
