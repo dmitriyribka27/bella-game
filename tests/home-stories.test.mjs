@@ -45,7 +45,7 @@ test('version 12 Ryzhiy memories remain and exactly two Citera stories can join 
 });
 
 test('scene hotspots, album access, save migration and return navigation are wired',()=>{
-  assert.match(app,/import \{HOME_STORIES,HOME_STORY_BY_ID,RYZHIY_HOME_STORIES,CITERA_HOME_STORIES,newMemoryBook,sanitizeMemoryBook,unlockMemory\}/);
+  assert.match(app,/import \{HOME_STORIES,HOME_STORY_BY_ID,RYZHIY_HOME_STORIES,CITERA_HOME_STORIES,BELLA_HOME_STORIES,newMemoryBook,sanitizeMemoryBook,unlockMemory\}/);
   assert.match(app,/out\.memories=s\.version>=12\?sanitizeMemoryBook\(s\.memories\):newMemoryBook\(\)/);
   assert.match(app,/before-home-memories-v1/);
   assert.match(app,/data-home-story="\$\{story\.id\}"/);
