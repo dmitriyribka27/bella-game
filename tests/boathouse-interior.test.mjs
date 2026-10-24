@@ -27,10 +27,10 @@ test('marina location enters the boathouse with four selectable views and close 
 
 test('boathouse is visual-only and preserves existing save compatibility',()=>{
   const start=app.indexOf('function showBoathouse(){');
-  const end=app.indexOf('function showHomeStory(',start);
+  const end=app.indexOf('function showPostOffice(){',start);
   assert.ok(start>=0&&end>start);
   const boathouse=app.slice(start,end);
   assert.doesNotMatch(boathouse,/unlockMemory\(|changed\(|coins\s*[+\-]=|xp\s*[+\-]=|data-home-story/);
   assert.match(app,/const FORMAT=13/);
-  assert.match(app,/версия 0\.9\.8/);
+  assert.match(app,/город Беллы · версия \d+\.\d+\.\d+ · 2D/);
 });
