@@ -83,5 +83,5 @@ test('home-management UI uses a separate panel with all three sectors and old sa
   assert.doesNotMatch(app,/data-upgrade="(?:bed|bowl|toy)"/);
   assert.match(app,/upgrades:\{bed:0,bowl:0,toy:0\}/);
   assert.match(app,/const FORMAT=13/);
-  assert.match(app,/город Беллы · версия 0\.9\.22 · 2D/);
+  assert.match(app,/город Беллы · версия 0\.9\.23 · 2D/);
 });

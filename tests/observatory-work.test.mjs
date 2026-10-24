@@ -60,6 +60,6 @@ test('observatory integrates three entry buttons with existing save and no inter
   assert.match(app,/out\.observatory=sanitizeObservatoryState\(s\.observatory\)/);
   assert.match(app,/if\(result\.newlyFound\)changed\(\)/);
   assert.match(app,/const FORMAT=13/);
-  assert.match(app,/город Беллы · версия 0\.9\.22 · 2D/);
+  assert.match(app,/город Беллы · версия 0\.9\.23 · 2D/);
   assert.doesNotMatch(app,/observatory-v1\.webp|observatoryInterior/);
 });
