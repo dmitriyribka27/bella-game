@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Тихая бухта">
+  <rect width="512" height="512" rx="112" fill="#477e82"/>
+  <circle cx="364" cy="150" r="55" fill="#f7d6a4"/>
+  <path d="M0 296C80 248 157 256 232 298c85 50 166 54 280 5v209H0z" fill="#a6d7ca"/>
+  <path d="M0 362c102-61 180-45 270 3 86 44 157 34 242-1v148H0z" fill="#6bb5b5"/>
+  <path d="M179 205l-12-94 73 47 32-3 77-46-16 96c30 23 44 60 44 104 0 79-53 129-128 129s-129-50-129-129c0-45 24-84 59-104z" fill="#f9efe2" stroke="#385a5d" stroke-width="12" stroke-linejoin="round"/>
+  <ellipse cx="208" cy="293" rx="10" ry="16" fill="#405d5b"/>
+  <ellipse cx="292" cy="293" rx="10" ry="16" fill="#405d5b"/>
+  <path d="M239 324l12 10 12-10z" fill="#ca9a95"/>
+  <path d="M251 334v15m0 0q-19 14-33-1m33 1q18 14 33-1" fill="none" stroke="#405d5b" stroke-width="6" stroke-linecap="round"/>
+</svg>

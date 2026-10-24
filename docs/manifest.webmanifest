@@ -1,0 +1,14 @@
+{
+  "name": "Тихая бухта · город Беллы",
+  "short_name": "Тихая бухта",
+  "description": "Тёплый остров Беллы, Кента, Мии, Льва, Цитеры и Рыжего",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#b6d8d0",
+  "theme_color": "#2c5a60",
+  "lang": "ru",
+  "icons": [
+    {"src":"./icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}

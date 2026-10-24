@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#2c5a60">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Тихая бухта">
+  <link rel="manifest" href="./manifest.webmanifest">
   <title>Тихая бухта · город Беллы</title>
   <style>
     :root { color-scheme: light; font-family: ui-rounded, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:#273f40; background:#b6d8d0; }
@@ -575,6 +578,7 @@ import {OBSERVATORY_DISCOVERIES,OBSERVATORY_DIRECTIONS,OBSERVATORY_FOCUS,newObse
 import {HOME_UPGRADE_MAX_BONUS,HOME_UPGRADE_SECTORS,homeUpgradeBonus,homeUpgradeCost,homeRecoveryRate,purchaseHomeUpgrade} from "./home-upgrades.js?v=1";
 import {WORK_SHIFT_SECONDS,MIN_WORK_NEED,MANUAL_FEED_COST,HOSPITAL_COST,CAFE_OPENING_COST,CAFE_GUEST_INTERVAL_MS,CAFE_RECIPE_EARNINGS,canStartWork,workWage,buyManualFeed} from "./game-economy.js?v=1";
 import {newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditOfflineCoins} from "./game-time.js?v=1";
+import {chooseStoredSave,secondsSince,saveMarker} from "./save-health.js?v=1";
 import {catRoutinePeriod,chooseCatRoutine} from "./cat-routines.js?v=1";
 import {createGameAudio} from "./game-audio.js?v=3";
 import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForMinute,readLightingEnabled,saveLightingEnabled} from "./daylight.js?v=2";
@@ -653,6 +657,8 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
     const previewName=new URLSearchParams(location.search).get('lightPreview');
     const previewMinute=Object.prototype.hasOwnProperty.call(previewTimes,previewName)?previewTimes[previewName]:null;
     let lastFrame=performance.now(), lastClockRender=0, hiddenAt=null, saveTimer=0, dirty=false;
+    let saveQueue=Promise.resolve(),lastStoredMarker=null,lastWriteStamp=0,saveConflict=false,recoverySnapshot=null;
+    let offlineCacheStatus='Подготовка офлайн-копии ещё не проверена.';
     function initial(){const visitors=newBookVisitorState();return {version:FORMAT,coins:30,paused:false,savedAt:Date.now(),clock:newGameClock(),coffee:{built:false,plan:false,delivery:false,recipe:false,style:null,orders:0,service:newCafeServiceState()},books:{orders:0,nextAt:0,visitors,inventory:newBookInventory(visitors),scenes:[]},memories:newMemoryBook(),observatory:newObservatoryState(),cats:defs.map(d=>({id:d.id,x:d.home[0],y:d.home[1],target:[...d.home],activity:d.id==='bella'?'walk':'work',hunger:80,energy:80,mood:75,xp:0,level:1,phase:0,upgrades:{bed:0,bowl:0,toy:0}}))};}
     function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
     function valid(s){return s&&[1,2,3,4,5,6,7,8,9,10,11,12,13,FORMAT].includes(s.version)&&Number.isFinite(s.coins)&&s.coins>=0&&(s.version<5||s.books&&Number.isInteger(s.books.orders)&&Number.isFinite(s.books.nextAt))&&Array.isArray(s.cats)&&s.cats.length===defs.length&&defs.every(d=>{let c=s.cats.find(x=>x.id===d.id);return c&&[c.x,c.y,c.hunger,c.energy,c.mood,c.xp,c.level].every(Number.isFinite)&&c.upgrades&&['bed','bowl','toy'].every(k=>Number.isInteger(c.upgrades[k])&&c.upgrades[k]>=0&&c.upgrades[k]<=3);});}
@@ -681,9 +687,43 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
     }
     async function openDB(){return new Promise((resolve,reject)=>{let r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore('saves');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
     function read(key){return new Promise((resolve,reject)=>{let t=db.transaction('saves','readonly'),r=t.objectStore('saves').get(key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
-    function write(){if(!db||!city)return Promise.resolve();city.savedAt=Date.now();let snapshot=JSON.parse(JSON.stringify(city));dirty=false;return new Promise((resolve,reject)=>{let t=db.transaction('saves','readwrite'),s=t.objectStore('saves');s.get(KEY).onsuccess=e=>{if(e.target.result)s.put(e.target.result,'previous');s.put(snapshot,KEY);};t.oncomplete=resolve;t.onerror=()=>{dirty=true;reject(t.error);};});}
-    function changed(){dirty=true;map?.invalidate();renderUI();clearTimeout(saveTimer);saveTimer=setTimeout(()=>write().catch(()=>notice('Не удалось сохранить. Экспортируй копию через ☰.')),900);}
-    function changedCafe(){dirty=true;renderUI();clearTimeout(saveTimer);saveTimer=setTimeout(()=>write().catch(()=>notice('Не удалось сохранить заказ. Экспортируй копию через ☰.')),900);}
+    function saveWarning(){notice(saveConflict?'Сохранение изменено в другой вкладке. Экспортируй текущий город через ☰ и обнови игру после закрытия второй вкладки.':'Не удалось сохранить город. Экспортируй копию через ☰.');}
+    function write(){
+      if(!db||!city)return Promise.reject(Error('Хранилище недоступно'));
+      if(saveConflict)return Promise.reject(Error('SAVE_CONFLICT'));
+      const owner=city;
+      const savedAt=Math.max(Date.now(),lastWriteStamp+1);
+      lastWriteStamp=savedAt;
+      const snapshot=JSON.parse(JSON.stringify({...city,savedAt}));
+      dirty=false;
+      const operation=saveQueue.then(()=>new Promise((resolve,reject)=>{
+        let tx,conflict=false;
+        try{
+          tx=db.transaction('saves','readwrite');
+          const store=tx.objectStore('saves'),request=store.get(KEY);
+          request.onsuccess=()=>{
+            const existing=request.result;
+            if(valid(existing)&&saveMarker(existing)!==lastStoredMarker){conflict=true;saveConflict=true;tx.abort();return;}
+            // Never replace a healthy recovery with damaged or obsolete data.
+            const backup=recoverySnapshot&&valid(recoverySnapshot)?recoverySnapshot:valid(existing)?existing:snapshot;
+            store.put(backup,'previous');
+            store.put(snapshot,KEY);
+          };
+          tx.oncomplete=()=>{
+            lastStoredMarker=saveMarker(snapshot);
+            recoverySnapshot=null;
+            if(city===owner)city.savedAt=Math.max(city.savedAt,savedAt);
+            resolve(true);
+          };
+          tx.onabort=()=>reject(Error(conflict?'SAVE_CONFLICT':'SAVE_ABORTED'));
+          tx.onerror=()=>{}; // onabort reports the transaction's failure.
+        }catch(error){reject(error);}
+      }));
+      saveQueue=operation.catch(()=>{});
+      return operation.catch(error=>{dirty=true;throw error;});
+    }
+    function changed(){dirty=true;map?.invalidate();renderUI();clearTimeout(saveTimer);saveTimer=setTimeout(()=>write().catch(saveWarning),900);}
+    function changedCafe(){dirty=true;renderUI();clearTimeout(saveTimer);saveTimer=setTimeout(()=>write().catch(saveWarning),900);}
     function notice(t){msg.textContent=t;}
     function cat(id){return city.cats.find(c=>c.id===id);}
     function targetFor(c,a){let d=byId[c.id];if(a==='rest'||a==='eat')return [...d.home];if(a==='work')return [...d.work];if(a==='play')return [...NODES.square];return walkTarget();}
@@ -728,8 +768,8 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
         }
       }
     }
-    function offline(elapsedSeconds=(Date.now()-city.savedAt)/1000){
-      const gained=creditOfflineCoins(city,Math.max(0,elapsedSeconds));
+    function offline(elapsedSeconds=secondsSince(city.savedAt)){
+      const gained=creditOfflineCoins(city,elapsedSeconds);
       if(gained){gameAudio.coinGain();notice(`Пока тебя не было, жители принесли ${gained} 🪙. Максимум 12 монет за одно отсутствие.`);}
       return gained;
     }
@@ -756,7 +796,42 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       button.title=enabled?'Выключить музыку':'Включить музыку';
     }
     function showSettings(){
-      show(`<h2>Меню бухты</h2><button data-audio-toggle="music">${gameAudio.preferences.music?'🎵 Музыка · включена':'🔇 Музыка · выключена'}</button><button data-audio-toggle="effects">${gameAudio.preferences.effects?'✨ Кнопки и монеты · включены':'✨ Кнопки и монеты · выключены'}</button><button data-lighting-toggle>${lightingEnabled?'🌗 Смена дня и ночи · включена':'☀️ Смена дня и ночи · выключена'}</button><button data-open-album>📖 Семейный альбом · ${city.memories.length}/${HOME_STORIES.length}</button><button id="export">Экспортировать сохранение</button><button id="import">Импортировать файл</button><button data-close>Закрыть</button>`);
+      show(`<h2>Меню бухты</h2><button data-audio-toggle="music">${gameAudio.preferences.music?'🎵 Музыка · включена':'🔇 Музыка · выключена'}</button><button data-audio-toggle="effects">${gameAudio.preferences.effects?'✨ Кнопки и монеты · включены':'✨ Кнопки и монеты · выключены'}</button><button data-lighting-toggle>${lightingEnabled?'🌗 Смена дня и ночи · включена':'☀️ Смена дня и ночи · выключена'}</button><button data-open-album>📖 Семейный альбом · ${city.memories.length}/${HOME_STORIES.length}</button><button id="checkSave">🛡️ Проверить сохранение и офлайн</button><button id="export">Экспортировать сохранение</button><button id="import">Импортировать файл</button><button data-close>Закрыть</button>`);
+    }
+    async function showSaveHealth(){
+      let persisted=false;
+      try{await write();persisted=true;}catch{}
+      let primary=null,backup=null;
+      try{[primary,backup]=await Promise.all([read(KEY),read('previous')]);}catch{}
+      const state=chooseStoredSave(primary,backup,valid);
+      const current=sanitize(state.source||city),clock=gameClockDisplay(current.clock);
+      const matched=persisted&&state.primaryOk&&saveMarker(primary)===saveMarker(city);
+      const time=state.source&&Number.isFinite(state.source.savedAt)?new Date(state.source.savedAt).toLocaleString('ru-RU'):null;
+      show(`<h2>🛡️ Сохранение города</h2><p>${matched?'✅ Текущий прогресс записан и успешно прочитан.':state.source?'⚠️ Копия города найдена, но текущие изменения ещё не подтверждены.':'❌ Не удалось найти исправное сохранение.'}</p><p><strong>Основная запись:</strong> ${state.primaryOk?'✅ исправна':'⚠️ отсутствует или повреждена'}<br><strong>Резервная копия:</strong> ${state.backupOk?'✅ исправна':'пока нет'}${time?`<br><strong>Последняя запись:</strong> ${time}`:''}</p><p>В сохранении: 🪙 ${current.coins} · 🕰️ день ${clock.day} · 📖 ${current.memories.length} воспоминаний.</p><p id="offlineCacheStatus">${offlineCacheStatus}</p><button data-offline-retry>📥 Подготовить офлайн-копию</button><small>Данные хранятся в этом браузере. Перед очисткой Safari или сменой телефона скачай JSON-копию.</small><button id="export">Скачать сохранение в файл</button><button data-save-health-back>← В меню</button><button data-close>Вернуться в город</button>`);
+      requestOfflineStatus();
+    }
+    function requestOfflineStatus(){
+      if(!('serviceWorker' in navigator)){
+        offlineCacheStatus='⚠️ Этот браузер не поддерживает офлайн-копию.';
+        const label=document.getElementById('offlineCacheStatus');if(label)label.textContent=offlineCacheStatus;
+        return;
+      }
+      navigator.serviceWorker.getRegistration('./').then(registration=>{
+        if(registration?.active)registration.active.postMessage({type:'CACHE_STATUS'});
+      }).catch(()=>{});
+    }
+    function setupOfflineCaching(){
+      if(!('serviceWorker' in navigator))return;
+      navigator.serviceWorker.addEventListener('message',event=>{
+        const result=event.data;
+        if(result?.type!=='CACHE_STATUS')return;
+        offlineCacheStatus=result.complete?`✅ Офлайн-копия готова: ${result.done} из ${result.total} файлов.`:`📥 Подготовка офлайн-копии: ${result.done} из ${result.total} файлов. Оставь игру открытой с интернетом.`;
+        const label=document.getElementById('offlineCacheStatus');if(label)label.textContent=offlineCacheStatus;
+      });
+      navigator.serviceWorker.register('./sw.js').then(async registration=>{
+        await navigator.serviceWorker.ready;
+        (registration.active||navigator.serviceWorker.controller)?.postMessage({type:'CACHE_ALL'});
+      }).catch(()=>{offlineCacheStatus='⚠️ Офлайн-копию не удалось подготовить. Сохранения города от этого не удаляются.';});
     }
     function cafeReady(){let c=city.coffee;return c.plan&&c.delivery&&c.recipe&&c.style;}
     function renderCafe(){
@@ -1683,7 +1758,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       if(button.hasAttribute('data-book-back')){e.stopImmediatePropagation();bookSelected=null;bookSceneSelected=null;showBookshop();return;}
       if(button.hasAttribute('data-book-refresh')){e.stopImmediatePropagation();showBookshop();return;}
     },true);
-    dialog.onclick=async e=>{let t=e.target;if(t.dataset.bookRoom){const room=t.dataset.bookRoom;document.getElementById('bookScene').dataset.room=room;for(const button of dialog.querySelectorAll('[data-book-room]')){const active=button.dataset.bookRoom===room;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));}return;}if(t.dataset.book!==undefined){bookAction(Number(t.dataset.book));return;}if(t.hasAttribute('data-book-refresh')){showBookshop();return;}let id=t.id;if(e.target.hasAttribute('data-close'))close();if(id==='import')document.getElementById('file').click();if(id==='export'){await write().catch(()=>{});let blob=new Blob([JSON.stringify(city,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='tihaya-buhta-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);close();notice('Копия сохранения загружена. Сохрани файл в «Файлы».');}if(id==='restore'||id==='restoreBeforeInventory'||id==='restoreBefore2D'||id==='restoreBeforePaths'){let prev=await read(id==='restoreBeforeInventory'?'before-book-inventory-v1':id==='restoreBefore2D'?'before-map-2d-v1':id==='restoreBeforePaths'?'before-paths-2d-v1':'previous').catch(()=>null);if(!prev||!valid(prev)){notice('Предыдущей исправной копии пока нет.');close();return;}if(confirm('Заменить текущий город предыдущей копией?')){city=sanitize(prev);city.savedAt=Date.now();changed();notice('Предыдущая копия восстановлена.');}close();}};
+    dialog.onclick=async e=>{let t=e.target;if(t.dataset.bookRoom){const room=t.dataset.bookRoom;document.getElementById('bookScene').dataset.room=room;for(const button of dialog.querySelectorAll('[data-book-room]')){const active=button.dataset.bookRoom===room;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));}return;}if(t.dataset.book!==undefined){bookAction(Number(t.dataset.book));return;}if(t.hasAttribute('data-book-refresh')){showBookshop();return;}let id=t.id;if(e.target.hasAttribute('data-close'))close();if(t.hasAttribute('data-save-health-back')){showSettings();return;}if(t.hasAttribute('data-offline-retry')){navigator.serviceWorker?.getRegistration('./').then(reg=>reg?.active?.postMessage({type:'CACHE_ALL'})).catch(()=>{});requestOfflineStatus();return;}if(id==='checkSave'){await showSaveHealth();return;}if(id==='import')document.getElementById('file').click();if(id==='export'){await write().catch(saveWarning);let blob=new Blob([JSON.stringify(city,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='tihaya-buhta-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);close();notice('Копия сохранения загружена. Сохрани файл в «Файлы».');}if(id==='restore'||id==='restoreBeforeInventory'||id==='restoreBefore2D'||id==='restoreBeforePaths'){let prev=await read(id==='restoreBeforeInventory'?'before-book-inventory-v1':id==='restoreBefore2D'?'before-map-2d-v1':id==='restoreBeforePaths'?'before-paths-2d-v1':'previous').catch(()=>null);if(!prev||!valid(prev)){notice('Предыдущей исправной копии пока нет.');close();return;}if(confirm('Заменить текущий город предыдущей копией?')){city=sanitize(prev);city.savedAt=Date.now();changed();notice('Предыдущая копия восстановлена.');}close();}};
     document.getElementById('file').onchange=async e=>{let f=e.target.files[0];e.target.value='';if(!f)return;if(f.size>200000){notice('Файл слишком большой.');close();return;}try{let data=JSON.parse(await f.text());if(!valid(data))throw Error('Неверный формат или версия файла.');if(!confirm('Заменить текущий город содержимым этого файла?'))return;city=sanitize(data);city.savedAt=Date.now();changed();close();notice('Город восстановлен из файла.');}catch(err){close();notice(`Не удалось импортировать: ${err.message}`);}};
 
     let map=null;
@@ -1698,31 +1773,58 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
     }
     async function preserveOldMap(saved){if(!saved)return;for(const [limit,key] of [[6,'before-map-2d-v1'],[8,'before-paths-2d-v1'],[10,'before-book-inventory-v1'],[11,'before-book-shelves-v1'],[12,'before-home-memories-v1'],[13,'before-citera-home-v1']]){if(saved.version>=limit||await read(key))continue;await new Promise((resolve,reject)=>{const tx=db.transaction('saves','readwrite');tx.objectStore('saves').put(saved,key);tx.oncomplete=resolve;tx.onerror=reject;});}}
     async function start(){
-      try{db=await openDB();const saved=await read(KEY),previous=await read('previous');const restored=valid(previous)&&(!valid(saved)||previous.version>saved.version);const source=restored?previous:saved;await preserveOldMap(source);city=valid(source)?sanitize(source):initial();if(saved&&!valid(source))notice('Сохранение повреждено или создано другой версией. Начат новый город.');else if(source){offline();if(restored)notice('Восстановлен прогресс из более новой резервной копии. Закрой старые вкладки игры.');else if(source.version<FORMAT)notice('Появились игровые часы и новые цены. Прежние монеты, покупки, книги и воспоминания сохранены.');}else notice('Коснись кота или выбери жителя в панели.');const delivered=receiveBookShipments(city.books.inventory);if(delivered.length)notice(`📦 Получено поставок: ${delivered.length}. Книги ждут на полке.`);await write();}
+      try{
+        db=await openDB();
+        const saved=await read(KEY),previous=await read('previous');
+        const choice=chooseStoredSave(saved,previous,valid),source=choice.source;
+        lastStoredMarker=valid(saved)?saveMarker(saved):null;
+        lastWriteStamp=Math.max(0,Number.isFinite(saved?.savedAt)?saved.savedAt:0,Number.isFinite(previous?.savedAt)?previous.savedAt:0);
+        recoverySnapshot=choice.recovered?source:null;
+        await preserveOldMap(source);
+        city=source?sanitize(source):initial();
+        if(!source&&saved)notice('Сохранение повреждено или создано другой версией. Начат новый город.');
+        else if(source){
+          offline();
+          if(choice.recovered)notice('Прогресс восстановлен из исправной резервной копии.');
+          else if(source.version<FORMAT)notice('Данные обновлены. Прежние монеты, покупки, книги и воспоминания сохранены.');
+        }else notice('Коснись кота или выбери жителя в панели.');
+        const delivered=receiveBookShipments(city.books.inventory);
+        if(delivered.length)notice(`📦 Получено поставок: ${delivered.length}. Книги ждут на полке.`);
+        await write();
+      }
       catch(err){city=city||initial();notice('Автосохранение недоступно. Экспортируй прогресс через ☰.');}
       gameAudio.setPaused(city.paused);updateAudioUI();
       try{map=createMap({canvas,catArt:CAT_ART,getCity:()=>city,getSelected:()=>selected,onSelect:id=>{selected=id;renderUI();notice('Выбран житель: '+byId[id].name+'.');},onLocation:id=>showLocation(id),onNotice:notice});renderUI();requestAnimationFrame(frame);}
       catch(err){notice('Не удалось открыть карту: '+err.message);}
-      setInterval(()=>{if(dirty)write().catch(()=>{})},15000);
+      setupOfflineCaching();
+      setInterval(()=>{if(dirty&&!saveConflict)write().catch(saveWarning)},15000);
       setInterval(()=>{
         if(!city)return;
         if(city.books.inventory.shipments.length){const deliveries=receiveBookShipments(city.books.inventory);if(deliveries.length){changed();notice(`📦 Книжная лавка: прибыло ${deliveries.reduce((n,s)=>n+s.qty,0)} экз.`);if(!overlay.hidden&&dialog.classList.contains('bookshop')&&bookTab==='supply')showBookshop('📦 Заказ доставлен и книги появились на полке!');}}
         if(city.paused||overlay.hidden||!dialog.classList.contains('bookshop'))return;
         if(bringNextBookVisitor(city.books.visitors)){changed();if(bookTab==='visitors'&&!bookSelected)showBookshop('🐾 В лавку заглянул новый посетитель!');}
       },3000);
+      function suspendForBackground(){
+        if(hiddenAt!==null)return;
+        hiddenAt=Date.now();
+        clearTimeout(saveTimer);
+        write().catch(saveWarning);
+      }
+      function resumeFromBackground(){
+        if(hiddenAt===null)return;
+        const elapsed=secondsSince(hiddenAt);
+        hiddenAt=null;
+        offline(elapsed);
+        changed(); // Immediately commit the offline reward and its consumed time.
+        lastFrame=performance.now();
+      }
       document.addEventListener('visibilitychange',()=>{
         gameAudio.sync();
-        if(document.hidden){
-          hiddenAt=Date.now();
-          write().catch(()=>{});
-        }else if(hiddenAt!==null){
-          const elapsed=(Date.now()-hiddenAt)/1000;
-          hiddenAt=null;
-          offline(elapsed);
-          changed();
-        }
+        if(document.hidden)suspendForBackground();else resumeFromBackground();
         lastFrame=performance.now();
       });
+      window.addEventListener('pagehide',suspendForBackground);
+      window.addEventListener('pageshow',()=>{if(!document.hidden)resumeFromBackground();});
     }
     start();
 })();
