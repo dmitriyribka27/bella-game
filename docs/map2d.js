@@ -1,5 +1,27 @@
 // Drawn island v0.3: Canvas 2D with entrance-to-entrance footpaths.
 export const WIDTH=3840,HEIGHT=2560;
+// Warm night lights are anchored to the shared world coordinates, so they stay
+// in place whether the player sees the overview, a tile, or an HD detail patch.
+// [normalized x, normalized y, glow radius in world pixels, brightness, kind]
+const NIGHT_LIGHTS=[
+  [.333,.146,54,.85,'window'],  // observatory
+  [.373,.169,43,.75,'window'],[.391,.181,45,.8,'window'], // Mia
+  [.342,.313,47,.9,'window'],[.366,.325,43,.7,'window'], // Kent
+  [.422,.327,47,.85,'window'],[.449,.345,49,.78,'window'], // hospital
+  [.470,.419,51,.9,'window'],[.487,.432,43,.7,'window'], // Lev
+  [.557,.241,48,.8,'window'],[.584,.259,49,.85,'window'], // town hall
+  [.643,.315,46,.8,'window'],[.664,.330,44,.8,'window'], // Ryzhiy
+  [.693,.351,48,.8,'window'],[.717,.366,42,.75,'window'], // café
+  [.343,.448,51,.7,'window'],[.368,.472,43,.75,'window'], // restaurant
+  [.318,.634,54,.95,'window'],[.339,.646,43,.75,'window'], // Bella
+  [.552,.545,55,.85,'window'],[.576,.552,49,.7,'window'], // Citera
+  [.674,.545,53,.85,'window'],[.694,.556,43,.75,'window'], // post office
+  [.679,.720,55,.85,'window'],[.697,.736,45,.68,'window'], // boathouse
+  [.303,.462,65,.8,'lantern'],[.456,.519,62,.9,'lantern'],
+  [.496,.344,61,.85,'lantern'],[.642,.663,65,.9,'lantern'],
+  [.726,.434,62,.75,'lantern'],[.305,.701,58,.8,'lantern'],
+  [.295,.714,139,1,'beacon'] // lighthouse
+];
 const xy=p=>[p[0]*20.5,p[1]*15];
 const points={
   observatory:[.293,.181],mia:[.352,.211],miaStairs:[.405,.255],
@@ -110,9 +132,11 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onLocation
   const background=document.getElementById('mapBackground');
   const mapCtx=background?.getContext('2d',{alpha:false});
   const ctx=canvas.getContext('2d',{alpha:true});
+  const glowCanvas=document.getElementById('nightLights');
+  const glowCtx=glowCanvas?.getContext('2d',{alpha:true});
   if(!ctx||!mapCtx)throw Error('Canvas 2D недоступен');
   const camera={x:WIDTH/2,y:HEIGHT/2,scale:1,min:.1,max:1.15};
-  const images=new Map(),tiles=new Map(),details=new Map(),pointers=new Map();let width=0,height=0,dpr=1,catDpr=1,overview=null,dirty=true,sceneDirty=true,last=0,gesture=null,hitCats=[];
+  const images=new Map(),tiles=new Map(),details=new Map(),pointers=new Map();let width=0,height=0,dpr=1,catDpr=1,glowDpr=1,overview=null,dirty=true,sceneDirty=true,last=0,gesture=null,hitCats=[];
   function invalidateScene(){sceneDirty=true;dirty=true;}
   const detailPatches=[
     // Kent's residence, Lev's cottage, and the former pink residential building
@@ -166,7 +190,7 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onLocation
   function worldAt(x,y){const c=center();return [camera.x+(x-c[0])/camera.scale,camera.y+(y-c[1])/camera.scale];}
   function screenAt(x,y){const c=center();return [(x-camera.x)*camera.scale+c[0],(y-camera.y)*camera.scale+c[1]];}
   function clampCamera(){const r=region(),hw=width/(camera.scale*2),hh=(r.bottom-r.top)/(camera.scale*2);camera.x=Math.max(-hw*.1,Math.min(WIDTH+hw*.1,camera.x));camera.y=Math.max(-hh*.1,Math.min(HEIGHT+hh*.1,camera.y));}
-  function resize(){width=innerWidth;height=innerHeight;dpr=Math.min(devicePixelRatio||1,3);catDpr=Math.min(devicePixelRatio||1,2);background.width=Math.round(width*dpr);background.height=Math.round(height*dpr);background.style.width=width+'px';background.style.height=height+'px';canvas.width=Math.round(width*catDpr);canvas.height=Math.round(height*catDpr);canvas.style.width=width+'px';canvas.style.height=height+'px';const r=region();camera.min=Math.min(width/WIDTH,(r.bottom-r.top)/HEIGHT)*.94;camera.scale=Math.max(camera.min,Math.min(camera.max,camera.scale));invalidateScene();}
+  function resize(){width=innerWidth;height=innerHeight;dpr=Math.min(devicePixelRatio||1,3);catDpr=Math.min(devicePixelRatio||1,2);glowDpr=Math.min(devicePixelRatio||1,1.5);background.width=Math.round(width*dpr);background.height=Math.round(height*dpr);background.style.width=width+'px';background.style.height=height+'px';canvas.width=Math.round(width*catDpr);canvas.height=Math.round(height*catDpr);canvas.style.width=width+'px';canvas.style.height=height+'px';if(glowCanvas){glowCanvas.width=Math.round(width*glowDpr);glowCanvas.height=Math.round(height*glowDpr);glowCanvas.style.width=width+'px';glowCanvas.style.height=height+'px';}const r=region();camera.min=Math.min(width/WIDTH,(r.bottom-r.top)/HEIGHT)*.94;camera.scale=Math.max(camera.min,Math.min(camera.max,camera.scale));invalidateScene();}
   function fit(){resize();camera.x=WIDTH/2;camera.y=HEIGHT/2;camera.scale=camera.min;invalidateScene();}
   function zoom(factor,x=width/2,y=center()[1]){const anchor=worldAt(x,y);camera.scale=Math.max(camera.min,Math.min(camera.max,camera.scale*factor));const after=worldAt(x,y);camera.x+=anchor[0]-after[0];camera.y+=anchor[1]-after[1];clampCamera();invalidateScene();}
   function focus(x,y){camera.x=x/20.5*WIDTH;camera.y=y/15*HEIGHT;camera.scale=Math.max(camera.scale,Math.min(.55,camera.min*4.5));clampCamera();invalidateScene();}
@@ -193,6 +217,26 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onLocation
       mapCtx.globalAlpha=1;
     }
     mapCtx.restore();
+  }
+  function drawNightLights(){
+    if(!glowCtx)return;
+    glowCtx.setTransform(glowDpr,0,0,glowDpr,0,0);
+    glowCtx.clearRect(0,0,width,height);
+    const a=worldAt(0,0),b=worldAt(width,height),c=center();
+    glowCtx.save();
+    glowCtx.translate(c[0],c[1]);glowCtx.scale(camera.scale,camera.scale);glowCtx.translate(-camera.x,-camera.y);
+    for(const [u,v,r,brightness,kind] of NIGHT_LIGHTS){
+      const x=u*WIDTH,y=v*HEIGHT;
+      if(x+r<a[0]||x-r>b[0]||y+r<a[1]||y-r>b[1])continue;
+      const halo=glowCtx.createRadialGradient(x,y,0,x,y,r);
+      const centerAlpha=(kind==='beacon'?.94:.82)*brightness;
+      halo.addColorStop(0,`rgba(255,228,160,${centerAlpha})`);
+      halo.addColorStop(kind==='beacon'?.12:.18,`rgba(255,202,110,${(.52*brightness).toFixed(3)})`);
+      halo.addColorStop(1,'rgba(255,169,77,0)');
+      glowCtx.fillStyle=halo;
+      glowCtx.beginPath();glowCtx.arc(x,y,r,0,Math.PI*2);glowCtx.fill();
+    }
+    glowCtx.restore();
   }
   function drawCats(now){
     hitCats=[];const city=getCity(),selected=getSelected(),r=region();
@@ -237,5 +281,5 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onLocation
     overview=soft;invalidateScene();document.getElementById('mapLoading').hidden=true;
   };overviewImage.onerror=()=>{document.getElementById('mapLoading').textContent='Карта не загрузилась. Обнови страницу при подключении к интернету.';onNotice('Не удалось загрузить карту. Прогресс сохранён.');};overviewImage.src='./assets/island-v1/overview.webp';
   window.addEventListener('resize',resize);if(typeof ResizeObserver!=='undefined')new ResizeObserver(invalidateScene).observe(sheet);fit();
-  return {focus,fit,render(now){if(document.hidden||getCity().paused&&!dirty)return;if(now-last<40&&!dirty)return;last=now;if(sceneDirty){mapCtx.setTransform(dpr,0,0,dpr,0,0);sceneDirty=false;drawMap();}ctx.setTransform(catDpr,0,0,catDpr,0,0);ctx.clearRect(0,0,width,height);drawCats(now);dirty=false;},invalidate(){dirty=true;}};
+  return {focus,fit,render(now){if(document.hidden||getCity().paused&&!dirty)return;if(now-last<40&&!dirty)return;last=now;if(sceneDirty){mapCtx.setTransform(dpr,0,0,dpr,0,0);sceneDirty=false;drawMap();drawNightLights();}ctx.setTransform(catDpr,0,0,catDpr,0,0);ctx.clearRect(0,0,width,height);drawCats(now);dirty=false;},invalidate(){dirty=true;}};
 }

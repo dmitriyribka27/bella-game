@@ -15,10 +15,11 @@
     #mapBackground { background:#233c54; pointer-events:none; }
     #world { touch-action:none; }
     #timeTint { position:absolute; inset:0; z-index:1; pointer-events:none; background-color:transparent; transition:background-color 3s linear; }
-    #catLabels{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+    #nightLights { position:absolute; inset:0; z-index:2; width:100%; height:100%; pointer-events:none; opacity:0; transition:opacity 2s linear; }
+    #catLabels{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden}
     .catLabel{position:absolute;transform:translate(-50%,-100%);padding:4px 9px;border-radius:14px;background:#fff9efdb;border:1px solid #fffdf3b8;box-shadow:0 3px 10px #2145474d;color:#29474a;font-family:ui-rounded,"Arial Rounded MT Bold",-apple-system,system-ui,sans-serif;font-size:12px;font-weight:650;letter-spacing:.01em;white-space:nowrap;text-shadow:0 1px #ffffffb8;backdrop-filter:blur(4px)}
     .catLabel.selected{background:#fff1d8ed;border-color:#f9dba7;color:#6a4c41}
-    .top { position:absolute; z-index:2; top:0; left:0; right:0; padding:calc(env(safe-area-inset-top) + 10px) 14px 8px; display:flex; align-items:center; justify-content:space-between; gap:8px; pointer-events:none; }
+    .top { position:absolute; z-index:4; top:0; left:0; right:0; padding:calc(env(safe-area-inset-top) + 10px) 14px 8px; display:flex; align-items:center; justify-content:space-between; gap:8px; pointer-events:none; }
     .brand,.money,.icon { box-shadow:0 3px 18px #315b5a25; border:1px solid #fff9; background:#fff8ebed; }
     .brand { padding:7px 12px; border-radius:16px; min-width:0; }
     .brand strong { display:block; font-size:15px; white-space:nowrap; }
@@ -28,8 +29,8 @@
     .money { padding:10px; border-radius:14px; font-weight:800; white-space:nowrap; }
     .icon { width:43px; height:43px; border-radius:14px; border-color:#fff9; font-size:19px; }
     .icon.soundOff { opacity:.65; }
-    .hint { position:absolute; z-index:2; top:calc(env(safe-area-inset-top) + 75px); left:50%; transform:translateX(-50%); text-align:center; background:#193e40c8; color:white; border-radius:22px; padding:7px 12px; font-size:11px; white-space:nowrap; pointer-events:none; }
-    .sheet { position:absolute; z-index:3; bottom:0; left:0; right:0; height:min(31%,260px); overflow:auto; touch-action:pan-y; overscroll-behavior:contain; padding:11px 15px calc(env(safe-area-inset-bottom) + 12px); background:#fff9ed; border-radius:24px 24px 0 0; box-shadow:0 -8px 35px #22444532; }
+    .hint { position:absolute; z-index:4; top:calc(env(safe-area-inset-top) + 75px); left:50%; transform:translateX(-50%); text-align:center; background:#193e40c8; color:white; border-radius:22px; padding:7px 12px; font-size:11px; white-space:nowrap; pointer-events:none; }
+    .sheet { position:absolute; z-index:5; bottom:0; left:0; right:0; height:min(31%,260px); overflow:auto; touch-action:pan-y; overscroll-behavior:contain; padding:11px 15px calc(env(safe-area-inset-bottom) + 12px); background:#fff9ed; border-radius:24px 24px 0 0; box-shadow:0 -8px 35px #22444532; }
     .grab { width:36px; height:4px; border-radius:4px; background:#c7d7ce; margin:0 auto 8px; }
     .row { display:flex; gap:10px; align-items:center; }
     .avatar { width:43px; height:43px; flex:none; border-radius:50%; background:#d8ece4; display:grid; place-items:center; font-size:27px; }
@@ -42,7 +43,7 @@
     .action.primary { background:#f2bc86; }
     .action:disabled { opacity:.45; }
     #message { min-height:32px; margin:10px 0 0; color:#496665; font-size:12px; line-height:1.35; }
-    .overlay { position:absolute; inset:0; z-index:5; background:#173a3eb5; display:grid; place-items:center; padding:18px; }
+    .overlay { position:absolute; inset:0; z-index:7; background:#173a3eb5; display:grid; place-items:center; padding:18px; }
     .overlay[hidden] { display:none; }
     .dialog { width:min(100%,380px); max-height:85svh; overflow:auto; border-radius:23px; padding:20px; background:#fff9ed; box-shadow:0 16px 50px #102c2c66; }
     .dialog h2 { margin:0 0 8px; font-size:21px; }
@@ -522,9 +523,9 @@
     @keyframes bookSaleFloat{0%{opacity:0;transform:translate(-90px,62px) scale(.45) rotate(-24deg)}25%{opacity:1}68%{opacity:1;transform:translate(0,-13px) scale(1) rotate(6deg)}100%{opacity:0;transform:translate(13px,-44px) scale(.9) rotate(-4deg)}}
     @media (prefers-reduced-motion:reduce){.bookCanvas,.bookGuestTrack,.bookSaleFx{transition:none!important;animation:none!important;}.bookGuestTrack[data-route="exit"]{display:none;}}
     #file { display:none; }
-    .mapTools{position:absolute;z-index:2;right:12px;bottom:calc(min(31%,260px) + 14px);display:flex;gap:5px}
+    .mapTools{position:absolute;z-index:4;right:12px;bottom:calc(min(31%,260px) + 14px);display:flex;gap:5px}
     .mapTools button{border:1px solid #fff9;background:#fff8ebed;color:#29474a;border-radius:12px;padding:9px 12px;min-height:42px;font-weight:700;box-shadow:0 3px 12px #21454735}
-    #mapLoading{position:absolute;z-index:2;left:14px;right:14px;top:42%;padding:14px;border-radius:16px;background:#fff8ebed;text-align:center;font-size:13px}
+    #mapLoading{position:absolute;z-index:4;left:14px;right:14px;top:42%;padding:14px;border-radius:16px;background:#fff8ebed;text-align:center;font-size:13px}
     #mapLoading[hidden]{display:none}
     #residents{display:flex;gap:5px;overflow-x:auto;margin:0 0 9px;padding:2px 0;scrollbar-width:none}
     #residents button{border:0;border-radius:10px;padding:6px 9px;background:#e4eee5;color:#315357;white-space:nowrap;font-size:11px}
@@ -535,6 +536,7 @@
   <canvas id="mapBackground" aria-hidden="true"></canvas>
   <canvas id="world" aria-label="Карта города Тихая бухта"></canvas>
   <div id="timeTint" aria-hidden="true"></div>
+  <canvas id="nightLights" aria-hidden="true"></canvas>
   <div id="catLabels" aria-hidden="true"></div>
   <header class="top">
     <div class="brand"><strong>Тихая бухта</strong><small class="gameClock" id="gameClock" aria-label="Игровые часы">🕰️ 08:00 · день 1</small></div>
@@ -564,7 +566,7 @@ import {HOME_UPGRADE_MAX_BONUS,HOME_UPGRADE_SECTORS,homeUpgradeBonus,homeUpgrade
 import {WORK_SHIFT_SECONDS,MIN_WORK_NEED,MANUAL_FEED_COST,HOSPITAL_COST,CAFE_OPENING_COST,CAFE_GUEST_INTERVAL_MS,CAFE_RECIPE_EARNINGS,canStartWork,workWage,buyManualFeed} from "./game-economy.js?v=1";
 import {newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditOfflineCoins} from "./game-time.js?v=1";
 import {createGameAudio} from "./game-audio.js?v=3";
-import {lightingForClock,lightingForMinute,readLightingEnabled,saveLightingEnabled} from "./daylight.js?v=1";
+import {lightingForClock,lightingForMinute,nightGlowStrengthForMinute,readLightingEnabled,saveLightingEnabled} from "./daylight.js?v=2";
 (()=>{"use strict";
     const FORMAT=14, DB='quiet-bay-save', KEY='city';
     const cafeSite={id:'cafe',name:'Кофейня',home:[5,11.2],roof:'#c98165'};
@@ -730,6 +732,7 @@ import {lightingForClock,lightingForMinute,readLightingEnabled,saveLightingEnabl
       const light=previewMinute===null?lightingForClock(city.clock):lightingForMinute(previewMinute);
       tint.style.backgroundColor=lightingEnabled?light.color:'transparent';
       tint.dataset.phase=lightingEnabled?light.phase:'day';
+      document.getElementById('nightLights').style.opacity=lightingEnabled?nightGlowStrengthForMinute(light.minute).toFixed(3):'0';
     }
     function updateAudioUI(){
       const button=document.getElementById('soundToggle'),enabled=gameAudio.preferences.music;

@@ -37,6 +37,15 @@ export function lightingForMinute(minute){
 
 export function lightingForClock(clock){return lightingForMinute(minuteOfGameDay(clock));}
 
+// Street lamps and lit windows appear *only* during the night (22:00–06:00).
+// A short fade at either edge avoids sudden flashes when the game clock ticks.
+export function nightGlowStrengthForMinute(minute){
+  const time=((Number.isFinite(minute)?minute:GAME_START_MINUTE)%1440+1440)%1440;
+  if(time>=1320){const t=Math.min(1,(time-1320)/15);return t*t*(3-2*t);}
+  if(time<360){const t=Math.min(1,(360-time)/15);return t*t*(3-2*t);}
+  return 0;
+}
+
 export function readLightingEnabled(storage){
   try{return storage?.getItem(LIGHTING_STORAGE_KEY)!=='off';}catch{return true;}
 }

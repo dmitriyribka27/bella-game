@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {GAME_DAY_SECONDS} from '../docs/game-time.js';
-import {LIGHTING_STORAGE_KEY,minuteOfGameDay,lightingForMinute,lightingForClock,readLightingEnabled,saveLightingEnabled} from '../docs/daylight.js';
+import {LIGHTING_STORAGE_KEY,minuteOfGameDay,lightingForMinute,lightingForClock,nightGlowStrengthForMinute,readLightingEnabled,saveLightingEnabled} from '../docs/daylight.js';
 
 const clockAt=(hour,minute=0)=>({activeSeconds:(((hour*60+minute-480+1440)%1440)/1440)*GAME_DAY_SECONDS});
 
@@ -28,6 +28,19 @@ test('day stays unfiltered; sunset, night, and sunrise blend smoothly',()=>{
   assert.ok(Math.abs(before-after)<.01,'no sudden color jump at sunset');
 });
 
+test('warm window light is strictly nocturnal and fades gently at both edges',()=>{
+  for(const hour of [6,7,12,18,21,21.99])assert.equal(nightGlowStrengthForMinute(hour*60),0);
+  assert.equal(nightGlowStrengthForMinute(22*60),0);
+  assert.ok(nightGlowStrengthForMinute(22*60+8)>.4);
+  assert.equal(nightGlowStrengthForMinute(23*60),1);
+  assert.equal(nightGlowStrengthForMinute(0),1);
+  assert.equal(nightGlowStrengthForMinute(5*60+30),1);
+  assert.ok(nightGlowStrengthForMinute(5*60+55)<.3);
+  assert.equal(nightGlowStrengthForMinute(6*60),0);
+  assert.equal(nightGlowStrengthForMinute(-1),1,'wrapping midnight remains continuous');
+  assert.equal(nightGlowStrengthForMinute(Number.NaN),0);
+});
+
 test('lighting preference stays independent from game saves',()=>{
   const memory=new Map();
   const storage={getItem:key=>memory.get(key),setItem:(key,value)=>memory.set(key,value)};
@@ -42,9 +55,11 @@ test('lighting preference stays independent from game saves',()=>{
 
 test('lightweight tint sits above image layers and below game UI',()=>{
   const html=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
-  const tint=html.indexOf('<div id="timeTint"'),map=html.indexOf('<canvas id="world"'),tags=html.indexOf('<div id="catLabels"');
-  assert.ok(map<tint&&tint<tags);
+  const tint=html.indexOf('<div id="timeTint"'),map=html.indexOf('<canvas id="world"'),glows=html.indexOf('<canvas id="nightLights"'),tags=html.indexOf('<div id="catLabels"');
+  assert.ok(map<tint&&tint<glows&&glows<tags);
   assert.match(html,/#timeTint\s*\{[^}]*pointer-events:none;/);
+  assert.match(html,/#nightLights\s*\{[^}]*pointer-events:none;/);
+  assert.match(html,/nightLights'\)\.style\.opacity=lightingEnabled\?nightGlowStrengthForMinute\(light\.minute\)/);
   assert.match(html,/function updateGameClock\(\)\s*\{[\s\S]*?updateLighting\(\);/);
   assert.match(html,/data-lighting-toggle/);
   assert.match(html,/lightPreview/);
