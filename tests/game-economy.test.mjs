@@ -5,6 +5,7 @@ import {WORK_SHIFT_SECONDS,MIN_WORK_NEED,WORK_WAGES,MANUAL_FEED_COST,HOSPITAL_CO
 import {CAFE_RECIPES} from '../docs/cafe-visitors.js';
 import {BOOK_CATALOG} from '../docs/book-inventory.js';
 import {MARKET_SNACKS} from '../docs/market-snacks.js';
+import {chooseCatRoutine} from '../docs/cat-routines.js';
 
 const app=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
 
@@ -33,7 +34,8 @@ test('manual feeding spends four coins and automatic basic feeding remains free'
   city.coins=1;
   assert.deepEqual(buyManualFeed(city,'mia'),{ok:false,reason:'funds'});
   assert.equal(city.coins,1);
-  assert.match(app,/auto\(c\).*assign\(c,'eat',false\)/);
+  assert.equal(chooseCatRoutine({id:'mia',hunger:20,energy:90,mood:100},23*60),'eat','routine auto-feeding is still free');
+  assert.match(app,/function auto\(c\)\{[^}]*chooseCatRoutine\(c,minuteOfGameDay\(city\.clock\)\)/);
 });
 
 test('commercial prices match the approved categories without stock for the cafe',()=>{

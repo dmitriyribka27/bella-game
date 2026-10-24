@@ -565,8 +565,9 @@ import {OBSERVATORY_DISCOVERIES,OBSERVATORY_DIRECTIONS,OBSERVATORY_FOCUS,newObse
 import {HOME_UPGRADE_MAX_BONUS,HOME_UPGRADE_SECTORS,homeUpgradeBonus,homeUpgradeCost,homeRecoveryRate,purchaseHomeUpgrade} from "./home-upgrades.js?v=1";
 import {WORK_SHIFT_SECONDS,MIN_WORK_NEED,MANUAL_FEED_COST,HOSPITAL_COST,CAFE_OPENING_COST,CAFE_GUEST_INTERVAL_MS,CAFE_RECIPE_EARNINGS,canStartWork,workWage,buyManualFeed} from "./game-economy.js?v=1";
 import {newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditOfflineCoins} from "./game-time.js?v=1";
+import {catRoutinePeriod,chooseCatRoutine} from "./cat-routines.js?v=1";
 import {createGameAudio} from "./game-audio.js?v=3";
-import {lightingForClock,lightingForMinute,nightGlowStrengthForMinute,readLightingEnabled,saveLightingEnabled} from "./daylight.js?v=2";
+import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForMinute,readLightingEnabled,saveLightingEnabled} from "./daylight.js?v=2";
 (()=>{"use strict";
     const FORMAT=14, DB='quiet-bay-save', KEY='city';
     const cafeSite={id:'cafe',name:'Кофейня',home:[5,11.2],roof:'#c98165'};
@@ -677,7 +678,7 @@ import {lightingForClock,lightingForMinute,nightGlowStrengthForMinute,readLighti
     function cat(id){return city.cats.find(c=>c.id===id);}
     function targetFor(c,a){let d=byId[c.id];if(a==='rest'||a==='eat')return [...d.home];if(a==='work')return [...d.work];if(a==='play')return [...NODES.square];return walkTarget();}
     function assign(c,a,announce=true){c.activity=a;c.target=targetFor(c,a);c.phase=0;if(announce){notice(`${byId[c.id].name}: ${activities[a]}. ${a==='work'?'Заработает монеты и опыт после работы.':a==='rest'?'Восстановит бодрость дома.':a==='eat'?'Восполнит сытость дома.':a==='play'?'Поднимет настроение.':'Идёт на прогулку.'}`);changed();}}
-    function auto(c){if(c.id==='bella')return;if(c.hunger<MIN_WORK_NEED)assign(c,'eat',false);else if(c.energy<MIN_WORK_NEED)assign(c,'rest',false);else if(c.mood<25)assign(c,'play',false);else {let a=Math.random();assign(c,a<.62?'work':a<.83?'walk':'play',false);}dirty=true;}
+    function auto(c){if(c.id==='bella')return;assign(c,chooseCatRoutine(c,minuteOfGameDay(city.clock)),false);dirty=true;}
     function simulate(dt){
       if(city.paused||document.hidden)return;
       if(advanceGameClock(city.clock,dt))dirty=true;
@@ -692,7 +693,10 @@ import {lightingForClock,lightingForMinute,nightGlowStrengthForMinute,readLighti
           c.hunger=clamp(c.hunger+dt*homeRecoveryRate('eat',c.upgrades),0,100);
           if(c.phase>9)auto(c);
         }else if(c.activity==='rest'){
-          if(c.phase>12||c.energy>=95)auto(c);
+          // Overnight sleep lasts until morning unless hunger needs attention.
+          // Manual rest is also allowed to last a little while at full energy.
+          const isNight=catRoutinePeriod(minuteOfGameDay(city.clock))==='night';
+          if(c.phase>12&&(!isNight||c.hunger<MIN_WORK_NEED)||!isNight&&c.phase>7&&c.energy>=95)auto(c);
         }else if(c.activity==='play'){
           c.mood=clamp(c.mood+dt*homeRecoveryRate('play',c.upgrades),0,100);
           if(c.phase>10)auto(c);
