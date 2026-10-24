@@ -13,5 +13,5 @@ test('Bella uses her approved Hello Kitty sprite without replacing the other cat
   assert.match(app,/catArt:\{\.\.\.CAT_ART,bella:\{src:'\.\/assets\/cats\/bella-hello-kitty-v1\.webp'\}\}/);
   assert.match(app,/const FORMAT=14/,'old cities must still load unchanged');
   assert.match(worker,/\.\/assets\/cats\/bella-hello-kitty-v1\.webp/,'the Bella skin is available offline');
-  assert.match(worker,/const VERSION='v0\.9\.34'/);
+  assert.match(worker,/const VERSION='v1\.0\.0'/);
 });

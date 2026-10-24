@@ -21,3 +21,12 @@ export function saveMarker(snapshot){
   if(!snapshot||!Number.isFinite(snapshot.savedAt))return null;
   return `${snapshot.version}:${snapshot.savedAt}`;
 }
+
+// Called synchronously from the user's save-check button, so browsers that
+// require a user gesture can consider the request. This is only a hint to the
+// browser: JSON export remains the durable backup path.
+export async function requestPersistentStorage(storage){
+  if(!storage||typeof storage.persist!=='function')return 'unsupported';
+  try{return await storage.persist()?'granted':'denied';}
+  catch{return 'error';}
+}

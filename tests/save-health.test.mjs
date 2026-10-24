@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {chooseStoredSave,secondsSince,saveMarker} from '../docs/save-health.js';
+import {chooseStoredSave,secondsSince,saveMarker,requestPersistentStorage} from '../docs/save-health.js';
 
 const good=s=>s&&s.version===14&&Number.isInteger(s.coins)&&s.coins>=0;
 const original={version:14,coins:31,savedAt:1_000};
@@ -35,4 +35,16 @@ test('city checks both records, serializes commits, and guards other tabs',()=>{
   assert.match(page,/window\.addEventListener\('pageshow'/);
   assert.match(page,/id="checkSave"/);
   assert.match(page,/id="offlineCacheStatus"/);
+  assert.match(page,/requestPersistentStorage\(navigator\.storage\)/);
+  assert.match(page,/Хранение прогресса:/);
+});
+
+test('persistent storage is requested on user action and reports all outcomes',async()=>{
+  let called=false;
+  const request=requestPersistentStorage({persist(){called=true;return Promise.resolve(true);}});
+  assert.equal(called,true,'request begins synchronously in the button click');
+  assert.equal(await request,'granted');
+  assert.equal(await requestPersistentStorage({persist:async()=>false}),'denied');
+  assert.equal(await requestPersistentStorage(undefined),'unsupported');
+  assert.equal(await requestPersistentStorage({persist:async()=>{throw Error('blocked');}}),'error');
 });

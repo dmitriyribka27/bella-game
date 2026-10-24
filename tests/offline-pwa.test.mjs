@@ -24,6 +24,21 @@ test('offline manifest is installable, scoped, and includes every physical asset
   assert.equal(icon.readUInt32BE(20),180);
 });
 
+test('offline preload excludes legacy artwork without omitting live imports',()=>{
+  const stale=[
+    'environment-art.js','quarter-art.js','bookshop-art.js','site-art.js',
+    'beach-art.js','environment.js','promenade-art.js','seaside-art.js',
+    'assets/interiors/lighthouse-v1.webp',
+    'assets/island-v1/ryzhiy-east-detail-v1.webp',
+    'assets/island-v1/ryzhiy-townhall-detail-v1.webp'
+  ];
+  for(const path of stale)assert.ok(!roots.includes(path),`${path} is not preloaded`);
+  const page=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+  const liveImports=[...page.matchAll(/from ["']\.\/([^"']+\.js)(?:\?[^"']*)?["']/g)].map(match=>match[1]);
+  for(const path of liveImports)assert.ok(roots.includes(path),`${path} is available offline`);
+  assert.match(source,/const VERSION='v1\.0\.0'/);
+});
+
 test('service worker opens app and media offline after it has cached files',async()=>{
   const handlers={};
   const sets=new Map();

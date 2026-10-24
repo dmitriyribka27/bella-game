@@ -1,5 +1,5 @@
 /* Quiet Bay offline app shell and artwork. Saves live in IndexedDB, not here. */
-const VERSION='v0.9.34';
+const VERSION='v1.0.0';
 const PREFIX='quiet-bay-pwa-';
 const SHELL_CACHE=`${PREFIX}${VERSION}-shell`;
 const MEDIA_CACHE=`${PREFIX}${VERSION}-media`;
@@ -12,10 +12,7 @@ const SHELL=[
   './cafe-visitors.js','./home-stories.js','./market-snacks.js',
   './townhall-management.js','./observatory-work.js','./home-upgrades.js',
   './game-economy.js','./game-time.js','./save-health.js','./cat-routines.js',
-  './game-audio.js','./daylight.js','./environment-art.js',
-  './quarter-art.js','./bookshop-art.js','./site-art.js',
-  './beach-art.js','./environment.js','./promenade-art.js',
-  './seaside-art.js','./book-visitor-motion.js',
+  './game-audio.js','./daylight.js','./book-visitor-motion.js',
   './assets/island-v1/overview.webp'
 ];
 const MEDIA=[
@@ -28,7 +25,6 @@ const MEDIA=[
   './assets/interiors/greenhouse-v1.webp',
   './assets/interiors/kent-home-v1.webp',
   './assets/interiors/lev-home-v1.webp',
-  './assets/interiors/lighthouse-v1.webp',
   './assets/interiors/lighthouse-v2.webp',
   './assets/interiors/market-v1.webp',
   './assets/interiors/mia-home-v1.webp',
@@ -67,9 +63,7 @@ const MEDIA=[
   './assets/island-v1/lighthouse-detail-v1.webp',
   './assets/island-v1/pier-detail-v1.webp',
   './assets/island-v1/pond-detail-v1.webp',
-  './assets/island-v1/restaurant-detail-v1.webp',
-  './assets/island-v1/ryzhiy-east-detail-v1.webp',
-  './assets/island-v1/ryzhiy-townhall-detail-v1.webp'
+  './assets/island-v1/restaurant-detail-v1.webp'
 ];
 
 function key(path){
