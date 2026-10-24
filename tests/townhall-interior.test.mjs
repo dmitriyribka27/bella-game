@@ -9,7 +9,7 @@ test('town hall shows an optimized illustration loaded only on entry',()=>{
   assert.equal(art.toString('ascii',0,4),'RIFF');
   assert.equal(art.toString('ascii',8,12),'WEBP');
   assert.ok(art.byteLength>100_000&&art.byteLength<650_000);
-  assert.match(app,/function showTownHall\(\)/);
+  assert.match(app,/function showTownHall\(view='all'\)/);
   assert.match(app,/src="\.\/assets\/interiors\/townhall-v1\.webp"/);
 });
 
@@ -26,11 +26,11 @@ test('town hall opens from existing location and displays five focus zones',()=>
 });
 
 test('town hall view controls do not introduce a currency or save mechanic',()=>{
-  const start=app.indexOf('function showTownHall(){');
+  const start=app.indexOf("function showTownHall(view='all'){");
   const end=app.indexOf('function showLevHome(',start);
   assert.ok(start>=0&&end>start);
   const townHall=app.slice(start,end);
   assert.doesNotMatch(townHall,/changed\(|coins\s*[+\-]=|unlockMemory\(|data-home-story/);
   assert.match(app,/const FORMAT=13/);
-  assert.match(app,/город Беллы · версия 0\.9\.19 · 2D/);
+  assert.match(app,/город Беллы · версия 0\.9\.20 · 2D/);
 });
