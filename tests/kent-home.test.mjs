@@ -9,7 +9,7 @@ test('Kent house uses a compact high-detail WebP illustration',()=>{
   assert.equal(art.toString('ascii',0,4),'RIFF');
   assert.equal(art.toString('ascii',8,12),'WEBP');
   assert.ok(art.byteLength>100_000&&art.byteLength<750_000);
-  assert.match(app,/function showKentHome\(\)/);
+  assert.match(app,/function showKentHome\(view='all'\)/);
   assert.match(app,/src="\.\/assets\/interiors\/kent-home-v1\.webp"/);
 });
 
@@ -23,7 +23,7 @@ test('Kent house is accessible from both map building and resident dashboard',()
 });
 
 test('Kent house has four focused views without changing save data or economics',()=>{
-  const start=app.indexOf('function showKentHome(){');
+  const start=app.indexOf("function showKentHome(view='all'){");
   const end=app.indexOf('function showHomeStory(',start);
   assert.ok(start>=0&&end>start);
   const kent=app.slice(start,end);
@@ -32,7 +32,7 @@ test('Kent house has four focused views without changing save data or economics'
   }
   assert.match(app,/data-kent-home-view="\$\{id\}"/);
   assert.match(app,/\['all','desk','secret','chair','terrace'\]\.includes\(view\)/);
-  assert.doesNotMatch(kent,/changed\(|unlockMemory\(|coins\s*[+\-]=|data-home-story/);
+  assert.doesNotMatch(kent,/changed\(|unlockMemory\(|coins\s*[+\-]=/);
   assert.match(app,/const FORMAT=13/);
   assert.match(app,/город Беллы · версия \d+\.\d+\.\d+ · 2D/);
 });

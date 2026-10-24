@@ -17,7 +17,7 @@ test('Lev has three small replayable stories in distinct areas of his house',()=
     assert.ok(story.choices.every(choice=>choice.id&&choice.label&&choice.reaction));
     assert.match(app,new RegExp(`\\.levHomeHotspot\\[data-home-story="${story.id}"\\]`));
   }
-  assert.equal(HOME_STORIES.length,11);
+  assert.equal(HOME_STORIES.length,14);
   assert.match(app,/const hotSpots=LEV_HOME_STORIES\.map/);
   assert.match(app,/const scenes=LEV_HOME_STORIES\.map/);
 });
@@ -34,6 +34,6 @@ test('old memories survive, Lev memories save only once and the player returns t
   assert.match(app,/else if\(button\.dataset\.homeOwner==='lev'\)showLevHome\(button\.dataset\.homeReturn\)/);
   assert.match(app,/\['🩺 Лев',LEV_HOME_STORIES\]/);
   assert.match(app,/data-home-return="all" data-home-owner="lev"/);
-  assert.match(app,/"\.\/home-stories\.js\?v=4"/);
+  assert.match(app,/"\.\/home-stories\.js\?v=\d+"/);
   assert.match(app,/const FORMAT=13/);
 });

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {HOME_STORIES,RYZHIY_HOME_STORIES,CITERA_HOME_STORIES,LEV_HOME_STORIES,newMemoryBook,sanitizeMemoryBook,unlockMemory} from '../docs/home-stories.js';
+import {HOME_STORIES,RYZHIY_HOME_STORIES,CITERA_HOME_STORIES,LEV_HOME_STORIES,KENT_HOME_STORIES,newMemoryBook,sanitizeMemoryBook,unlockMemory} from '../docs/home-stories.js';
 
 const app=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
 
@@ -9,6 +9,7 @@ test('three Ryzhiy home moments offer distinct choices without timers or currenc
   assert.deepEqual(RYZHIY_HOME_STORIES.map(story=>story.id),['fireplace','kitchen','bedroom']);
   assert.deepEqual(CITERA_HOME_STORIES.map(story=>story.id),['citera-lounge','citera-letter']);
   assert.deepEqual(LEV_HOME_STORIES.map(story=>story.id),['lev-curiosity','lev-play','lev-hammock']);
+  assert.deepEqual(KENT_HOME_STORIES.map(story=>story.id),['kent-desk','kent-winter','kent-chess']);
   for(const story of HOME_STORIES){
     assert.equal(story.choices.length,3);
     assert.ok(story.intro&&story.memoryTitle);
@@ -46,7 +47,7 @@ test('version 12 Ryzhiy memories remain and exactly two Citera stories can join 
 });
 
 test('scene hotspots, album access, save migration and return navigation are wired',()=>{
-  assert.match(app,/import \{HOME_STORIES,HOME_STORY_BY_ID,RYZHIY_HOME_STORIES,CITERA_HOME_STORIES,BELLA_HOME_STORIES,LEV_HOME_STORIES,newMemoryBook,sanitizeMemoryBook,unlockMemory\}/);
+  assert.match(app,/import \{HOME_STORIES,HOME_STORY_BY_ID,RYZHIY_HOME_STORIES,CITERA_HOME_STORIES,BELLA_HOME_STORIES,LEV_HOME_STORIES,KENT_HOME_STORIES,newMemoryBook,sanitizeMemoryBook,unlockMemory\}/);
   assert.match(app,/out\.memories=s\.version>=12\?sanitizeMemoryBook\(s\.memories\):newMemoryBook\(\)/);
   assert.match(app,/before-home-memories-v1/);
   assert.match(app,/data-home-story="\$\{story\.id\}"/);

@@ -27,7 +27,7 @@ test('Bella has three replayable private stories and only the first choice enter
   assert.equal(unlockMemory(album,'bella-balloons','photo',1729700000002),true);
   assert.equal(unlockMemory(album,'bella-balloons','hearts',1729700000003),false);
   assert.equal(album.length,3);
-  assert.equal(HOME_STORIES.length,11);
+  assert.equal(HOME_STORIES.length,14);
 });
 
 test('Bella house opens through map and resident card, with zoom and memory navigation',()=>{

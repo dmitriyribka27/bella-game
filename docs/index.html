@@ -264,6 +264,13 @@
     .dialog .kentHomeViews button { min-width:0; width:auto; margin:0; padding:11px 6px; background:#e7ece2; font-size:12px; }
     .dialog .kentHomeViews button.active { background:#e0d0ae; color:#5d4834; }
     .kentHomeNote { padding:11px 12px; margin:10px 0; border-radius:12px; background:#edece2; color:#626853; font-size:12px; line-height:1.45; }
+    .dialog .kentHomeHotspot,.dialog .kentHomeHotspot:first-of-type { position:absolute; z-index:3; display:grid; place-items:center; width:44px; height:44px; min-width:44px; padding:0; margin:0; transform:translate(-50%,-50%); border:2px solid #fff8e6; border-radius:50%; background:#fbefd5ee; color:#544730; box-shadow:0 3px 13px #332719a6; font-size:22px; }
+    .kentHomeHotspot[data-home-story="kent-desk"] { left:29%; top:57%; }
+    .kentHomeHotspot[data-home-story="kent-winter"] { left:40%; top:34%; }
+    .kentHomeHotspot[data-home-story="kent-chess"] { left:80%; top:67%; }
+    .dialog .kentHomeHotspot:focus-visible { outline:3px solid #416761; outline-offset:3px; }
+    .kentHomeTasks { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin:9px 0 12px; }
+    .dialog .kentHomeTasks button,.dialog .kentHomeTasks button:first-of-type { min-width:0; margin:0; padding:11px 5px; background:#efe4ce; color:#584631; font-size:11px; line-height:1.3; }
     .bookModeTabs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; padding:4px; border-radius:15px; background:#e6eae0; margin:11px 0; }
     .dialog .bookModeTabs button { margin:0; padding:12px 5px; font-size:12px; background:transparent; border-radius:12px; }
     .dialog .bookModeTabs button:first-of-type { background:transparent; }
@@ -280,6 +287,7 @@
     .homeStoryHero { position:relative; overflow:hidden; padding:22px 17px; margin:12px 0; border-radius:17px; background:linear-gradient(135deg,#fae0bd,#eff0df); text-align:center; box-shadow:inset 0 1px 0 #fff9; }
     .homeStoryHero[data-story="bedroom"] { background:linear-gradient(135deg,#cfd7e7,#f6e9d5); }
     .homeStoryHero[data-story="kitchen"] { background:linear-gradient(135deg,#f9dfb9,#dbe8d2); }
+    .homeStoryHero[data-story="kent-winter"] { background:linear-gradient(135deg,#cbdde1,#f5e4d3); border:1px solid #d4dedb; }
     .homeStoryEmoji { display:block; font-size:49px; margin-bottom:9px; }
     .homeStoryHero p { margin:0; color:#4c574d; font-size:14px; }
     .homeStoryChoices { display:grid; gap:7px; margin:12px 0; }
@@ -413,7 +421,7 @@
   <canvas id="world" aria-label="Карта города Тихая бухта"></canvas>
   <div id="catLabels" aria-hidden="true"></div>
   <header class="top">
-    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.9.15 · 2D</small></div>
+    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.9.16 · 2D</small></div>
     <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Сохранения и помощь">☰</button></div>
   </header>
   <div class="hint">Коснись здания · двумя пальцами меняй масштаб</div>
@@ -432,7 +440,7 @@ import {BOOK_SCENES,BOOK_SCENE_BY_ID,sanitizeBookScenes,availableBookScene,finis
 import {createBookVisitorMotion,syncBookVisitorMotion,focusBookVisitor,leaveBookVisitor,bookVisitorRoute,activeBookDeparture} from "./book-visitor-motion.js?v=1";
 import {CAFE_OPENING_STAGES,cafeStageDone,nextCafeStage,startCafeTask,answerCafeTask} from "./cafe-opening.js?v=1";
 import {CAFE_RECIPES,CAFE_RECIPE_BY_ID,newCafeServiceState,sanitizeCafeServiceState,cafeGuestProfile,inviteCafeGuests,answerCafeIngredient,serveCafeGuest} from "./cafe-visitors.js?v=2";
-import {HOME_STORIES,HOME_STORY_BY_ID,RYZHIY_HOME_STORIES,CITERA_HOME_STORIES,BELLA_HOME_STORIES,LEV_HOME_STORIES,newMemoryBook,sanitizeMemoryBook,unlockMemory} from "./home-stories.js?v=4";
+import {HOME_STORIES,HOME_STORY_BY_ID,RYZHIY_HOME_STORIES,CITERA_HOME_STORIES,BELLA_HOME_STORIES,LEV_HOME_STORIES,KENT_HOME_STORIES,newMemoryBook,sanitizeMemoryBook,unlockMemory} from "./home-stories.js?v=5";
 import {MARKET_SNACKS,buyMarketSnack} from "./market-snacks.js?v=1";
 (()=>{"use strict";
     const FORMAT=13, DB='quiet-bay-save', KEY='city';
@@ -652,10 +660,14 @@ import {MARKET_SNACKS,buyMarketSnack} from "./market-snacks.js?v=1";
       show(`<h2>🐈 Дом Льва</h2><div class="levHomeScene" id="levHomeScene" data-view="${view}"><div class="levHomeCanvas"><img class="levHomeInterior" src="./assets/interiors/lev-home-v1.webp" alt="Двухуровневый дом доктора Льва: мастерская с редкими находками и приборами, кошачьи лазалки, бирюзовое кресло у круглого окна с видом на море и подвесная кровать на антресоли" draggable="false" decoding="async">${hotSpots}</div></div><div class="levHomeViews" aria-label="Рассмотреть дом Льва">${views}</div><p class="levHomeNote">🐾 Личные моменты Льва · ${found}/${LEV_HOME_STORIES.length}. Нажми на мастерскую, лазалки или гамак либо выбери историю ниже. Никаких таймеров и расходов монет.</p><div class="levHomeTasks">${scenes}</div><button data-open-album>📖 Семейный альбом · ${city.memories.length}/${HOME_STORIES.length}</button><button data-close>Вернуться в город</button>`);
       dialog.classList.add('levHomeDialog');
     }
-    function showKentHome(){
+    function showKentHome(view='all'){
+      view=['all','desk','secret','chair','terrace'].includes(view)?view:'all';
       const views=[['all','Весь дом'],['desk','🗺️ Личный кабинет'],['secret','🗝️ Тайный уголок'],['chair','🛋️ Место отдыха'],['terrace','♟️ Терраса с шахматами']]
-        .map(([id,label])=>`<button class="${id==='all'?'active':''}" data-kent-home-view="${id}" aria-pressed="${id==='all'}">${label}</button>`).join('');
-      show(`<h2>🐈‍⬛ Дом Кента</h2><div class="kentHomeScene" id="kentHomeScene" data-view="all"><div class="kentHomeCanvas"><img class="kentHomeInterior" src="./assets/interiors/kent-home-v1.webp" alt="Старинный дом Кента на берегу моря: письменный стол с картой острова и латунными ключами, укромный уголок за резной ширмой, кожаное кресло у больших окон и цветущая терраса с шахматами на закате" draggable="false" decoding="async"></div></div><div class="kentHomeViews" aria-label="Рассмотреть дом Кента">${views}</div><p class="kentHomeNote">🗝️ Дома Кент любит тишину, порядок и собственные секреты. Загляни в кабинет, посмотри на старый сундук или полюбуйся городом с террасы. Пока здесь просто уютно — без заданий и монет.</p><button data-close>Вернуться в город</button>`);
+        .map(([id,label])=>`<button class="${id===view?'active':''}" data-kent-home-view="${id}" aria-pressed="${id===view}">${label}</button>`).join('');
+      const hotSpots=KENT_HOME_STORIES.map(story=>`<button class="kentHomeHotspot" data-home-story="${story.id}" aria-label="${story.label}: открыть историю" title="${story.label}">${story.emoji}</button>`).join('');
+      const scenes=KENT_HOME_STORIES.map(story=>`<button data-home-story="${story.id}">${story.emoji} ${story.label}</button>`).join('');
+      const found=KENT_HOME_STORIES.filter(story=>city.memories.some(memory=>memory.id===story.id)).length;
+      show(`<h2>🐈‍⬛ Дом Кента</h2><div class="kentHomeScene" id="kentHomeScene" data-view="${view}"><div class="kentHomeCanvas"><img class="kentHomeInterior" src="./assets/interiors/kent-home-v1.webp" alt="Старинный дом Кента на берегу моря: письменный стол с картой острова и латунными ключами, укромный уголок за резной ширмой, кожаное кресло у больших окон и цветущая терраса с шахматами на закате" draggable="false" decoding="async">${hotSpots}</div></div><div class="kentHomeViews" aria-label="Рассмотреть дом Кента">${views}</div><p class="kentHomeNote">🗝️ Личные моменты Кента · ${found}/${KENT_HOME_STORIES.length}. Открой указ мэра, старый сундук или шахматный столик прямо на картинке. Можно и кнопками ниже, без заданий и платы за выбор.</p><div class="kentHomeTasks">${scenes}</div><button data-open-album>📖 Семейный альбом · ${city.memories.length}/${HOME_STORIES.length}</button><button data-close>Вернуться в город</button>`);
       dialog.classList.add('kentHomeDialog');
     }
     function showHomeStory(id,choiceId=null,justUnlocked=false){
@@ -669,12 +681,12 @@ import {MARKET_SNACKS,buyMarketSnack} from "./market-snacks.js?v=1";
       dialog.classList.add('homeStoryDialog');
     }
     function showFamilyAlbum(){
-      const collections=[['🧡 Рыжий',RYZHIY_HOME_STORIES],['📚 Цитера',CITERA_HOME_STORIES],['💛 Белла',BELLA_HOME_STORIES],['🩺 Лев',LEV_HOME_STORIES]];
+      const collections=[['🧡 Рыжий',RYZHIY_HOME_STORIES],['📚 Цитера',CITERA_HOME_STORIES],['💛 Белла',BELLA_HOME_STORIES],['🩺 Лев',LEV_HOME_STORIES],['🐈‍⬛ Кент',KENT_HOME_STORIES]];
       const sections=collections.map(([owner,stories])=>{
         const found=stories.filter(story=>city.memories.some(entry=>entry.id===story.id)).length;
         const entries=stories.map(story=>{
           const memory=city.memories.find(entry=>entry.id===story.id);
-          if(!memory)return `<div class="memoryCard locked"><h3>🔒 ${story.memoryTitle}</h3><p>Загляни в комнату ${{citera:'Цитеры',ryzhiy:'Рыжего',bella:'Беллы',lev:'Льва'}[story.owner]}: ${story.label.toLowerCase()} ждёт своей истории.</p></div>`;
+          if(!memory)return `<div class="memoryCard locked"><h3>🔒 ${story.memoryTitle}</h3><p>Загляни в комнату ${{citera:'Цитеры',ryzhiy:'Рыжего',bella:'Беллы',lev:'Льва',kent:'Кента'}[story.owner]}: ${story.label.toLowerCase()} ждёт своей истории.</p></div>`;
           const choice=story.choices.find(item=>item.id===memory.choiceId);
           const date=new Date(memory.at).toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
           return `<div class="memoryCard"><h3>${story.emoji} ${story.memoryTitle}</h3><p>${choice?.reaction||''}</p><small>В альбоме с ${date}</small></div>`;
@@ -682,7 +694,7 @@ import {MARKET_SNACKS,buyMarketSnack} from "./market-snacks.js?v=1";
         return `<h3 class="bookSupplyHeading">${owner} · ${found}/${stories.length}</h3><div class="memoryProgress">${stories.map(story=>`<span class="${city.memories.some(memory=>memory.id===story.id)?'found':''}"></span>`).join('')}</div>${entries}`;
       }).join('');
       const count=city.memories.length;
-      show(`<h2>📖 Семейный альбом Беллы</h2><p>Личные истории любимых жителей без спешки, монет и обязательных заданий.</p><strong>Воспоминания · ${count}/${HOME_STORIES.length}</strong>${sections}<p class="ryzhiyHomeNote">Впереди — истории Мии и Кента.</p><button data-home-return="all" data-home-owner="bella">🏡 В дом Беллы</button><button data-home-return="all" data-home-owner="ryzhiy">🧡 К Рыжему</button><button data-home-return="lounge" data-home-owner="citera">📚 К Цитере</button><button data-home-return="all" data-home-owner="lev">🩺 К Льву</button><button data-close>Вернуться в город</button>`);
+      show(`<h2>📖 Семейный альбом Беллы</h2><p>Личные истории любимых жителей без спешки, монет и обязательных заданий.</p><strong>Воспоминания · ${count}/${HOME_STORIES.length}</strong>${sections}<p class="ryzhiyHomeNote">Впереди — личные истории Мии.</p><button data-home-return="all" data-home-owner="bella">🏡 В дом Беллы</button><button data-home-return="all" data-home-owner="ryzhiy">🧡 К Рыжему</button><button data-home-return="lounge" data-home-owner="citera">📚 К Цитере</button><button data-home-return="all" data-home-owner="lev">🩺 К Льву</button><button data-home-return="all" data-home-owner="kent">🐈‍⬛ К Кенту</button><button data-close>Вернуться в город</button>`);
       dialog.classList.add('familyAlbumDialog');
     }
     function cafeInteriorVisible(){return !overlay.hidden&&dialog.classList.contains('cafeInteriorDialog');}
@@ -938,7 +950,7 @@ import {MARKET_SNACKS,buyMarketSnack} from "./market-snacks.js?v=1";
     function cleanupCafeScene(){clearTimeout(cafeRefillTimer);clearTimeout(cafeDepartTimer);cafeDeparting=null;cafeSeen.clear();}
     function close(){bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;bookMode='shop';bookRoom='bookshop';cleanupCafeScene();overlay.hidden=true;dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','lighthouseDialog','boathouseDialog','postOfficeDialog','marketDialog','marketShopDialog','greenhouseDialog','homeStoryDialog','familyAlbumDialog');}
     function show(html){if(dialog.classList.contains('cafeInteriorDialog'))cleanupCafeScene();dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','lighthouseDialog','boathouseDialog','postOfficeDialog','marketDialog','marketShopDialog','greenhouseDialog','homeStoryDialog','familyAlbumDialog');dialog.innerHTML=html;overlay.hidden=false;}
-    function showGuide(){show(`<h2>Добро пожаловать в бухту</h2><p>Коснись кота, чтобы выбрать жителя. Коты сами работают, едят и отдыхают. Назначай занятия, помогай с настроением и улучшай их дома.</p><p>Коснись здания на карте, чтобы открыть его окно. Там можно отправить жителя к входу по дорожке, открыть существующие занятия или управление домом. Кнопка «Места» покажет все доступные локации. Обычные жилые дома без жителей не открываются.</p><p>Перетаскивай город одним пальцем, меняй масштаб двумя. Пауза останавливает жизнь котов; сохранения хранятся в Safari.</p><p>Кент работает в ратуше, Мия — в обсерватории, Лев лечит жителей в больнице. В лавке Цитеры гости входят через дверь, подходят к полкам, а при начале беседы идут к кассе. После покупки они уходят с книгой. На вкладке «Витрина» можно рассматривать обложки и проверять остатки. В «Закупках» пополняй склад: доставка займёт немного реального времени, даже если выйти из игры. Когда двое гостей заговорят у полок, присоединяйся к их небольшой истории. Кофейню Рыжего можно открыть через поручения.</p><p>В доме Рыжего нажимай на камин, кухню и кровать. В здании Цитеры выбери «Личные комнаты» и исследуй диван и книгу у кровати. В доме Беллы можно открыть три истории, касаясь шариков, стеллажа и кровати. В доме Льва исследуй находку в мастерской, прыгай по лазалкам и отдыхай в гамаке: у каждого предмета своя маленькая история. Первый выбор сохраняет воспоминание в семейном альбоме. Альбом можно открыть через меню ☰; сценки можно повторять без штрафов. А в маяк, лодочный домик, на почту и в оранжерею можно просто зайти и рассматривать декорации без заданий. На рынке Белла может купить свои любимые вкусняшки за городские монеты.</p><button data-close>Играть</button>`);}
+    function showGuide(){show(`<h2>Добро пожаловать в бухту</h2><p>Коснись кота, чтобы выбрать жителя. Коты сами работают, едят и отдыхают. Назначай занятия, помогай с настроением и улучшай их дома.</p><p>Коснись здания на карте, чтобы открыть его окно. Там можно отправить жителя к входу по дорожке, открыть существующие занятия или управление домом. Кнопка «Места» покажет все доступные локации. Обычные жилые дома без жителей не открываются.</p><p>Перетаскивай город одним пальцем, меняй масштаб двумя. Пауза останавливает жизнь котов; сохранения хранятся в Safari.</p><p>Кент работает в ратуше, Мия — в обсерватории, Лев лечит жителей в больнице. В лавке Цитеры гости входят через дверь, подходят к полкам, а при начале беседы идут к кассе. После покупки они уходят с книгой. На вкладке «Витрина» можно рассматривать обложки и проверять остатки. В «Закупках» пополняй склад: доставка займёт немного реального времени, даже если выйти из игры. Когда двое гостей заговорят у полок, присоединяйся к их небольшой истории. Кофейню Рыжего можно открыть через поручения.</p><p>В доме Рыжего нажимай на камин, кухню и кровать. В здании Цитеры выбери «Личные комнаты» и исследуй диван и книгу у кровати. В доме Беллы можно открыть три истории, касаясь шариков, стеллажа и кровати. В доме Льва исследуй находку в мастерской, прыгай по лазалкам и отдыхай в гамаке: у каждого предмета своя маленькая история. В доме Кента можно открыть указ мэра, сыграть на террасе и узнать, как Белла спасла его холодной зимой в Адыгее. Первый выбор сохраняет воспоминание в семейном альбоме. Альбом можно открыть через меню ☰; сценки можно повторять без штрафов. А в маяк, лодочный домик, на почту и в оранжерею можно просто зайти и рассматривать декорации без заданий. На рынке Белла может купить свои любимые вкусняшки за городские монеты.</p><button data-close>Играть</button>`);}
     // Only the open interior mounts its image; none of these controls run in the map animation loop.
     details.addEventListener('click',e=>{
       if(!e.target.closest('button[data-cafe="interior"]'))return;
@@ -962,6 +974,7 @@ import {MARKET_SNACKS,buyMarketSnack} from "./market-snacks.js?v=1";
         if(button.dataset.homeOwner==='citera'){bookMode='home';bookRoom=button.dataset.homeReturn;showBookshop();}
         else if(button.dataset.homeOwner==='bella')showBellaHome(button.dataset.homeReturn);
         else if(button.dataset.homeOwner==='lev')showLevHome(button.dataset.homeReturn);
+        else if(button.dataset.homeOwner==='kent')showKentHome(button.dataset.homeReturn);
         else showRyzhiyHome(button.dataset.homeReturn);
         return;
       }
