@@ -688,7 +688,7 @@ import {createGameAudio} from "./game-audio.js?v=1";
         }else if(c.activity==='work'){
           if(c.phase>WORK_SHIFT_SECONDS){
             const reward=workWage(c);
-            city.coins+=reward;c.xp+=4;c.mood=clamp(c.mood-2,0,100);
+            city.coins+=reward;gameAudio.coinGain();c.xp+=4;c.mood=clamp(c.mood-2,0,100);
             const female=['mia','citera'].includes(c.id);
             if(c.xp>=c.level*18&&c.level<100){
               c.xp-=c.level*18;c.level++;
@@ -705,7 +705,7 @@ import {createGameAudio} from "./game-audio.js?v=1";
     }
     function offline(elapsedSeconds=(Date.now()-city.savedAt)/1000){
       const gained=creditOfflineCoins(city,Math.max(0,elapsedSeconds));
-      if(gained)notice(`Пока тебя не было, жители принесли ${gained} 🪙. Максимум 12 монет за одно отсутствие.`);
+      if(gained){gameAudio.coinGain();notice(`Пока тебя не было, жители принесли ${gained} 🪙. Максимум 12 монет за одно отсутствие.`);}
       return gained;
     }
     function updateGameClock(){
@@ -1051,6 +1051,7 @@ import {createGameAudio} from "./game-audio.js?v=1";
       const outcome=finishBookScene(city.books.scenes,scene.id,index);
       if(!outcome)return;
       city.coins+=outcome.coins;
+      if(outcome.coins>0)gameAudio.coinGain();
       const c=cat('citera');c.mood=clamp(c.mood+outcome.mood,0,100);c.xp+=2;
       bookSceneSelected=null;changed();
       showBookshop(`💬 ${outcome.reply} · +${outcome.coins} 🪙, +${outcome.mood} настроения и +2 опыта Цитере.`);
@@ -1114,7 +1115,7 @@ import {createGameAudio} from "./game-audio.js?v=1";
       if(!sale.ok){showBookshop(`📦 «${book.title}» закончилась. Открой вкладку «Закупки» и закажи экземпляры у издательства.`);return;}
       leaveBookVisitor(bookMotion,id);
       finishBookVisit(vis,id);
-      city.books.orders++;city.coins+=sale.revenue;
+      city.books.orders++;city.coins+=sale.revenue;gameAudio.coinGain();
       const c=cat('citera');c.xp+=5;c.mood=clamp(c.mood+3,0,100);
       bookSaleFlash={id:book.id,coins:sale.revenue};
       bookSelected=null;
@@ -1244,7 +1245,7 @@ import {createGameAudio} from "./game-audio.js?v=1";
         cafeDeparting={guest:served,slot:served.slot,at:Date.now()};
         cafeSelectedGuest=city.coffee.service.queue[0]?.seq??null;
         const payment=CAFE_RECIPE_EARNINGS[served.recipeId];
-        city.coffee.orders++;city.coins+=payment;cat('ryzhiy').xp+=3;
+        city.coffee.orders++;city.coins+=payment;gameAudio.coinGain();cat('ryzhiy').xp+=3;
         changedCafe();renderCafeGuestLayer();
         const profile=cafeGuestProfile(served);
         renderCafeServicePanel(`☕ ${profile.name}: «${profile.farewell}» · +${payment} 🪙. Гость идёт к столику.`);

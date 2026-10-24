@@ -13,15 +13,16 @@ function setup(saved){
     pause(){this.paused=true;this.stopped++;}
   }
   let clicks=0;
+  const peaks=[];
   class FakeContext{
     constructor(){this.state='running';this.currentTime=1;this.destination={};}
     createOscillator(){return {frequency:{setValueAtTime(){},exponentialRampToValueAtTime(){}},connect(){},start(){clicks++;},stop(){}};}
-    createGain(){return {gain:{setValueAtTime(){},exponentialRampToValueAtTime(){}},connect(){}};}
+    createGain(){return {gain:{setValueAtTime(){},exponentialRampToValueAtTime(value){peaks.push(value);}},connect(){}};}
     suspend(){this.state='suspended';return Promise.resolve();}
     resume(){this.state='running';return Promise.resolve();}
   }
   const audio=createGameAudio({storage,documentRef,AudioCtor:FakeAudio,AudioContextCtor:FakeContext});
-  return {audio,track:tracks[0],storage,documentRef,get clicks(){return clicks;}};
+  return {audio,track:tracks[0],storage,documentRef,peaks,get clicks(){return clicks;}};
 }
 
 test('sound defaults are both on; stored preferences are honored',()=>{
@@ -69,4 +70,19 @@ test('sound stays quiet if restored game is paused',()=>{
   assert.equal(state.track.played,0);
   state.audio.setPaused(false);
   assert.equal(state.track.played,1);
+});
+
+test('button tap is louder and coin income has a short four-note chime',()=>{
+  const state=setup();
+  state.audio.unlock();
+  state.audio.tap();
+  assert.equal(state.clicks,1);
+  assert.ok(state.peaks.includes(.105),'button sounds peak at the increased volume');
+  state.audio.coinGain();
+  assert.equal(state.clicks,9,'four notes with a metallic harmonic each');
+  state.audio.coinGain();
+  assert.equal(state.clicks,9,'simultaneous income is throttled');
+  state.audio.setEffects(false);
+  state.audio.coinGain();
+  assert.equal(state.clicks,9,'muted effects include coin income');
 });
