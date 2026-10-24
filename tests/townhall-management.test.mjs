@@ -86,5 +86,5 @@ test('town hall UI wires all three actions without adding a save format',()=>{
   assert.match(app,/holdTownHallFestival\(city\)/);
   assert.match(app,/getTownHallReport\(city\)/);
   assert.match(app,/const FORMAT=13/);
-  assert.match(app,/город Беллы · версия 0\.9\.20 · 2D/);
+  assert.match(app,/город Беллы · версия 0\.9\.21 · 2D/);
 });
