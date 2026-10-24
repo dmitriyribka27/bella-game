@@ -55,6 +55,13 @@
     .dialog button { display:block; width:100%; padding:13px; margin-top:8px; border:0; border-radius:12px; background:#dcece3; color:#27484b; font-weight:700; }
     .dialog button:first-of-type { background:#f2bc86; }
     .dialog small { color:#647979; }
+    .dialog.welcomeDialog { width:min(100%,390px); padding:10px; background:#fff9f4; border:1px solid #fffaf3; }
+    .welcomeCard { padding:clamp(21px,6vw,30px) 18px; border-radius:18px; background:#fff0e8; text-align:center; color:#826d68; }
+    .welcomeKicker { display:block; color:#ad7c78; font-size:10px; font-weight:750; letter-spacing:.1em; line-height:1.5; }
+    .dialog .welcomeTitle { margin:18px auto 15px; max-width:290px; color:#8d6562; font-size:clamp(22px,6vw,26px); line-height:1.2; font-weight:750; }
+    .dialog .welcomeCard p { max-width:300px; margin:12px auto; color:#826d68; font-size:14px; line-height:1.55; }
+    .dialog .welcomeStart,.dialog .welcomeStart:first-of-type { margin:22px auto 0; max-width:270px; min-height:48px; border-radius:24px; background:#d99395; color:#fff; font-size:14px; box-shadow:0 5px 15px #bc858333; }
+    .dialog .welcomeStart:active { transform:scale(.985); }
     .dialog.bookshop { width:min(100%,600px); padding:14px; }
     .dialog.cafeInteriorDialog { width:min(100%,660px); padding:14px; }
     .dialog.ryzhiyHomeDialog,.dialog.bellaHomeDialog { width:min(100%,660px); padding:14px; }
@@ -584,7 +591,7 @@ import {catRoutinePeriod,chooseCatRoutine} from "./cat-routines.js?v=1";
 import {createGameAudio} from "./game-audio.js?v=3";
 import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForMinute,readLightingEnabled,saveLightingEnabled} from "./daylight.js?v=2";
 (()=>{"use strict";
-    const FORMAT=14, DB='quiet-bay-save', KEY='city';
+    const FORMAT=14, DB='quiet-bay-save', KEY='city', WELCOME_KEY='welcome-seen';
     const cafeSite={id:'cafe',name:'Кофейня',home:[5,11.2],roof:'#c98165'};
     const scenicSites=[
       {id:'bookshop',name:'Городская читальня',home:[3.7,6],roof:'#b37f75',wall:'#f1dcc5',floors:2},
@@ -1306,8 +1313,22 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
     function renderUI(){if(!city)return;updateGameClock();document.getElementById('money').textContent=`🪙 ${city.coins}`;document.getElementById('pause').textContent=city.paused?'▶':'Ⅱ';if(selected==='cafe'){renderCafe();return;}let c=cat(selected),d=byId[selected];let bella=c.id==='bella';details.innerHTML=`<div class="row"><div class="avatar">${d.symbol}</div><div><h1>${d.name} <span style="font-size:12px;font-weight:400">${bella?'':`· уровень ${c.level}`}</span></h1><p class="sub">${d.job} · ${activities[c.activity]}</p></div></div><div class="stats">${bella?'<span class="stat">Гуляет и навещает друзей</span>':`<span class="stat">🥣 ${Math.round(c.hunger)}%</span><span class="stat">💤 ${Math.round(c.energy)}%</span><span class="stat">♡ ${Math.round(c.mood)}%</span><span class="stat">✦ ${Math.floor(c.xp)}/${c.level*18} опыта</span>`}</div><div class="actions">${bella?'<button class="action primary" data-action="bella-home">🏡 Дом Беллы</button><button class="action" data-action="cafe">☕ Кофейня</button><button class="action" data-action="focus">Показать на карте</button>':`<button class="action primary" data-action="work">Работать 🪙</button><button class="action" data-action="rest">Отдыхать 💤</button><button class="action" data-action="eat">Кормить 🥣</button><button class="action" data-action="play">Играть 🎭</button><button class="action" data-action="walk">Гулять</button>${c.id==='citera'?'<button class="action primary" data-action="bookshop">📚 Войти в книжную лавку</button>':''}${c.id==='ryzhiy'?'<button class="action primary" data-action="ryzhiy-home">🏡 Войти в дом Рыжего</button>':''}${c.id==='lev'?'<button class="action primary" data-action="lev-home">🏡 Войти в дом Льва</button>':''}${c.id==='kent'?'<button class="action primary" data-action="kent-home">🏡 Войти в дом Кента</button>':''}${c.id==='mia'?'<button class="action primary" data-action="mia-home">🏡 Войти в дом Мии</button>':''}<button class="action" data-action="focus">Показать на карте</button><button class="action primary" data-action="home-upgrades">🏡 Улучшения дома</button>`}</div>`;}
     details.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.cafe){coffeeAction(b.dataset.cafe);return;}if(b.dataset.action==='cafe'){selected='cafe';renderUI();notice('Помоги жителям открыть кофейню.');return;}if(b.dataset.action==='bookshop')showBookshop();else if(b.dataset.action==='ryzhiy-home')showRyzhiyHome();else if(b.dataset.action==='bella-home')showBellaHome();else if(b.dataset.action==='lev-home')showLevHome();else if(b.dataset.action==='kent-home')showKentHome();else if(b.dataset.action==='mia-home')showMiaHome();else if(b.dataset.action==='home-upgrades')showHomeUpgrades(selected,'resident');else if(b.dataset.action==='focus'){let c=cat(selected);focusCity(c.x,c.y);}else if(b.dataset.action==='work'){const resident=cat(selected);if(!canStartWork(resident)){notice('Для работы нужно не меньше 35% сытости и бодрости.');return;}assign(resident,'work');}else if(b.dataset.action==='eat'){const result=buyManualFeed(city,selected);if(!result.ok){notice('Для вкусного обеда нужно '+MANUAL_FEED_COST+' 🪙. Обычное автоматическое питание остаётся бесплатным.');return;}gameAudio.coinSpend();notice(byId[selected].name+' вкусно поел(а): +35% сытости и +3% настроения.');changed();}else if(b.dataset.action)assign(cat(selected),b.dataset.action);});
     function cleanupCafeScene(){clearTimeout(cafeRefillTimer);clearTimeout(cafeDepartTimer);cafeDeparting=null;cafeSeen.clear();}
-    function close(){bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;bookMode='shop';bookRoom='bookshop';cleanupCafeScene();overlay.hidden=true;dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','boathouseDialog','postOfficeDialog','postLetterDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');}
-    function show(html){if(dialog.classList.contains('cafeInteriorDialog'))cleanupCafeScene();dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','boathouseDialog','postOfficeDialog','postLetterDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');dialog.innerHTML=html;overlay.hidden=false;}
+    function close(){bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;bookMode='shop';bookRoom='bookshop';cleanupCafeScene();overlay.hidden=true;dialog.classList.remove('welcomeDialog','bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','boathouseDialog','postOfficeDialog','postLetterDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');}
+    function show(html){if(dialog.classList.contains('cafeInteriorDialog'))cleanupCafeScene();dialog.classList.remove('welcomeDialog','bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','boathouseDialog','postOfficeDialog','postLetterDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');dialog.innerHTML=html;overlay.hidden=false;}
+    async function welcomeWasSeen(){
+      try{if(db&&await read(WELCOME_KEY))return true;}catch{}
+      try{return localStorage.getItem('quiet-bay-welcome-seen')==='yes';}catch{return false;}
+    }
+    async function acknowledgeWelcome(){
+      try{localStorage.setItem('quiet-bay-welcome-seen','yes');}catch{}
+      if(db)try{await new Promise((resolve,reject)=>{const tx=db.transaction('saves','readwrite');tx.objectStore('saves').put(true,WELCOME_KEY);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}catch{}
+      close();
+    }
+    function showWelcome(){
+      show('<div class="welcomeCard"><span class="welcomeKicker">ТИХАЯ БУХТА · ДОБРО ПОЖАЛОВАТЬ</span><h2 class="welcomeTitle">Белла, это твой маленький мир ♡</h2><p>Здесь тебя ждут пять знакомых хвостиков, уютные домики и целый остров маленьких историй.</p><p>Исследуй его в своём ритме. Он создан специально для тебя.</p><button class="welcomeStart" id="welcomeStart">Начать приключение ✨</button></div>');
+      dialog.classList.add('welcomeDialog');
+      document.getElementById('welcomeStart').addEventListener('click',acknowledgeWelcome,{once:true});
+    }
     // Only the open interior mounts its image; none of these controls run in the map animation loop.
     details.addEventListener('click',e=>{
       if(!e.target.closest('button[data-cafe="interior"]'))return;
@@ -1800,6 +1821,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       try{map=createMap({canvas,catArt:{...CAT_ART,bella:{src:'./assets/cats/bella-hello-kitty-v1.webp'}},getCity:()=>city,getSelected:()=>selected,onSelect:id=>{selected=id;renderUI();notice('Выбран житель: '+byId[id].name+'.');},onLocation:id=>showLocation(id),onNotice:notice});renderUI();requestAnimationFrame(frame);}
       catch(err){notice('Не удалось открыть карту: '+err.message);}
       setupOfflineCaching();
+      if(!await welcomeWasSeen())showWelcome();
       setInterval(()=>{if(dirty&&!saveConflict)write().catch(saveWarning)},15000);
       setInterval(()=>{
         if(!city)return;
