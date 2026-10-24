@@ -145,6 +145,19 @@
     .ryzhiyHomeTasks { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; margin:7px 0; }
     .dialog .ryzhiyHomeTasks button { margin:0; padding:10px 2px; background:#f8e9d7; font-size:11px; }
     .dialog .ryzhiyHomeTasks button:first-of-type { background:#f8e9d7; }
+    .bookModeTabs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; padding:4px; border-radius:15px; background:#e6eae0; margin:11px 0; }
+    .dialog .bookModeTabs button { margin:0; padding:12px 5px; font-size:12px; background:transparent; border-radius:12px; }
+    .dialog .bookModeTabs button:first-of-type { background:transparent; }
+    .dialog .bookModeTabs button.active,.dialog .bookModeTabs button.active:first-of-type { background:#fffaf0; color:#6a4c38; box-shadow:0 2px 7px #3451491c; }
+    .bookHomeTasks { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; margin:8px 0 12px; }
+    .dialog .bookHomeTasks button { margin:0; padding:11px 6px; background:#f4e4cd; font-size:12px; }
+    .dialog .bookHomeTasks button:first-of-type { background:#f4e4cd; }
+    .bookHomeStatus { padding:12px; margin:7px 0; border-radius:12px; background:#edf0e6; color:#526e60; font-size:12px; line-height:1.5; }
+    .dialog .bookHomeHotspot { position:absolute; z-index:4; display:grid; place-items:center; width:44px; height:44px; min-width:44px; margin:0; padding:0; transform:translate(-50%,-50%); border:2px solid #fff9e8; border-radius:50%; background:#fff2d8ee; box-shadow:0 3px 12px #1b211b9c; font-size:23px; }
+    .dialog .bookHomeHotspot:first-of-type { background:#fff2d8ee; }
+    .bookHomeHotspot[data-home-story="citera-lounge"] { left:25%; top:60%; }
+    .bookHomeHotspot[data-home-story="citera-letter"] { left:27%; top:25%; }
+    .dialog .bookHomeHotspot:focus-visible { outline:3px solid #4a8c8b; outline-offset:2px; }
     .homeStoryHero { position:relative; overflow:hidden; padding:22px 17px; margin:12px 0; border-radius:17px; background:linear-gradient(135deg,#fae0bd,#eff0df); text-align:center; box-shadow:inset 0 1px 0 #fff9; }
     .homeStoryHero[data-story="bedroom"] { background:linear-gradient(135deg,#cfd7e7,#f6e9d5); }
     .homeStoryHero[data-story="kitchen"] { background:linear-gradient(135deg,#f9dfb9,#dbe8d2); }
@@ -281,7 +294,7 @@
   <canvas id="world" aria-label="Карта города Тихая бухта"></canvas>
   <div id="catLabels" aria-hidden="true"></div>
   <header class="top">
-    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.9.3 · 2D</small></div>
+    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.9.4 · 2D</small></div>
     <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Сохранения и помощь">☰</button></div>
   </header>
   <div class="hint">Коснись здания · двумя пальцами меняй масштаб</div>
@@ -300,9 +313,9 @@ import {BOOK_SCENES,BOOK_SCENE_BY_ID,sanitizeBookScenes,availableBookScene,finis
 import {createBookVisitorMotion,syncBookVisitorMotion,focusBookVisitor,leaveBookVisitor,bookVisitorRoute,activeBookDeparture} from "./book-visitor-motion.js?v=1";
 import {CAFE_OPENING_STAGES,cafeStageDone,nextCafeStage,startCafeTask,answerCafeTask} from "./cafe-opening.js?v=1";
 import {CAFE_RECIPES,CAFE_RECIPE_BY_ID,newCafeServiceState,sanitizeCafeServiceState,cafeGuestProfile,inviteCafeGuests,answerCafeIngredient,serveCafeGuest} from "./cafe-visitors.js?v=2";
-import {HOME_STORIES,HOME_STORY_BY_ID,newMemoryBook,sanitizeMemoryBook,unlockMemory} from "./home-stories.js?v=1";
+import {HOME_STORIES,HOME_STORY_BY_ID,RYZHIY_HOME_STORIES,CITERA_HOME_STORIES,newMemoryBook,sanitizeMemoryBook,unlockMemory} from "./home-stories.js?v=2";
 (()=>{"use strict";
-    const FORMAT=12, DB='quiet-bay-save', KEY='city';
+    const FORMAT=13, DB='quiet-bay-save', KEY='city';
     const cafeSite={id:'cafe',name:'Кофейня',home:[5,11.2],roof:'#c98165'};
     const scenicSites=[
       {id:'bookshop',name:'Городская читальня',home:[3.7,6],roof:'#b37f75',wall:'#f1dcc5',floors:2},
@@ -361,7 +374,7 @@ import {HOME_STORIES,HOME_STORY_BY_ID,newMemoryBook,sanitizeMemoryBook,unlockMem
     const details=document.getElementById('details'), msg=document.getElementById('message');
     const overlay=document.getElementById('overlay'), dialog=document.getElementById('dialog');
     let db, city, selected='bella', gesture=null;
-    let bookRoom='all',bookTab='visitors',bookSelected=null,bookSupplier='needed',bookFocused=null,bookShelfFilter='stock',bookSceneSelected=null,bookSaleFlash=null;
+    let bookMode='shop',bookRoom='bookshop',bookTab='visitors',bookSelected=null,bookSupplier='needed',bookFocused=null,bookShelfFilter='stock',bookSceneSelected=null,bookSaleFlash=null;
     let cafeTask=null,cafeSelectedGuest=null,cafeDeparting=null,cafeRefillTimer=0,cafeDepartTimer=0;
     let ryzhiyRoom='all';
     const cafeSeen=new Set();
@@ -369,7 +382,7 @@ import {HOME_STORIES,HOME_STORY_BY_ID,newMemoryBook,sanitizeMemoryBook,unlockMem
     let lastFrame=performance.now(), saveTimer=0, dirty=false, time=0;
     function initial(){const visitors=newBookVisitorState();return {version:FORMAT,coins:30,paused:false,savedAt:Date.now(),coffee:{built:false,plan:false,delivery:false,recipe:false,style:null,orders:0,service:newCafeServiceState()},books:{orders:0,nextAt:0,visitors,inventory:newBookInventory(visitors),scenes:[]},memories:newMemoryBook(),cats:defs.map(d=>({id:d.id,x:d.home[0],y:d.home[1],target:[...d.home],activity:d.id==='bella'?'walk':'work',hunger:80,energy:80,mood:75,xp:0,level:1,phase:0,upgrades:{bed:0,bowl:0,toy:0}}))};}
     function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
-    function valid(s){return s&&[1,2,3,4,5,6,7,8,9,10,11,FORMAT].includes(s.version)&&Number.isFinite(s.coins)&&s.coins>=0&&(s.version<5||s.books&&Number.isInteger(s.books.orders)&&Number.isFinite(s.books.nextAt))&&Array.isArray(s.cats)&&s.cats.length===defs.length&&defs.every(d=>{let c=s.cats.find(x=>x.id===d.id);return c&&[c.x,c.y,c.hunger,c.energy,c.mood,c.xp,c.level].every(Number.isFinite)&&c.upgrades&&['bed','bowl','toy'].every(k=>Number.isInteger(c.upgrades[k])&&c.upgrades[k]>=0&&c.upgrades[k]<=3);});}
+    function valid(s){return s&&[1,2,3,4,5,6,7,8,9,10,11,12,FORMAT].includes(s.version)&&Number.isFinite(s.coins)&&s.coins>=0&&(s.version<5||s.books&&Number.isInteger(s.books.orders)&&Number.isFinite(s.books.nextAt))&&Array.isArray(s.cats)&&s.cats.length===defs.length&&defs.every(d=>{let c=s.cats.find(x=>x.id===d.id);return c&&[c.x,c.y,c.hunger,c.energy,c.mood,c.xp,c.level].every(Number.isFinite)&&c.upgrades&&['bed','bowl','toy'].every(k=>Number.isInteger(c.upgrades[k])&&c.upgrades[k]>=0&&c.upgrades[k]<=3);});}
     function sanitize(s){
       let out=initial();
       out.coins=clamp(Math.floor(s.coins),0,10000000);
@@ -458,32 +471,37 @@ import {HOME_STORIES,HOME_STORY_BY_ID,newMemoryBook,sanitizeMemoryBook,unlockMem
     }
     function showRyzhiyHome(room='all'){
       ryzhiyRoom=['all','lounge','kitchen','bedroom'].includes(room)?room:'all';
-      const hotSpots=HOME_STORIES.map(story=>`<button class="ryzhiyHomeHotspot" data-home-story="${story.id}" aria-label="${story.label}: открыть историю" title="${story.label}">${story.emoji}</button>`).join('');
+      const hotSpots=RYZHIY_HOME_STORIES.map(story=>`<button class="ryzhiyHomeHotspot" data-home-story="${story.id}" aria-label="${story.label}: открыть историю" title="${story.label}">${story.emoji}</button>`).join('');
       const roomButtons=[['all','Весь дом'],['lounge','Гостиная'],['kitchen','Кухня'],['bedroom','Спальня']].map(([id,label])=>`<button class="${id===ryzhiyRoom?'active':''}" data-ryzhiy-room="${id}" aria-pressed="${id===ryzhiyRoom}">${label}</button>`).join('');
-      const scenes=HOME_STORIES.map(story=>`<button data-home-story="${story.id}">${story.emoji} ${story.label}</button>`).join('');
+      const scenes=RYZHIY_HOME_STORIES.map(story=>`<button data-home-story="${story.id}">${story.emoji} ${story.label}</button>`).join('');
       show(`<h2>🏡 Дом Рыжего</h2><div class="ryzhiyHomeScene" id="ryzhiyHomeScene" data-room="${ryzhiyRoom}"><div class="ryzhiyHomeCanvas"><img class="ryzhiyHomeInterior" src="./assets/interiors/ryzhiy-home-v1.webp" alt="Дом Рыжего: гостиная с камином, уютная кухня, спальня и душевая за клетчатой шторкой" draggable="false" decoding="async">${hotSpots}</div></div><div class="ryzhiyHomeViews" aria-label="Рассмотреть комнаты дома Рыжего">${roomButtons}</div><p class="ryzhiyHomeNote">🧡 Нажми на предмет в доме или выбери историю ниже. Здесь можно просто проводить время с Рыжим.</p><div class="ryzhiyHomeTasks">${scenes}</div><button data-open-album>📖 Семейный альбом · ${city.memories.length}/${HOME_STORIES.length}</button><button data-close>Вернуться в город</button>`);
       dialog.classList.add('ryzhiyHomeDialog');
     }
-    function showRyzhiyStory(id,choiceId=null,justUnlocked=false){
+    function showHomeStory(id,choiceId=null,justUnlocked=false){
       const story=HOME_STORY_BY_ID[id];if(!story)return;
       const choice=story.choices.find(item=>item.id===choiceId);
       const intro=`<div class="homeStoryHero" data-story="${story.id}"><span class="homeStoryEmoji">${story.emoji}</span><p>${story.intro}</p></div>`;
       const interaction=choice
         ? `<div class="homeStoryReaction" role="status">${choice.reaction}</div><div class="memoryToast">${justUnlocked?`✨ Новое воспоминание: «${story.memoryTitle}». Оно теперь в семейном альбоме Беллы.`:`💛 Воспоминание «${story.memoryTitle}» уже хранится в альбоме. Эту сценку можно проживать снова.`}</div><button data-home-replay="${story.id}">Попробовать другой вариант</button>`
         : `<p>Что сделаем?</p><div class="homeStoryChoices">${story.choices.map(item=>`<button data-home-choice="${item.id}" data-home-id="${story.id}">${item.label}</button>`).join('')}</div>`;
-      show(`<h2>${story.emoji} ${story.title}</h2>${intro}${interaction}<button data-home-return="${story.room}">← Вернуться в комнату</button><button data-open-album>📖 Семейный альбом</button>`);
+      show(`<h2>${story.emoji} ${story.title}</h2>${intro}${interaction}<button data-home-return="${story.room}" data-home-owner="${story.owner}">← Вернуться в комнату</button><button data-open-album>📖 Семейный альбом</button>`);
       dialog.classList.add('homeStoryDialog');
     }
     function showFamilyAlbum(){
-      const entries=HOME_STORIES.map(story=>{
-        const memory=city.memories.find(entry=>entry.id===story.id);
-        if(!memory)return `<div class="memoryCard locked"><h3>🔒 ${story.memoryTitle}</h3><p>Загляни в комнату Рыжего: ${story.label.toLowerCase()} ждёт своей истории.</p></div>`;
-        const choice=story.choices.find(item=>item.id===memory.choiceId);
-        const date=new Date(memory.at).toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
-        return `<div class="memoryCard"><h3>${story.emoji} ${story.memoryTitle}</h3><p>${choice?.reaction||''}</p><small>В альбоме с ${date}</small></div>`;
+      const collections=[['🧡 Рыжий',RYZHIY_HOME_STORIES],['📚 Цитера',CITERA_HOME_STORIES]];
+      const sections=collections.map(([owner,stories])=>{
+        const found=stories.filter(story=>city.memories.some(entry=>entry.id===story.id)).length;
+        const entries=stories.map(story=>{
+          const memory=city.memories.find(entry=>entry.id===story.id);
+          if(!memory)return `<div class="memoryCard locked"><h3>🔒 ${story.memoryTitle}</h3><p>Загляни в комнату ${story.owner==='citera'?'Цитеры':'Рыжего'}: ${story.label.toLowerCase()} ждёт своей истории.</p></div>`;
+          const choice=story.choices.find(item=>item.id===memory.choiceId);
+          const date=new Date(memory.at).toLocaleDateString('ru-RU',{day:'numeric',month:'long'});
+          return `<div class="memoryCard"><h3>${story.emoji} ${story.memoryTitle}</h3><p>${choice?.reaction||''}</p><small>В альбоме с ${date}</small></div>`;
+        }).join('');
+        return `<h3 class="bookSupplyHeading">${owner} · ${found}/${stories.length}</h3><div class="memoryProgress">${stories.map(story=>`<span class="${city.memories.some(memory=>memory.id===story.id)?'found':''}"></span>`).join('')}</div>${entries}`;
       }).join('');
       const count=city.memories.length;
-      show(`<h2>📖 Семейный альбом Беллы</h2><p>Тёплые моменты, которые случаются без спешки. Первые три истории живут в доме Рыжего.</p><strong>Воспоминания · ${count}/${HOME_STORIES.length}</strong><div class="memoryProgress">${HOME_STORIES.map(story=>`<span class="${city.memories.some(memory=>memory.id===story.id)?'found':''}"></span>`).join('')}</div>${entries}<p class="ryzhiyHomeNote">Скоро здесь появятся воспоминания из домов Мии, Кента, Льва, Цитеры и самой Беллы.</p><button data-home-return="all">🏡 В дом Рыжего</button><button data-close>Вернуться в город</button>`);
+      show(`<h2>📖 Семейный альбом Беллы</h2><p>Личные истории котиков, которые происходят без спешки и не требуют монет.</p><strong>Воспоминания · ${count}/${HOME_STORIES.length}</strong>${sections}<p class="ryzhiyHomeNote">Впереди — истории Мии, Кента, Льва и самой Беллы.</p><button data-home-return="all" data-home-owner="ryzhiy">🏡 В дом Рыжего</button><button data-home-return="lounge" data-home-owner="citera">📚 К Цитере</button><button data-close>Вернуться в город</button>`);
       dialog.classList.add('familyAlbumDialog');
     }
     function cafeInteriorVisible(){return !overlay.hidden&&dialog.classList.contains('cafeInteriorDialog');}
@@ -609,6 +627,9 @@ import {HOME_STORIES,HOME_STORY_BY_ID,newMemoryBook,sanitizeMemoryBook,unlockMem
     }
     function showBookshop(note=''){
       selected='citera';renderUI();
+      const atHome=bookMode==='home';
+      if(atHome&&!['lounge','bedroom'].includes(bookRoom))bookRoom='lounge';
+      if(!atHome&&!['all','bookshop'].includes(bookRoom))bookRoom='bookshop';
       const b=city.books,vis=b.visitors;
       const received=receiveBookShipments(b.inventory);
       if(received.length){changed();if(!note)note=`📦 Получена поставка: ${received.map(s=>escapeBookText(BOOK_BY_ID[s.bookId].title)+' ×'+s.qty).join(', ')}.`;}
@@ -619,7 +640,7 @@ import {HOME_STORIES,HOME_STORY_BY_ID,newMemoryBook,sanitizeMemoryBook,unlockMem
       const guestButtons=vis.queue.map(id=>{const v=BOOK_VISITOR_BY_ID[id],route=bookVisitorRoute(bookMotion,id,bookSelected,now),slot=bookMotion.slots.get(id);return `<div class="bookGuestTrack" data-slot="${slot}" data-route="${route.name}" style="--route-delay:${route.delay}ms"><button class="bookGuest" data-book-visitor="${id}" aria-label="Поговорить: ${v.name}">${bookGuestSprite(v)}<span>${v.name}</span></button></div>`;}).join('');
       const departure=activeBookDeparture(bookMotion,now);
       const exitGuest=departure?`<div class="bookGuestTrack" data-route="exit" style="--route-delay:-${Math.max(0,now-departure.at)}ms" aria-hidden="true"><div class="bookGuest">${bookGuestSprite(BOOK_VISITOR_BY_ID[departure.id])}<span>${BOOK_VISITOR_BY_ID[departure.id].name}</span></div></div>`:'';
-      const roomTabs=[['all','Весь дом'],['bookshop','Лавка'],['lounge','Гостиная'],['bedroom','Спальня']].map(([id,label])=>`<button data-book-room="${id}" class="${bookRoom===id?'active':''}" aria-pressed="${bookRoom===id}">${label}</button>`).join('');
+      const roomTabs=(atHome?[['lounge','🛋 Гостиная'],['bedroom','🛏 Спальня']]:[['bookshop','📚 Крупно'],['all','Весь интерьер']]).map(([id,label])=>`<button data-book-room="${id}" class="${bookRoom===id?'active':''}" aria-pressed="${bookRoom===id}">${label}</button>`).join('');
       let content='';
       if(bookTab==='supply'){
         content=bookSupplyContent();
@@ -645,7 +666,12 @@ import {HOME_STORIES,HOME_STORY_BY_ID,newMemoryBook,sanitizeMemoryBook,unlockMem
       }
       const saleFlash=bookSaleFlash?`<div class="bookSaleFx" aria-hidden="true">${bookCoverMarkup(bookSaleFlash.id)}<strong>+${bookSaleFlash.coins} 🪙</strong></div>`:'';
       bookSaleFlash=null;
-      show(`<h2>Книжная лавка и дом Цитеры</h2><div class="bookScene" id="bookScene" data-room="${bookRoom}" data-paused="${city.paused}"><div class="bookCanvas"><img id="bookInterior" class="bookInterior" src="./assets/interiors/citera-home-v1.webp" alt="Книжная лавка, гостиная и спальня Цитеры" draggable="false"><div class="bookGuestLayer">${guestButtons}${exitGuest}</div></div><button class="sceneShelfHotspot" data-book-shelf>📚 Рассмотреть полки</button>${saleFlash}</div><div class="bookRooms" aria-label="Рассмотреть комнаты">${roomTabs}</div><span class="shopStatus">📚 Обслужено гостей: ${b.orders} · 📖 На полке: ${totalCopies(b.inventory)} · 🐈 В лавке: ${vis.queue.length}</span><div class="bookPanelTabs"><button data-book-tab="visitors" class="${bookTab==='visitors'?'active':''}">Посетители</button><button data-book-tab="shelves" class="${bookTab==='shelves'?'active':''}">Витрина</button><button data-book-tab="supply" class="${bookTab==='supply'?'active':''}">Закупки</button><button data-book-tab="stories" class="${bookTab==='stories'?'active':''}">Истории</button></div>${note?`<div class="bookMessage" role="status">${note}</div>`:''}${content}<button data-close>Вернуться в город</button>`);
+      const modes=`<div class="bookModeTabs" aria-label="Разделы здания Цитеры"><button data-book-mode="shop" class="${atHome?'':'active'}" aria-pressed="${!atHome}">📚 Лавка</button><button data-book-mode="home" class="${atHome?'active':''}" aria-pressed="${atHome}">🏡 Личные комнаты</button></div>`;
+      const personalHotspots=atHome?CITERA_HOME_STORIES.map(story=>`<button class="bookHomeHotspot" data-home-story="${story.id}" aria-label="${story.label}: открыть историю" title="${story.label}">${story.emoji}</button>`).join(''):'';
+      const found=CITERA_HOME_STORIES.filter(story=>city.memories.some(memory=>memory.id===story.id)).length;
+      const homePanel=`<div class="bookHomeStatus">🧡 Личные моменты Цитеры · ${found}/${CITERA_HOME_STORIES.length}<br>Выбери предмет прямо на картинке или нажми на историю ниже.</div><div class="bookHomeTasks">${CITERA_HOME_STORIES.map(story=>`<button data-home-story="${story.id}">${story.emoji} ${story.title}</button>`).join('')}</div><button data-open-album>📖 Семейный альбом Беллы · ${city.memories.length}/${HOME_STORIES.length}</button>`;
+      const shopPanel=`<span class="shopStatus">📚 Обслужено гостей: ${b.orders} · 📖 На полке: ${totalCopies(b.inventory)} · 🐈 В лавке: ${vis.queue.length}</span><div class="bookPanelTabs"><button data-book-tab="visitors" class="${bookTab==='visitors'?'active':''}">Посетители</button><button data-book-tab="shelves" class="${bookTab==='shelves'?'active':''}">Витрина</button><button data-book-tab="supply" class="${bookTab==='supply'?'active':''}">Закупки</button><button data-book-tab="stories" class="${bookTab==='stories'?'active':''}">Журнал</button></div>${note?`<div class="bookMessage" role="status">${note}</div>`:''}${content}`;
+      show(`<h2>Книжная лавка и дом Цитеры</h2>${modes}<div class="bookScene" id="bookScene" data-room="${bookRoom}" data-paused="${city.paused}"><div class="bookCanvas"><img id="bookInterior" class="bookInterior" src="./assets/interiors/citera-home-v1.webp" alt="Книжная лавка, гостиная и спальня Цитеры" draggable="false">${atHome?personalHotspots:`<div class="bookGuestLayer">${guestButtons}${exitGuest}</div>`}</div>${atHome?'':`<button class="sceneShelfHotspot" data-book-shelf>📚 Рассмотреть полки</button>${saleFlash}`}</div><div class="bookRooms" aria-label="Рассмотреть комнаты">${roomTabs}</div>${atHome?homePanel:shopPanel}<button data-close>Вернуться в город</button>`);
       dialog.classList.add('bookshop');
     }
     function bookAction(i){
@@ -724,9 +750,9 @@ import {HOME_STORIES,HOME_STORY_BY_ID,newMemoryBook,sanitizeMemoryBook,unlockMem
     function renderUI(){if(!city)return;document.getElementById('money').textContent=`🪙 ${city.coins}`;document.getElementById('pause').textContent=city.paused?'▶':'Ⅱ';if(selected==='cafe'){renderCafe();return;}let c=cat(selected),d=byId[selected];let bella=c.id==='bella';details.innerHTML=`<div class="row"><div class="avatar">${d.symbol}</div><div><h1>${d.name} <span style="font-size:12px;font-weight:400">${bella?'':`· уровень ${c.level}`}</span></h1><p class="sub">${d.job} · ${activities[c.activity]}</p></div></div><div class="stats">${bella?'<span class="stat">Гуляет и навещает друзей</span>':`<span class="stat">🥣 ${Math.round(c.hunger)}%</span><span class="stat">💤 ${Math.round(c.energy)}%</span><span class="stat">♡ ${Math.round(c.mood)}%</span><span class="stat">✦ ${Math.floor(c.xp)}/${c.level*18} опыта</span>`}</div><div class="actions">${bella?'<button class="action primary" data-action="cafe">☕ Кофейня</button><button class="action" data-action="guide">Как играть</button><button class="action" data-action="focus">Показать на карте</button>':`<button class="action primary" data-action="work">Работать · +монеты</button><button class="action" data-action="rest">Отдыхать · +бодрость</button><button class="action" data-action="eat">Кормить · +сытость</button><button class="action" data-action="play">Играть · +настроение</button><button class="action" data-action="walk">Гулять</button>${c.id==='citera'?'<button class="action primary" data-action="bookshop">📚 Войти в книжную лавку</button>':''}${c.id==='ryzhiy'?'<button class="action primary" data-action="ryzhiy-home">🏡 Войти в дом Рыжего</button>':''}<button class="action" data-action="focus">Показать на карте</button><button class="action" data-upgrade="bed" ${c.upgrades.bed>=3?'disabled':''}>🛏 Кровать ${c.upgrades.bed}/3 · ${homeCost(c,'bed')} 🪙</button><button class="action" data-upgrade="bowl" ${c.upgrades.bowl>=3?'disabled':''}>🥣 Миска ${c.upgrades.bowl}/3 · ${homeCost(c,'bowl')} 🪙</button><button class="action" data-upgrade="toy" ${c.upgrades.toy>=3?'disabled':''}>🧶 Игрушки ${c.upgrades.toy}/3 · ${homeCost(c,'toy')} 🪙</button>`}</div>`;}
     details.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.cafe){coffeeAction(b.dataset.cafe);return;}if(b.dataset.action==='cafe'){selected='cafe';renderUI();notice('Помоги жителям открыть кофейню.');return;}if(b.dataset.action==='guide')showGuide();else if(b.dataset.action==='bookshop')showBookshop();else if(b.dataset.action==='ryzhiy-home')showRyzhiyHome();else if(b.dataset.action==='focus'){let c=cat(selected);focusCity(c.x,c.y);}else if(b.dataset.action)assign(cat(selected),b.dataset.action);else if(b.dataset.upgrade)improve(b.dataset.upgrade);});
     function cleanupCafeScene(){clearTimeout(cafeRefillTimer);clearTimeout(cafeDepartTimer);cafeDeparting=null;cafeSeen.clear();}
-    function close(){if(dialog.classList.contains('bookshop')){bookRoom='all';bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;}cleanupCafeScene();overlay.hidden=true;dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','homeStoryDialog','familyAlbumDialog');}
+    function close(){bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;bookMode='shop';bookRoom='bookshop';cleanupCafeScene();overlay.hidden=true;dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','homeStoryDialog','familyAlbumDialog');}
     function show(html){if(dialog.classList.contains('cafeInteriorDialog'))cleanupCafeScene();dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','homeStoryDialog','familyAlbumDialog');dialog.innerHTML=html;overlay.hidden=false;}
-    function showGuide(){show(`<h2>Добро пожаловать в бухту</h2><p>Коснись кота, чтобы выбрать жителя. Коты сами работают, едят и отдыхают. Назначай занятия, помогай с настроением и улучшай их дома.</p><p>Коснись здания на карте, чтобы открыть его окно. Там можно отправить жителя к входу по дорожке, открыть существующие занятия или управление домом. Кнопка «Места» покажет все доступные локации. Обычные жилые дома без жителей не открываются.</p><p>Перетаскивай город одним пальцем, меняй масштаб двумя. Пауза останавливает жизнь котов; сохранения хранятся в Safari.</p><p>Кент работает в ратуше, Мия — в обсерватории, Лев лечит жителей в больнице. В лавке Цитеры гости входят через дверь, подходят к полкам, а при начале беседы идут к кассе. После покупки они уходят с книгой. На вкладке «Витрина» можно рассматривать обложки и проверять остатки. В «Закупках» пополняй склад: доставка займёт немного реального времени, даже если выйти из игры. Когда двое гостей заговорят у полок, присоединяйся к их небольшой истории. Кофейню Рыжего можно открыть через поручения.</p><p>В доме Рыжего нажимай на камин, кухню и кровать — там живут маленькие истории. Первый выбор сохраняет воспоминание в семейном альбоме Беллы. Альбом можно открыть через меню ☰; сценки можно повторять без штрафов.</p><button data-close>Играть</button>`);}
+    function showGuide(){show(`<h2>Добро пожаловать в бухту</h2><p>Коснись кота, чтобы выбрать жителя. Коты сами работают, едят и отдыхают. Назначай занятия, помогай с настроением и улучшай их дома.</p><p>Коснись здания на карте, чтобы открыть его окно. Там можно отправить жителя к входу по дорожке, открыть существующие занятия или управление домом. Кнопка «Места» покажет все доступные локации. Обычные жилые дома без жителей не открываются.</p><p>Перетаскивай город одним пальцем, меняй масштаб двумя. Пауза останавливает жизнь котов; сохранения хранятся в Safari.</p><p>Кент работает в ратуше, Мия — в обсерватории, Лев лечит жителей в больнице. В лавке Цитеры гости входят через дверь, подходят к полкам, а при начале беседы идут к кассе. После покупки они уходят с книгой. На вкладке «Витрина» можно рассматривать обложки и проверять остатки. В «Закупках» пополняй склад: доставка займёт немного реального времени, даже если выйти из игры. Когда двое гостей заговорят у полок, присоединяйся к их небольшой истории. Кофейню Рыжего можно открыть через поручения.</p><p>В доме Рыжего нажимай на камин, кухню и кровать — там живут маленькие истории. В здании Цитеры выбери «Личные комнаты» и исследуй диван и книгу у кровати. Первый выбор сохраняет воспоминание в семейном альбоме Беллы. Альбом можно открыть через меню ☰; сценки можно повторять без штрафов.</p><button data-close>Играть</button>`);}
     // Only the open interior mounts its image; none of these controls run in the map animation loop.
     details.addEventListener('click',e=>{
       if(!e.target.closest('button[data-cafe="interior"]'))return;
@@ -734,18 +760,23 @@ import {HOME_STORIES,HOME_STORY_BY_ID,newMemoryBook,sanitizeMemoryBook,unlockMem
     },true);
     dialog.addEventListener('click',e=>{
       const button=e.target.closest('button');if(!button)return;
-      if(button.dataset.homeStory){e.stopImmediatePropagation();showRyzhiyStory(button.dataset.homeStory);return;}
+      if(button.dataset.homeStory){e.stopImmediatePropagation();showHomeStory(button.dataset.homeStory);return;}
       if(button.dataset.homeChoice!==undefined){
         e.stopImmediatePropagation();
         const id=button.dataset.homeId,story=HOME_STORY_BY_ID[id],choiceId=button.dataset.homeChoice;
         if(!story||!story.choices.some(choice=>choice.id===choiceId))return;
         const newMemory=unlockMemory(city.memories,id,choiceId);
         if(newMemory)changed();
-        showRyzhiyStory(id,choiceId,newMemory);
+        showHomeStory(id,choiceId,newMemory);
         return;
       }
-      if(button.dataset.homeReplay){e.stopImmediatePropagation();showRyzhiyStory(button.dataset.homeReplay);return;}
-      if(button.dataset.homeReturn){e.stopImmediatePropagation();showRyzhiyHome(button.dataset.homeReturn);return;}
+      if(button.dataset.homeReplay){e.stopImmediatePropagation();showHomeStory(button.dataset.homeReplay);return;}
+      if(button.dataset.homeReturn){
+        e.stopImmediatePropagation();
+        if(button.dataset.homeOwner==='citera'){bookMode='home';bookRoom=button.dataset.homeReturn;showBookshop();}
+        else showRyzhiyHome(button.dataset.homeReturn);
+        return;
+      }
       if(button.hasAttribute('data-open-album')){e.stopImmediatePropagation();showFamilyAlbum();return;}
       if(button.dataset.cafeGuest!==undefined){
         e.stopImmediatePropagation();
@@ -837,7 +868,7 @@ import {HOME_STORIES,HOME_STORY_BY_ID,newMemoryBook,sanitizeMemoryBook,unlockMem
       }
     },true);
     document.getElementById('places').onclick=showPlaces;
-    document.getElementById('settings').onclick=()=>show(`<h2>Город и сохранение</h2><p>Игра сохраняется автоматически в Safari. Для переноса на другое устройство экспортируй файл JSON и импортируй его там.</p><button data-open-album>📖 Семейный альбом · ${city.memories.length}/${HOME_STORIES.length}</button><button id="export">Экспортировать сохранение</button><button id="import">Импортировать файл</button><button id="restore">Вернуть предыдущую копию</button><button id="restoreBeforeMemories">Копия до семейного альбома</button><button id="restoreBeforeShelves">Копия до новой витрины</button><button id="restoreBeforeInventory">Копия до системы закупок</button><button id="restoreBefore2D">Копия до перехода в 2D</button><button id="restoreBeforePaths">Копия до новых маршрутов</button><button id="help">Как играть</button><button data-close>Закрыть</button><small>Не очищай данные Safari до экспорта. Формат сохранения: ${FORMAT}.</small>`);
+    document.getElementById('settings').onclick=()=>show(`<h2>Город и сохранение</h2><p>Игра сохраняется автоматически в Safari. Для переноса на другое устройство экспортируй файл JSON и импортируй его там.</p><button data-open-album>📖 Семейный альбом · ${city.memories.length}/${HOME_STORIES.length}</button><button id="export">Экспортировать сохранение</button><button id="import">Импортировать файл</button><button id="restore">Вернуть предыдущую копию</button><button id="restoreBeforeCitera">Копия до личных комнат Цитеры</button><button id="restoreBeforeMemories">Копия до семейного альбома</button><button id="restoreBeforeShelves">Копия до новой витрины</button><button id="restoreBeforeInventory">Копия до системы закупок</button><button id="restoreBefore2D">Копия до перехода в 2D</button><button id="restoreBeforePaths">Копия до новых маршрутов</button><button id="help">Как играть</button><button data-close>Закрыть</button><small>Не очищай данные Safari до экспорта. Формат сохранения: ${FORMAT}.</small>`);
     document.getElementById('pause').onclick=()=>{city.paused=!city.paused;notice(city.paused?'Город на паузе.':'Город снова живёт.');changed();};
     dialog.addEventListener('click',e=>{
       const button=e.target.closest('button');if(!button)return;
@@ -854,12 +885,13 @@ import {HOME_STORIES,HOME_STORY_BY_ID,newMemoryBook,sanitizeMemoryBook,unlockMem
       if(patientButton)hospitalAction(patientButton.dataset.patient);
     });
     dialog.addEventListener('click',async e=>{
-      if(!['restoreBeforeShelves','restoreBeforeMemories'].includes(e.target.closest('button')?.id))return;
+      if(!['restoreBeforeShelves','restoreBeforeMemories','restoreBeforeCitera'].includes(e.target.closest('button')?.id))return;
       e.stopImmediatePropagation();
-      const isMemories=e.target.closest('button').id==='restoreBeforeMemories';
-      const saved=await read(isMemories?'before-home-memories-v1':'before-book-shelves-v1').catch(()=>null);
+      const backup=e.target.closest('button').id;
+      const selectedBackup={restoreBeforeCitera:['before-citera-home-v1','личных комнат Цитеры'],restoreBeforeMemories:['before-home-memories-v1','семейного альбома'],restoreBeforeShelves:['before-book-shelves-v1','витрины']}[backup];
+      const saved=await read(selectedBackup[0]).catch(()=>null);
       if(!saved||!valid(saved)){close();notice('Резервная копия отсутствует.');return;}
-      if(confirm(`Восстановить город до добавления ${isMemories?'семейного альбома':'витрины'}? Текущий прогресс будет заменён.`)){
+      if(confirm(`Восстановить город до добавления ${selectedBackup[1]}? Текущий прогресс будет заменён.`)){
         city=sanitize(saved);city.savedAt=Date.now();changed();notice('Резервная копия восстановлена.');
       }
       close();
@@ -867,6 +899,12 @@ import {HOME_STORIES,HOME_STORY_BY_ID,newMemoryBook,sanitizeMemoryBook,unlockMem
     dialog.addEventListener('click',e=>{
       const button=e.target.closest('button');if(!button)return;
       const d=button.dataset;
+      if(d.bookMode){
+        e.stopImmediatePropagation();
+        if(!['shop','home'].includes(d.bookMode)||d.bookMode===bookMode)return;
+        bookMode=d.bookMode;bookRoom=bookMode==='home'?'lounge':'bookshop';
+        showBookshop();return;
+      }
       if(d.bookRoom){
         e.stopImmediatePropagation();bookRoom=d.bookRoom;
         document.getElementById('bookScene').dataset.room=bookRoom;
@@ -904,9 +942,9 @@ import {HOME_STORIES,HOME_STORY_BY_ID,newMemoryBook,sanitizeMemoryBook,unlockMem
     let map=null;
     function focusCity(x,y){map?.focus(x,y);}
     function frame(now){const dt=clamp((now-lastFrame)/1000,0,.1);lastFrame=now;simulate(dt);map?.render(now);requestAnimationFrame(frame);}
-    async function preserveOldMap(saved){if(!saved)return;for(const [limit,key] of [[6,'before-map-2d-v1'],[8,'before-paths-2d-v1'],[10,'before-book-inventory-v1'],[11,'before-book-shelves-v1'],[12,'before-home-memories-v1']]){if(saved.version>=limit||await read(key))continue;await new Promise((resolve,reject)=>{const tx=db.transaction('saves','readwrite');tx.objectStore('saves').put(saved,key);tx.oncomplete=resolve;tx.onerror=reject;});}}
+    async function preserveOldMap(saved){if(!saved)return;for(const [limit,key] of [[6,'before-map-2d-v1'],[8,'before-paths-2d-v1'],[10,'before-book-inventory-v1'],[11,'before-book-shelves-v1'],[12,'before-home-memories-v1'],[13,'before-citera-home-v1']]){if(saved.version>=limit||await read(key))continue;await new Promise((resolve,reject)=>{const tx=db.transaction('saves','readwrite');tx.objectStore('saves').put(saved,key);tx.oncomplete=resolve;tx.onerror=reject;});}}
     async function start(){
-      try{db=await openDB();const saved=await read(KEY),previous=await read('previous');const restored=valid(previous)&&(!valid(saved)||previous.version>saved.version);const source=restored?previous:saved;await preserveOldMap(source);city=valid(source)?sanitize(source):initial();if(saved&&!valid(source))notice('Сохранение повреждено или создано другой версией. Начат новый город.');else if(source){offline();if(restored)notice('Восстановлен прогресс из более новой резервной копии. Закрой старые вкладки игры.');else if(source.version<FORMAT)notice('В лавке появились витрина и новые беседы! Монеты, книги, поставки и истории сохранены.');}else notice('Коснись кота или выбери жителя в панели.');const delivered=receiveBookShipments(city.books.inventory);if(delivered.length)notice(`📦 Получено поставок: ${delivered.length}. Книги ждут на полке.`);await write();}
+      try{db=await openDB();const saved=await read(KEY),previous=await read('previous');const restored=valid(previous)&&(!valid(saved)||previous.version>saved.version);const source=restored?previous:saved;await preserveOldMap(source);city=valid(source)?sanitize(source):initial();if(saved&&!valid(source))notice('Сохранение повреждено или создано другой версией. Начат новый город.');else if(source){offline();if(restored)notice('Восстановлен прогресс из более новой резервной копии. Закрой старые вкладки игры.');else if(source.version<FORMAT)notice('У Цитеры появились личные истории. Прежние монеты, книги, заказы и воспоминания сохранены.');}else notice('Коснись кота или выбери жителя в панели.');const delivered=receiveBookShipments(city.books.inventory);if(delivered.length)notice(`📦 Получено поставок: ${delivered.length}. Книги ждут на полке.`);await write();}
       catch(err){city=city||initial();notice('Автосохранение недоступно. Экспортируй прогресс через ☰.');}
       try{map=createMap({canvas,catArt:CAT_ART,getCity:()=>city,getSelected:()=>selected,onSelect:id=>{selected=id;renderUI();notice('Выбран житель: '+byId[id].name+'.');},onLocation:id=>showLocation(id),onNotice:notice});renderUI();requestAnimationFrame(frame);}
       catch(err){notice('Не удалось открыть карту: '+err.message);}
