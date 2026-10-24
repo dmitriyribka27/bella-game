@@ -3,17 +3,19 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const app=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
-const menuLine=app.split('\n').find(line=>line.includes("document.getElementById('settings').onclick"));
+const menuLine=app.split('\n').find(line=>line.includes('show(`<h2>Меню бухты'));
 const residentLine=app.split('\n').find(line=>line.includes('function renderUI(){'));
 
-test('settings menu has exactly the four useful controls and no legacy backup buttons',()=>{
+test('settings menu keeps four useful controls plus two optional audio toggles',()=>{
   assert.ok(menuLine);
   const labels=Array.from(menuLine.matchAll(/<button\b[^>]*>(.*?)<\/button>/g),m=>m[1]);
-  assert.equal(labels.length,4);
-  assert.match(labels[0],/Семейный альбом/);
-  assert.match(labels[1],/Экспортировать сохранение/);
-  assert.match(labels[2],/Импортировать файл/);
-  assert.equal(labels[3],'Закрыть');
+  assert.equal(labels.length,6);
+  assert.match(labels[0],/Музыка/);
+  assert.match(labels[1],/Звук кнопок/);
+  assert.match(labels[2],/Семейный альбом/);
+  assert.match(labels[3],/Экспортировать сохранение/);
+  assert.match(labels[4],/Импортировать файл/);
+  assert.equal(labels[5],'Закрыть');
   assert.doesNotMatch(menuLine,/restore|Как играть|Копия до|Вернуть предыдущую/);
 });
 

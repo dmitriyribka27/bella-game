@@ -23,9 +23,10 @@
     .brand strong { display:block; font-size:15px; white-space:nowrap; }
     .brand small { display:block; font-size:10px; opacity:.75; }
     .gameClock { font-variant-numeric:tabular-nums; font-weight:750; color:#476a6b; white-space:nowrap; }
-    .topRight { display:flex; gap:7px; pointer-events:auto; }
+    .topRight { display:flex; gap:5px; pointer-events:auto; }
     .money { padding:10px; border-radius:14px; font-weight:800; white-space:nowrap; }
     .icon { width:43px; height:43px; border-radius:14px; border-color:#fff9; font-size:19px; }
+    .icon.soundOff { opacity:.65; }
     .hint { position:absolute; z-index:2; top:calc(env(safe-area-inset-top) + 75px); left:50%; transform:translateX(-50%); text-align:center; background:#193e40c8; color:white; border-radius:22px; padding:7px 12px; font-size:11px; white-space:nowrap; pointer-events:none; }
     .sheet { position:absolute; z-index:3; bottom:0; left:0; right:0; height:min(31%,260px); overflow:auto; touch-action:pan-y; overscroll-behavior:contain; padding:11px 15px calc(env(safe-area-inset-bottom) + 12px); background:#fff9ed; border-radius:24px 24px 0 0; box-shadow:0 -8px 35px #22444532; }
     .grab { width:36px; height:4px; border-radius:4px; background:#c7d7ce; margin:0 auto 8px; }
@@ -535,7 +536,7 @@
   <div id="catLabels" aria-hidden="true"></div>
   <header class="top">
     <div class="brand"><strong>Тихая бухта</strong><small class="gameClock" id="gameClock" aria-label="Игровые часы">🕰️ 08:00 · день 1</small></div>
-    <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Сохранения и помощь">☰</button></div>
+    <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="soundToggle" aria-label="Выключить музыку" title="Музыка">♫</button><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Меню">☰</button></div>
   </header>
   <div class="hint">Коснись здания · двумя пальцами меняй масштаб</div>
   <div class="mapTools" aria-label="Карта и места"><button id="places">Места</button><button id="fitMap">Весь остров</button><button id="zoomOut" aria-label="Отдалить">−</button><button id="zoomIn" aria-label="Приблизить">+</button></div>
@@ -560,6 +561,7 @@ import {OBSERVATORY_DISCOVERIES,OBSERVATORY_DIRECTIONS,OBSERVATORY_FOCUS,newObse
 import {HOME_UPGRADE_MAX_BONUS,HOME_UPGRADE_SECTORS,homeUpgradeBonus,homeUpgradeCost,homeRecoveryRate,purchaseHomeUpgrade} from "./home-upgrades.js?v=1";
 import {WORK_SHIFT_SECONDS,MIN_WORK_NEED,MANUAL_FEED_COST,HOSPITAL_COST,CAFE_OPENING_COST,CAFE_GUEST_INTERVAL_MS,CAFE_RECIPE_EARNINGS,canStartWork,workWage,buyManualFeed} from "./game-economy.js?v=1";
 import {newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditOfflineCoins} from "./game-time.js?v=1";
+import {createGameAudio} from "./game-audio.js?v=1";
 (()=>{"use strict";
     const FORMAT=14, DB='quiet-bay-save', KEY='city';
     const cafeSite={id:'cafe',name:'Кофейня',home:[5,11.2],roof:'#c98165'};
@@ -627,6 +629,7 @@ import {newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditO
     let observatoryTargetId=null,observatoryDirection='sea',observatoryFocus='near',observatoryAligned=false,observatoryReplay=0;
     const cafeSeen=new Set();
     const bookMotion=createBookVisitorMotion();
+    const gameAudio=createGameAudio();
     let lastFrame=performance.now(), lastClockRender=0, hiddenAt=null, saveTimer=0, dirty=false;
     function initial(){const visitors=newBookVisitorState();return {version:FORMAT,coins:30,paused:false,savedAt:Date.now(),clock:newGameClock(),coffee:{built:false,plan:false,delivery:false,recipe:false,style:null,orders:0,service:newCafeServiceState()},books:{orders:0,nextAt:0,visitors,inventory:newBookInventory(visitors),scenes:[]},memories:newMemoryBook(),observatory:newObservatoryState(),cats:defs.map(d=>({id:d.id,x:d.home[0],y:d.home[1],target:[...d.home],activity:d.id==='bella'?'walk':'work',hunger:80,energy:80,mood:75,xp:0,level:1,phase:0,upgrades:{bed:0,bowl:0,toy:0}}))};}
     function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
@@ -710,6 +713,16 @@ import {newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditO
       const element=document.getElementById('gameClock');
       element.textContent=`🕰️ ${clock.time} · день ${clock.day}`;
       element.setAttribute('aria-label',`Игровое время ${clock.time}, день ${clock.day}`);
+    }
+    function updateAudioUI(){
+      const button=document.getElementById('soundToggle'),enabled=gameAudio.preferences.music;
+      button.textContent=enabled?'♫':'🔇';
+      button.classList.toggle('soundOff',!enabled);
+      button.setAttribute('aria-label',enabled?'Выключить музыку':'Включить музыку');
+      button.title=enabled?'Выключить музыку':'Включить музыку';
+    }
+    function showSettings(){
+      show(`<h2>Меню бухты</h2><button data-audio-toggle="music">${gameAudio.preferences.music?'🎵 Музыка · включена':'🔇 Музыка · выключена'}</button><button data-audio-toggle="effects">${gameAudio.preferences.effects?'✨ Звук кнопок · включён':'✨ Звук кнопок · выключен'}</button><button data-open-album>📖 Семейный альбом · ${city.memories.length}/${HOME_STORIES.length}</button><button id="export">Экспортировать сохранение</button><button id="import">Импортировать файл</button><button data-close>Закрыть</button>`);
     }
     function cafeReady(){let c=city.coffee;return c.plan&&c.delivery&&c.recipe&&c.style;}
     function renderCafe(){
@@ -1537,9 +1550,22 @@ import {newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditO
         e.stopImmediatePropagation();selected='cafe';renderUI();showCafeOpening();
       }
     },true);
+    // Mobile Safari permits playback only after a real user gesture.
+    // A quiet first touch begins the soundtrack; opening the game never autoplays.
+    document.addEventListener('pointerdown',()=>{if(city)gameAudio.unlock();},true);
+    document.addEventListener('keydown',()=>{if(city)gameAudio.unlock();},true);
+    document.addEventListener('click',e=>{if(e.target.closest('button'))gameAudio.tap();},true);
     document.getElementById('places').onclick=showPlaces;
-    document.getElementById('settings').onclick=()=>show(`<h2>Меню бухты</h2><button data-open-album>📖 Семейный альбом · ${city.memories.length}/${HOME_STORIES.length}</button><button id="export">Экспортировать сохранение</button><button id="import">Импортировать файл</button><button data-close>Закрыть</button>`);
-    document.getElementById('pause').onclick=()=>{city.paused=!city.paused;notice(city.paused?'Город на паузе.':'Город снова живёт.');changed();};
+    document.getElementById('settings').onclick=showSettings;
+    document.getElementById('soundToggle').onclick=()=>{gameAudio.setMusic(!gameAudio.preferences.music);updateAudioUI();};
+    document.getElementById('pause').onclick=()=>{city.paused=!city.paused;gameAudio.setPaused(city.paused);notice(city.paused?'Город на паузе.':'Город снова живёт.');changed();};
+    dialog.addEventListener('click',e=>{
+      const button=e.target.closest('button[data-audio-toggle]');if(!button)return;
+      e.stopImmediatePropagation();
+      if(button.dataset.audioToggle==='music')gameAudio.setMusic(!gameAudio.preferences.music);
+      else if(button.dataset.audioToggle==='effects')gameAudio.setEffects(!gameAudio.preferences.effects);
+      updateAudioUI();showSettings();
+    },true);
     dialog.addEventListener('click',e=>{
       const button=e.target.closest('button');if(!button)return;
       const d=button.dataset;
@@ -1623,6 +1649,7 @@ import {newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditO
     async function start(){
       try{db=await openDB();const saved=await read(KEY),previous=await read('previous');const restored=valid(previous)&&(!valid(saved)||previous.version>saved.version);const source=restored?previous:saved;await preserveOldMap(source);city=valid(source)?sanitize(source):initial();if(saved&&!valid(source))notice('Сохранение повреждено или создано другой версией. Начат новый город.');else if(source){offline();if(restored)notice('Восстановлен прогресс из более новой резервной копии. Закрой старые вкладки игры.');else if(source.version<FORMAT)notice('Появились игровые часы и новые цены. Прежние монеты, покупки, книги и воспоминания сохранены.');}else notice('Коснись кота или выбери жителя в панели.');const delivered=receiveBookShipments(city.books.inventory);if(delivered.length)notice(`📦 Получено поставок: ${delivered.length}. Книги ждут на полке.`);await write();}
       catch(err){city=city||initial();notice('Автосохранение недоступно. Экспортируй прогресс через ☰.');}
+      gameAudio.setPaused(city.paused);updateAudioUI();
       try{map=createMap({canvas,catArt:CAT_ART,getCity:()=>city,getSelected:()=>selected,onSelect:id=>{selected=id;renderUI();notice('Выбран житель: '+byId[id].name+'.');},onLocation:id=>showLocation(id),onNotice:notice});renderUI();requestAnimationFrame(frame);}
       catch(err){notice('Не удалось открыть карту: '+err.message);}
       setInterval(()=>{if(dirty)write().catch(()=>{})},15000);
@@ -1633,6 +1660,7 @@ import {newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditO
         if(bringNextBookVisitor(city.books.visitors)){changed();if(bookTab==='visitors'&&!bookSelected)showBookshop('🐾 В лавку заглянул новый посетитель!');}
       },3000);
       document.addEventListener('visibilitychange',()=>{
+        gameAudio.sync();
         if(document.hidden){
           hiddenAt=Date.now();
           write().catch(()=>{});
