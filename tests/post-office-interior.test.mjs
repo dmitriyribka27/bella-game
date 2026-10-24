@@ -26,7 +26,7 @@ test('the post location opens four views and can return to the world',()=>{
 
 test('post office has no gameplay state changes or reward actions',()=>{
   const start=app.indexOf('function showPostOffice(){');
-  const end=app.indexOf('function showHomeStory(',start);
+  const end=app.indexOf('function showMarket(){',start);
   assert.ok(start>=0&&end>start);
   const postOffice=app.slice(start,end);
   assert.doesNotMatch(postOffice,/unlockMemory\(|changed\(|coins\s*[+\-]=|xp\s*[+\-]=|data-home-story/);
