@@ -33,6 +33,15 @@
     .money { padding:10px; border-radius:14px; font-weight:800; white-space:nowrap; }
     .icon { width:43px; height:43px; border-radius:14px; border-color:#fff9; font-size:19px; }
     .icon.soundOff { opacity:.65; }
+    .icon.speedButton { font-size:15px; font-weight:850; }
+    .icon.speedActive { background:#f2bc86; color:#60452d; border-color:#ffe1b9; }
+    @media (max-width:420px) {
+      .top { padding-left:10px; padding-right:10px; gap:5px; }
+      .brand { padding:7px 9px; }
+      .topRight { gap:4px; }
+      .icon { width:38px; height:40px; border-radius:12px; }
+      .money { padding:9px 7px; font-size:13px; }
+    }
     .hint { position:absolute; z-index:4; top:calc(env(safe-area-inset-top) + 75px); left:50%; transform:translateX(-50%); text-align:center; background:#193e40c8; color:white; border-radius:22px; padding:7px 12px; font-size:11px; white-space:nowrap; pointer-events:none; }
     .sheet { position:absolute; z-index:5; bottom:0; left:0; right:0; height:min(31%,260px); overflow:auto; touch-action:pan-y; overscroll-behavior:contain; padding:11px 15px calc(env(safe-area-inset-bottom) + 12px); background:#fff9ed; border-radius:24px 24px 0 0; box-shadow:0 -8px 35px #22444532; }
     .grab { width:36px; height:4px; border-radius:4px; background:#c7d7ce; margin:0 auto 8px; }
@@ -561,7 +570,7 @@
   <div id="catLabels" aria-hidden="true"></div>
   <header class="top">
     <div class="brand"><strong>Тихая бухта</strong><small class="gameClock" id="gameClock" aria-label="Игровые часы">🕰️ 08:00 · день 1</small></div>
-    <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="soundToggle" aria-label="Выключить музыку" title="Музыка">♫</button><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Меню">☰</button></div>
+    <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="soundToggle" aria-label="Выключить музыку" title="Музыка">♫</button><button class="icon speedButton" id="speed" aria-label="Ускорить время в 3 раза" aria-pressed="false" title="Ускорить время">⏩</button><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Меню">☰</button></div>
   </header>
   <div class="hint">Коснись здания · двумя пальцами меняй масштаб</div>
   <div class="mapTools" aria-label="Карта и места"><button id="places">Места</button><button id="fitMap">Весь остров</button><button id="zoomOut" aria-label="Отдалить">−</button><button id="zoomIn" aria-label="Приблизить">+</button></div>
@@ -585,7 +594,7 @@ import {TOWN_HALL_FESTIVAL_COST,TOWN_HALL_FESTIVAL_MOOD,getTownHallReport,issueT
 import {OBSERVATORY_DISCOVERIES,OBSERVATORY_DIRECTIONS,OBSERVATORY_FOCUS,newObservatoryState,sanitizeObservatoryState,nextObservatoryDiscovery,telescopeIsAligned,skyPatternsFor,recordObservatoryDiscovery} from "./observatory-work.js?v=1";
 import {HOME_UPGRADE_MAX_BONUS,HOME_UPGRADE_SECTORS,homeUpgradeBonus,homeUpgradeCost,homeRecoveryRate,purchaseHomeUpgrade} from "./home-upgrades.js?v=1";
 import {WORK_SHIFT_SECONDS,MIN_WORK_NEED,MANUAL_FEED_COST,HOSPITAL_COST,CAFE_OPENING_COST,CAFE_GUEST_INTERVAL_MS,CAFE_RECIPE_EARNINGS,canStartWork,workWage,buyManualFeed} from "./game-economy.js?v=1";
-import {newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditOfflineCoins} from "./game-time.js?v=1";
+import {FAST_FORWARD_MULTIPLIER,toggleTimeSpeed,newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditOfflineCoins} from "./game-time.js?v=2";
 import {chooseStoredSave,secondsSince,saveMarker,requestPersistentStorage} from "./save-health.js?v=2";
 import {catRoutinePeriod,chooseCatRoutine} from "./cat-routines.js?v=1";
 import {createGameAudio} from "./game-audio.js?v=3";
@@ -649,7 +658,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
     const canvas=document.getElementById('world');
     const details=document.getElementById('details'), msg=document.getElementById('message');
     const overlay=document.getElementById('overlay'), dialog=document.getElementById('dialog');
-    let db, city, selected='bella', gesture=null;
+    let db, city, selected='bella', gesture=null, speedFactor=1;
     let bookMode='shop',bookRoom='bookshop',bookTab='visitors',bookSelected=null,bookSupplier='needed',bookFocused=null,bookShelfFilter='stock',bookSceneSelected=null,bookSaleFlash=null;
     let cafeTask=null,cafeSelectedGuest=null,cafeDeparting=null,cafeRefillTimer=0,cafeDepartTimer=0;
     let ryzhiyRoom='all',bellaRoom='all';
@@ -802,6 +811,14 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       button.classList.toggle('soundOff',!enabled);
       button.setAttribute('aria-label',enabled?'Выключить музыку':'Включить музыку');
       button.title=enabled?'Выключить музыку':'Включить музыку';
+    }
+    function updateSpeedUI(){
+      const button=document.getElementById('speed'),fast=speedFactor===FAST_FORWARD_MULTIPLIER;
+      button.textContent=fast?`×${FAST_FORWARD_MULTIPLIER}`:'⏩';
+      button.classList.toggle('speedActive',fast);
+      button.setAttribute('aria-pressed',String(fast));
+      button.setAttribute('aria-label',fast?'Вернуть обычную скорость':`Ускорить время в ${FAST_FORWARD_MULTIPLIER} раза`);
+      button.title=fast?'Обычная скорость':`Ускорить в ${FAST_FORWARD_MULTIPLIER} раза`;
     }
     function showSettings(){
       show(`<h2>Меню бухты</h2><button data-audio-toggle="music">${gameAudio.preferences.music?'🎵 Музыка · включена':'🔇 Музыка · выключена'}</button><button data-audio-toggle="effects">${gameAudio.preferences.effects?'✨ Кнопки и монеты · включены':'✨ Кнопки и монеты · выключены'}</button><button data-lighting-toggle>${lightingEnabled?'🌗 Смена дня и ночи · включена':'☀️ Смена дня и ночи · выключена'}</button><button data-open-album>📖 Семейный альбом · ${city.memories.length}/${HOME_STORIES.length}</button><button id="checkSave">🛡️ Проверить сохранение и офлайн</button><button id="export">Экспортировать сохранение</button><button id="import">Импортировать файл</button><button data-close>Закрыть</button>`);
@@ -1705,6 +1722,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
     document.getElementById('places').onclick=showPlaces;
     document.getElementById('settings').onclick=showSettings;
     document.getElementById('soundToggle').onclick=()=>{gameAudio.setMusic(!gameAudio.preferences.music);updateAudioUI();};
+    document.getElementById('speed').onclick=()=>{speedFactor=toggleTimeSpeed(speedFactor);updateSpeedUI();notice(speedFactor===1?'Время снова идёт как обычно.':`Время ускорено в ${FAST_FORWARD_MULTIPLIER} раза. Нажми ещё раз, чтобы замедлить.`);};
     document.getElementById('pause').onclick=()=>{city.paused=!city.paused;gameAudio.setPaused(city.paused);notice(city.paused?'Город на паузе.':'Город снова живёт.');changed();};
     dialog.addEventListener('click',e=>{
       const button=e.target.closest('button[data-audio-toggle],button[data-lighting-toggle]');if(!button)return;
@@ -1790,7 +1808,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
     function frame(now){
       const dt=clamp((now-lastFrame)/1000,0,.1);
       lastFrame=now;
-      simulate(dt);
+      simulate(dt*speedFactor);
       if(city&&now-lastClockRender>=1000){updateGameClock();lastClockRender=now;}
       map?.render(now);
       requestAnimationFrame(frame);
@@ -1817,7 +1835,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
         await write();
       }
       catch(err){city=city||initial();notice('Автосохранение недоступно. Экспортируй прогресс через ☰.');}
-      gameAudio.setPaused(city.paused);updateAudioUI();
+      gameAudio.setPaused(city.paused);updateAudioUI();updateSpeedUI();
       try{map=createMap({canvas,catArt:{...CAT_ART,bella:{src:'./assets/cats/bella-hello-kitty-v1.webp'}},getCity:()=>city,getSelected:()=>selected,onSelect:id=>{selected=id;renderUI();notice('Выбран житель: '+byId[id].name+'.');},onLocation:id=>showLocation(id),onNotice:notice});renderUI();requestAnimationFrame(frame);}
       catch(err){notice('Не удалось открыть карту: '+err.message);}
       setupOfflineCaching();
