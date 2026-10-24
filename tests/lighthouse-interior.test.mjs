@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const app=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
-const art=readFileSync(new URL('../docs/assets/interiors/lighthouse-v1.webp',import.meta.url));
+const art=readFileSync(new URL('../docs/assets/interiors/lighthouse-v2.webp',import.meta.url));
 
 test('lighthouse uses optimized portrait WebP and lazy interior markup',()=>{
   assert.equal(art.toString('ascii',0,4),'RIFF');
   assert.equal(art.toString('ascii',8,12),'WEBP');
   assert.ok(art.byteLength>100_000);
   assert.ok(art.byteLength<500_000);
-  assert.match(app,/src="\.\/assets\/interiors\/lighthouse-v1\.webp"/);
+  assert.match(app,/src="\.\/assets\/interiors\/lighthouse-v2\.webp"/);
   assert.match(app,/function showLighthouse\(\)/);
 });
 
