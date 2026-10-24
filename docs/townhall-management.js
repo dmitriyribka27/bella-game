@@ -1,6 +1,6 @@
 // Small civic actions reuse the current residents, coin balance and map routes.
 // Nothing here introduces a new save field or an ongoing daily obligation.
-export const TOWN_HALL_FESTIVAL_COST=15;
+export const TOWN_HALL_FESTIVAL_COST=50;
 export const TOWN_HALL_FESTIVAL_MOOD=12;
 const residentCats=city=>Array.isArray(city?.cats)?city.cats.filter(cat=>cat.id!=='bella'):[];
 const clamp100=value=>Math.max(0,Math.min(100,Number.isFinite(value)?value:0));

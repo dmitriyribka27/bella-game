@@ -56,11 +56,11 @@ test('rest and walk orders change existing targets and return to the normal city
 
 test('festival uses existing coins and caps each cat mood at 100',()=>{
   const city=createCity();
-  assert.equal(TOWN_HALL_FESTIVAL_COST,15);
+  assert.equal(TOWN_HALL_FESTIVAL_COST,50);
   assert.equal(TOWN_HALL_FESTIVAL_MOOD,12);
   const result=holdTownHallFestival(city);
-  assert.deepEqual(result,{ok:true,spent:15,residents:5,moodGained:58});
-  assert.equal(city.coins,35);
+  assert.deepEqual(result,{ok:true,spent:50,residents:5,moodGained:58});
+  assert.equal(city.coins,0);
   assert.deepEqual(city.cats.slice(0,5).map(cat=>cat.mood),[62,72,82,92,100]);
   assert.equal(city.cats[5].mood,100);
 });
@@ -70,7 +70,7 @@ test('festival refuses insufficient funds or full mood without changing any stat
   const oldCity=structuredClone(city);
   assert.deepEqual(holdTownHallFestival(city),{ok:false,reason:'funds',spent:0});
   assert.deepEqual(city,oldCity);
-  city.coins=30;city.cats.slice(0,5).forEach(cat=>{cat.mood=100;});
+  city.coins=50;city.cats.slice(0,5).forEach(cat=>{cat.mood=100;});
   const allHappy=structuredClone(city);
   assert.deepEqual(holdTownHallFestival(city),{ok:false,reason:'full',spent:0});
   assert.deepEqual(city,allHappy);
@@ -85,6 +85,6 @@ test('town hall UI wires all three actions without adding a save format',()=>{
   assert.match(app,/issueTownHallOrder\(city,order,byId,NODES\.square\)/);
   assert.match(app,/holdTownHallFestival\(city\)/);
   assert.match(app,/getTownHallReport\(city\)/);
-  assert.match(app,/const FORMAT=13/);
-  assert.match(app,/город Беллы · версия 0\.9\.23 · 2D/);
+  assert.match(app,/const FORMAT=14/);
+  assert.match(app,/<strong>Тихая бухта<\/strong>/);
 });

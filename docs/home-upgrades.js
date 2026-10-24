@@ -3,17 +3,17 @@
 export const HOME_UPGRADE_MAX_BONUS=10;
 
 export const HOME_UPGRADE_SECTORS=Object.freeze({
-  bed:{title:'Спальня',icon:'🛏️',need:'Бодрость',description:'Быстрее восстанавливает силы во время отдыха.',basePrice:20,activity:'rest',steps:[
+  bed:{title:'Спальня',icon:'🛏️',need:'Бодрость',description:'Быстрее восстанавливает силы во время отдыха.',prices:[45,80,135],activity:'rest',steps:[
     {name:'Новая кровать',icon:'🛏️',bonus:3},
     {name:'Торшер',icon:'💡',bonus:2},
     {name:'Мягкий плед',icon:'🧸',bonus:5}
   ]},
-  bowl:{title:'Кухня',icon:'🥣',need:'Сытость',description:'Быстрее восполняет сытость во время еды.',basePrice:15,activity:'eat',steps:[
+  bowl:{title:'Кухня',icon:'🥣',need:'Сытость',description:'Быстрее восполняет сытость во время еды.',prices:[35,65,110],activity:'eat',steps:[
     {name:'Керамическая миска',icon:'🥣',bonus:3},
     {name:'Коврик для еды',icon:'🧺',bonus:2},
     {name:'Автопоилка',icon:'💧',bonus:5}
   ]},
-  toy:{title:'Игровая',icon:'🧶',need:'Настроение',description:'Быстрее поднимает настроение во время игры.',basePrice:18,activity:'play',steps:[
+  toy:{title:'Игровая',icon:'🧶',need:'Настроение',description:'Быстрее поднимает настроение во время игры.',prices:[40,75,125],activity:'play',steps:[
     {name:'Клубок с лентой',icon:'🧶',bonus:3},
     {name:'Когтеточка',icon:'🐾',bonus:2},
     {name:'Игровой комплекс',icon:'🎠',bonus:5}
@@ -35,7 +35,7 @@ export function homeUpgradeBonus(upgrades,sector){
 export function homeUpgradeCost(upgrades,sector){
   const level=validLevel(upgrades,sector);
   if(level===null||level===3)return null;
-  return HOME_UPGRADE_SECTORS[sector].basePrice*(level+1);
+  return HOME_UPGRADE_SECTORS[sector].prices[level];
 }
 
 export function homeRecoveryRate(activity,upgrades){

@@ -57,7 +57,7 @@ test('scene hotspots, album access, save migration and return navigation are wir
   assert.match(app,/function showFamilyAlbum\(\)/);
   assert.match(app,/unlockMemory\(city\.memories,id,choiceId\)/);
   assert.match(app,/before-citera-home-v1/);
-  assert.match(app,/const FORMAT=13/);
+  assert.match(app,/const FORMAT=14/);
 });
 
 test('Citera shop and private rooms have distinct dashboards and two personal hotspots',()=>{

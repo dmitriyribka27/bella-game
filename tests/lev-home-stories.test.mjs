@@ -35,5 +35,5 @@ test('old memories survive, Lev memories save only once and the player returns t
   assert.match(app,/\['🩺 Лев',LEV_HOME_STORIES\]/);
   assert.match(app,/data-home-return="all" data-home-owner="lev"/);
   assert.match(app,/"\.\/home-stories\.js\?v=\d+"/);
-  assert.match(app,/const FORMAT=13/);
+  assert.match(app,/const FORMAT=14/);
 });

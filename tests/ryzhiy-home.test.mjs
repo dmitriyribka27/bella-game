@@ -32,6 +32,6 @@ test('Ryzhiy house supports all rooms and resets its modal on exit',()=>{
   assert.match(app,/option\.setAttribute\('aria-pressed',String\(active\)\)/);
   assert.match(app,/dialog\.classList\.add\('ryzhiyHomeDialog'\)/);
   assert.match(app,/dialog\.classList\.remove\([^\n]*'ryzhiyHomeDialog'[^\n]*\)/);
-  assert.match(app,/const FORMAT=13/,'new memories use a migrated save format');
-  assert.match(app,/\[1,2,3,4,5,6,7,8,9,10,11,12,FORMAT\]/,'old saves remain importable');
+  assert.match(app,/const FORMAT=14/,'new memories use a migrated save format');
+  assert.match(app,/\[1,2,3,4,5,6,7,8,9,10,11,12,13,FORMAT\]/,'old saves remain importable');
 });

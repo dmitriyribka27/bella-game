@@ -31,6 +31,6 @@ test('town hall view controls do not introduce a currency or save mechanic',()=>
   assert.ok(start>=0&&end>start);
   const townHall=app.slice(start,end);
   assert.doesNotMatch(townHall,/changed\(|coins\s*[+\-]=|unlockMemory\(|data-home-story/);
-  assert.match(app,/const FORMAT=13/);
-  assert.match(app,/город Беллы · версия 0\.9\.23 · 2D/);
+  assert.match(app,/const FORMAT=14/);
+  assert.match(app,/<strong>Тихая бухта<\/strong>/);
 });

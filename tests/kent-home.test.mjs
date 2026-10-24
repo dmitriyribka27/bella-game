@@ -33,6 +33,6 @@ test('Kent house has four focused views without changing save data or economics'
   assert.match(app,/data-kent-home-view="\$\{id\}"/);
   assert.match(app,/\['all','desk','secret','chair','terrace'\]\.includes\(view\)/);
   assert.doesNotMatch(kent,/changed\(|unlockMemory\(|coins\s*[+\-]=/);
-  assert.match(app,/const FORMAT=13/);
-  assert.match(app,/город Беллы · версия \d+\.\d+\.\d+ · 2D/);
+  assert.match(app,/const FORMAT=14/);
+  assert.match(app,/<strong>Тихая бухта<\/strong>/);
 });

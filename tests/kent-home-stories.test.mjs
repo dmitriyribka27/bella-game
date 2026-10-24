@@ -45,5 +45,5 @@ test('new Kent memories coexist with old ones and are never duplicated',()=>{
   assert.match(app,/\['🐈‍⬛ Кент',KENT_HOME_STORIES\]/);
   assert.match(app,/data-home-return="all" data-home-owner="kent"/);
   assert.match(app,/"\.\/home-stories\.js\?v=\d+"/);
-  assert.match(app,/const FORMAT=13/);
+  assert.match(app,/const FORMAT=14/);
 });

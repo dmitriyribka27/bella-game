@@ -33,5 +33,5 @@ test('lighthouse is visual-only and does not alter save format or reward mechani
   assert.ok(start>=0&&end>start);
   const lighthouse=app.slice(start,end);
   assert.doesNotMatch(lighthouse,/unlockMemory\(|changed\(|coins\s*[+\-]=|xp\s*[+\-]=|data-home-story/);
-  assert.match(app,/const FORMAT=13/);
+  assert.match(app,/const FORMAT=14/);
 });

@@ -33,6 +33,6 @@ test('Mia home has four focus zones without directly changing saves or currency'
   assert.match(app,/data-mia-home-view="\$\{id\}"/);
   assert.match(app,/\['all','window','bedroom','treasures','terrace'\]\.includes\(view\)/);
   assert.doesNotMatch(mia,/changed\(|unlockMemory\(|coins\s*[+\-]=/);
-  assert.match(app,/const FORMAT=13/);
-  assert.match(app,/город Беллы · версия \d+\.\d+\.\d+ · 2D/);
+  assert.match(app,/const FORMAT=14/);
+  assert.match(app,/<strong>Тихая бухта<\/strong>/);
 });

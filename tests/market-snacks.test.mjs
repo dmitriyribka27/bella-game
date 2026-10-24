@@ -13,8 +13,8 @@ test('purchase spends only existing coins and returns the chosen snack',()=>{
   const purchase=buyMarketSnack(50,'salmon-sandwich');
   assert.equal(purchase.ok,true);
   assert.equal(purchase.snack.name,'Бутерброды с сёмгой');
-  assert.equal(purchase.balance,40);
-  assert.equal(buyMarketSnack(3,'tea').balance,0);
+  assert.equal(purchase.balance,32);
+  assert.equal(buyMarketSnack(5,'tea').balance,0);
 });
 
 test('insufficient coins and unknown items cannot produce a purchase',()=>{

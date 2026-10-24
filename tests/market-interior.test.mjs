@@ -30,8 +30,8 @@ test('market scenery remains viewable without any quest actions',()=>{
   assert.ok(start>=0&&end>start);
   const market=app.slice(start,end);
   assert.doesNotMatch(market,/unlockMemory\(|changed\(|coins\s*[+\-]=|xp\s*[+\-]=|data-home-story/);
-  assert.match(app,/const FORMAT=13/);
-  assert.match(app,/город Беллы · версия \d+\.\d+\.\d+ · 2D/);
+  assert.match(app,/const FORMAT=14/);
+  assert.match(app,/<strong>Тихая бухта<\/strong>/);
 });
 
 test('central market stall has touch-friendly buying and return actions',()=>{

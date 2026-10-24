@@ -31,6 +31,6 @@ test('boathouse is visual-only and preserves existing save compatibility',()=>{
   assert.ok(start>=0&&end>start);
   const boathouse=app.slice(start,end);
   assert.doesNotMatch(boathouse,/unlockMemory\(|changed\(|coins\s*[+\-]=|xp\s*[+\-]=|data-home-story/);
-  assert.match(app,/const FORMAT=13/);
-  assert.match(app,/город Беллы · версия \d+\.\d+\.\d+ · 2D/);
+  assert.match(app,/const FORMAT=14/);
+  assert.match(app,/<strong>Тихая бухта<\/strong>/);
 });

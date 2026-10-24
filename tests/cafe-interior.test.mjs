@@ -29,6 +29,6 @@ test('cafe gameplay remains reachable from the interior',()=>{
   assert.match(app,/coffeeAction\('order'\)/);
   assert.match(app,/data-cafe-interior-manage/);
   assert.match(app,/data-location-cafe>☕ Открыть дела кофейни/);
-  assert.match(app,/const FORMAT=13/);
-  assert.match(app,/\[1,2,3,4,5,6,7,8,9,10,11,12,FORMAT\]/);
+  assert.match(app,/const FORMAT=14/);
+  assert.match(app,/\[1,2,3,4,5,6,7,8,9,10,11,12,13,FORMAT\]/);
 });

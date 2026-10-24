@@ -26,10 +26,10 @@ test('the post location opens four views and can return to the world',()=>{
 
 test('post office has no gameplay state changes or reward actions',()=>{
   const start=app.indexOf('function showPostOffice(){');
-  const end=app.indexOf('function showMarket(){',start);
+  const end=app.indexOf("function showMarket(view='all'){");
   assert.ok(start>=0&&end>start);
   const postOffice=app.slice(start,end);
   assert.doesNotMatch(postOffice,/unlockMemory\(|changed\(|coins\s*[+\-]=|xp\s*[+\-]=|data-home-story/);
-  assert.match(app,/const FORMAT=13/);
-  assert.match(app,/город Беллы · версия \d+\.\d+\.\d+ · 2D/);
+  assert.match(app,/const FORMAT=14/);
+  assert.match(app,/<strong>Тихая бухта<\/strong>/);
 });

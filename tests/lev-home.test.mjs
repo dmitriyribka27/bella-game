@@ -33,6 +33,6 @@ test('Lev house has four focus zones without changing the economy or save schema
   assert.ok(start>=0&&end>start);
   const lev=app.slice(start,end);
   assert.doesNotMatch(lev,/changed\(|coins\s*[+\-]=|unlockMemory\(/);
-  assert.match(app,/const FORMAT=13/);
-  assert.match(app,/город Беллы · версия \d+\.\d+\.\d+ · 2D/);
+  assert.match(app,/const FORMAT=14/);
+  assert.match(app,/<strong>Тихая бухта<\/strong>/);
 });

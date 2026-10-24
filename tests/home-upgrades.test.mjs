@@ -27,11 +27,11 @@ test('existing 0..3 upgrades map to 0, 3, 5 and 10 percent without migration',()
   assert.equal(homeUpgradeBonus({bed:99},'bed'),0);
 });
 
-test('old coin prices are unchanged and prices increase by level',()=>{
-  for(const [key,base] of [['bed',20],['bowl',15],['toy',18]]){
-    assert.equal(homeUpgradeCost({[key]:0},key),base);
-    assert.equal(homeUpgradeCost({[key]:1},key),base*2);
-    assert.equal(homeUpgradeCost({[key]:2},key),base*3);
+test('approved improvement prices increase across three tiers',()=>{
+  for(const [key,prices] of [['bed',[45,80,135]],['bowl',[35,65,110]],['toy',[40,75,125]]]){
+    assert.equal(homeUpgradeCost({[key]:0},key),prices[0]);
+    assert.equal(homeUpgradeCost({[key]:1},key),prices[1]);
+    assert.equal(homeUpgradeCost({[key]:2},key),prices[2]);
     assert.equal(homeUpgradeCost({[key]:3},key),null);
   }
 });
@@ -40,8 +40,8 @@ test('successful purchases only change selected resident, sector, and existing c
   const current=city();
   const snapshot=structuredClone(current.cats[1]);
   const first=purchaseHomeUpgrade(current,'kent','bed');
-  assert.deepEqual(first,{ok:true,cost:20,level:1,bonus:3,item:HOME_UPGRADE_SECTORS.bed.steps[0]});
-  assert.equal(current.coins,980);
+  assert.deepEqual(first,{ok:true,cost:45,level:1,bonus:3,item:HOME_UPGRADE_SECTORS.bed.steps[0]});
+  assert.equal(current.coins,955);
   assert.equal(current.cats[0].upgrades.bed,1);
   assert.equal(current.cats[0].upgrades.bowl,0);
   assert.deepEqual(current.cats[1],snapshot);
@@ -55,7 +55,7 @@ test('successful purchases only change selected resident, sector, and existing c
 test('insufficient funds and invalid owners cannot spend coins or raise levels',()=>{
   const current=city();current.coins=14;
   const original=structuredClone(current);
-  assert.deepEqual(purchaseHomeUpgrade(current,'lev','bowl'),{ok:false,reason:'funds',shortfall:1});
+  assert.deepEqual(purchaseHomeUpgrade(current,'lev','bowl'),{ok:false,reason:'funds',shortfall:21});
   assert.deepEqual(purchaseHomeUpgrade(current,'bella','bowl'),{ok:false,reason:'invalid'});
   assert.deepEqual(purchaseHomeUpgrade(current,'unknown','toy'),{ok:false,reason:'invalid'});
   assert.deepEqual(purchaseHomeUpgrade(current,'kent','unknown'),{ok:false,reason:'invalid'});
@@ -82,6 +82,6 @@ test('home-management UI uses a separate panel with all three sectors and old sa
   assert.match(app,/if\(result\.ok\)changed\(\)/);
   assert.doesNotMatch(app,/data-upgrade="(?:bed|bowl|toy)"/);
   assert.match(app,/upgrades:\{bed:0,bowl:0,toy:0\}/);
-  assert.match(app,/const FORMAT=13/);
-  assert.match(app,/город Беллы · версия 0\.9\.23 · 2D/);
+  assert.match(app,/const FORMAT=14/);
+  assert.match(app,/<strong>Тихая бухта<\/strong>/);
 });

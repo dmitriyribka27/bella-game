@@ -16,8 +16,9 @@ for (const visitor of BOOK_VISITORS) {
     const title = chapter.choices[chapter.right];
     if (!titles.has(title)) {
       const supplier = VISITOR_SUPPLIERS[visitor.id];
-      const cost = 4 + ((index + (supplier==='press'?1:supplier==='nature'?2:0))%3)*2;
-      titles.set(title,{id:`book-${String(titles.size+1).padStart(2,'0')}`,title,supplier,cost,price:cost+10});
+      const tier=(index + (supplier==='press'?1:supplier==='nature'?2:0))%3;
+      const cost=[12,18,24][tier];
+      titles.set(title,{id:`book-${String(titles.size+1).padStart(2,'0')}`,title,supplier,cost,price:[16,24,32][tier]});
     }
   }
 }
