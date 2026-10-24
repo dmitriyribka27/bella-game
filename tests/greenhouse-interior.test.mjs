@@ -26,7 +26,7 @@ test('greenhouse location supports four zoom views and closing',()=>{
 
 test('greenhouse remains a visual-only location without save schema change',()=>{
   const start=app.indexOf('function showGreenhouse(){');
-  const end=app.indexOf('function showHomeStory(',start);
+  const end=app.indexOf('function showLevHome(',start);
   assert.ok(start>=0&&end>start);
   const greenhouse=app.slice(start,end);
   assert.doesNotMatch(greenhouse,/unlockMemory\(|changed\(|coins\s*[+\-]=|xp\s*[+\-]=|data-home-story/);

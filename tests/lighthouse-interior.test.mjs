@@ -29,7 +29,7 @@ test('map location opens lighthouse and its four visual views, then exits cleanl
 
 test('lighthouse is visual-only and does not alter save format or reward mechanics',()=>{
   const start=app.indexOf('function showLighthouse(){');
-  const end=app.indexOf('function showHomeStory(',start);
+  const end=app.indexOf('function showBoathouse(',start);
   assert.ok(start>=0&&end>start);
   const lighthouse=app.slice(start,end);
   assert.doesNotMatch(lighthouse,/unlockMemory\(|changed\(|coins\s*[+\-]=|xp\s*[+\-]=|data-home-story/);
