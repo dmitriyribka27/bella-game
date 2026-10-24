@@ -1795,7 +1795,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       }
       catch(err){city=city||initial();notice('Автосохранение недоступно. Экспортируй прогресс через ☰.');}
       gameAudio.setPaused(city.paused);updateAudioUI();
-      try{map=createMap({canvas,catArt:CAT_ART,getCity:()=>city,getSelected:()=>selected,onSelect:id=>{selected=id;renderUI();notice('Выбран житель: '+byId[id].name+'.');},onLocation:id=>showLocation(id),onNotice:notice});renderUI();requestAnimationFrame(frame);}
+      try{map=createMap({canvas,catArt:{...CAT_ART,bella:{src:'./assets/cats/bella-hello-kitty-v1.webp'}},getCity:()=>city,getSelected:()=>selected,onSelect:id=>{selected=id;renderUI();notice('Выбран житель: '+byId[id].name+'.');},onLocation:id=>showLocation(id),onNotice:notice});renderUI();requestAnimationFrame(frame);}
       catch(err){notice('Не удалось открыть карту: '+err.message);}
       setupOfflineCaching();
       setInterval(()=>{if(dirty&&!saveConflict)write().catch(saveWarning)},15000);

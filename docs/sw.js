@@ -1,5 +1,5 @@
 /* Quiet Bay offline app shell and artwork. Saves live in IndexedDB, not here. */
-const VERSION='v0.9.33';
+const VERSION='v0.9.34';
 const PREFIX='quiet-bay-pwa-';
 const SHELL_CACHE=`${PREFIX}${VERSION}-shell`;
 const MEDIA_CACHE=`${PREFIX}${VERSION}-media`;
@@ -20,6 +20,7 @@ const SHELL=[
 ];
 const MEDIA=[
   './assets/audio/quiet-bay-theme.mp3',
+  './assets/cats/bella-hello-kitty-v1.webp',
   './assets/interiors/bella-home-v1.webp',
   './assets/interiors/bella-letter-v1.webp',
   './assets/interiors/boathouse-v1.webp',
