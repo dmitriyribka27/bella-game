@@ -14,6 +14,7 @@
     #mapBackground,#world { position:absolute; inset:0; width:100%; height:100%; }
     #mapBackground { background:#233c54; pointer-events:none; }
     #world { touch-action:none; }
+    #timeTint { position:absolute; inset:0; z-index:1; pointer-events:none; background-color:transparent; transition:background-color 3s linear; }
     #catLabels{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
     .catLabel{position:absolute;transform:translate(-50%,-100%);padding:4px 9px;border-radius:14px;background:#fff9efdb;border:1px solid #fffdf3b8;box-shadow:0 3px 10px #2145474d;color:#29474a;font-family:ui-rounded,"Arial Rounded MT Bold",-apple-system,system-ui,sans-serif;font-size:12px;font-weight:650;letter-spacing:.01em;white-space:nowrap;text-shadow:0 1px #ffffffb8;backdrop-filter:blur(4px)}
     .catLabel.selected{background:#fff1d8ed;border-color:#f9dba7;color:#6a4c41}
@@ -533,6 +534,7 @@
 <body>
   <canvas id="mapBackground" aria-hidden="true"></canvas>
   <canvas id="world" aria-label="Карта города Тихая бухта"></canvas>
+  <div id="timeTint" aria-hidden="true"></div>
   <div id="catLabels" aria-hidden="true"></div>
   <header class="top">
     <div class="brand"><strong>Тихая бухта</strong><small class="gameClock" id="gameClock" aria-label="Игровые часы">🕰️ 08:00 · день 1</small></div>
@@ -562,6 +564,7 @@ import {HOME_UPGRADE_MAX_BONUS,HOME_UPGRADE_SECTORS,homeUpgradeBonus,homeUpgrade
 import {WORK_SHIFT_SECONDS,MIN_WORK_NEED,MANUAL_FEED_COST,HOSPITAL_COST,CAFE_OPENING_COST,CAFE_GUEST_INTERVAL_MS,CAFE_RECIPE_EARNINGS,canStartWork,workWage,buyManualFeed} from "./game-economy.js?v=1";
 import {newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditOfflineCoins} from "./game-time.js?v=1";
 import {createGameAudio} from "./game-audio.js?v=3";
+import {lightingForClock,lightingForMinute,readLightingEnabled,saveLightingEnabled} from "./daylight.js?v=1";
 (()=>{"use strict";
     const FORMAT=14, DB='quiet-bay-save', KEY='city';
     const cafeSite={id:'cafe',name:'Кофейня',home:[5,11.2],roof:'#c98165'};
@@ -630,6 +633,12 @@ import {createGameAudio} from "./game-audio.js?v=3";
     const cafeSeen=new Set();
     const bookMotion=createBookVisitorMotion();
     const gameAudio=createGameAudio();
+    let lightingStorage=null;
+    try{lightingStorage=localStorage;}catch{}
+    let lightingEnabled=readLightingEnabled(lightingStorage);
+    const previewTimes={day:720,evening:1140,night:1380,dawn:390};
+    const previewName=new URLSearchParams(location.search).get('lightPreview');
+    const previewMinute=Object.prototype.hasOwnProperty.call(previewTimes,previewName)?previewTimes[previewName]:null;
     let lastFrame=performance.now(), lastClockRender=0, hiddenAt=null, saveTimer=0, dirty=false;
     function initial(){const visitors=newBookVisitorState();return {version:FORMAT,coins:30,paused:false,savedAt:Date.now(),clock:newGameClock(),coffee:{built:false,plan:false,delivery:false,recipe:false,style:null,orders:0,service:newCafeServiceState()},books:{orders:0,nextAt:0,visitors,inventory:newBookInventory(visitors),scenes:[]},memories:newMemoryBook(),observatory:newObservatoryState(),cats:defs.map(d=>({id:d.id,x:d.home[0],y:d.home[1],target:[...d.home],activity:d.id==='bella'?'walk':'work',hunger:80,energy:80,mood:75,xp:0,level:1,phase:0,upgrades:{bed:0,bowl:0,toy:0}}))};}
     function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
@@ -713,6 +722,14 @@ import {createGameAudio} from "./game-audio.js?v=3";
       const element=document.getElementById('gameClock');
       element.textContent=`🕰️ ${clock.time} · день ${clock.day}`;
       element.setAttribute('aria-label',`Игровое время ${clock.time}, день ${clock.day}`);
+      updateLighting();
+    }
+    function updateLighting(){
+      const tint=document.getElementById('timeTint');
+      // Optional URL preview changes only the appearance, never the saved clock.
+      const light=previewMinute===null?lightingForClock(city.clock):lightingForMinute(previewMinute);
+      tint.style.backgroundColor=lightingEnabled?light.color:'transparent';
+      tint.dataset.phase=lightingEnabled?light.phase:'day';
     }
     function updateAudioUI(){
       const button=document.getElementById('soundToggle'),enabled=gameAudio.preferences.music;
@@ -722,7 +739,7 @@ import {createGameAudio} from "./game-audio.js?v=3";
       button.title=enabled?'Выключить музыку':'Включить музыку';
     }
     function showSettings(){
-      show(`<h2>Меню бухты</h2><button data-audio-toggle="music">${gameAudio.preferences.music?'🎵 Музыка · включена':'🔇 Музыка · выключена'}</button><button data-audio-toggle="effects">${gameAudio.preferences.effects?'✨ Кнопки и монеты · включены':'✨ Кнопки и монеты · выключены'}</button><button data-open-album>📖 Семейный альбом · ${city.memories.length}/${HOME_STORIES.length}</button><button id="export">Экспортировать сохранение</button><button id="import">Импортировать файл</button><button data-close>Закрыть</button>`);
+      show(`<h2>Меню бухты</h2><button data-audio-toggle="music">${gameAudio.preferences.music?'🎵 Музыка · включена':'🔇 Музыка · выключена'}</button><button data-audio-toggle="effects">${gameAudio.preferences.effects?'✨ Кнопки и монеты · включены':'✨ Кнопки и монеты · выключены'}</button><button data-lighting-toggle>${lightingEnabled?'🌗 Смена дня и ночи · включена':'☀️ Смена дня и ночи · выключена'}</button><button data-open-album>📖 Семейный альбом · ${city.memories.length}/${HOME_STORIES.length}</button><button id="export">Экспортировать сохранение</button><button id="import">Импортировать файл</button><button data-close>Закрыть</button>`);
     }
     function cafeReady(){let c=city.coffee;return c.plan&&c.delivery&&c.recipe&&c.style;}
     function renderCafe(){
@@ -1561,9 +1578,12 @@ import {createGameAudio} from "./game-audio.js?v=3";
     document.getElementById('soundToggle').onclick=()=>{gameAudio.setMusic(!gameAudio.preferences.music);updateAudioUI();};
     document.getElementById('pause').onclick=()=>{city.paused=!city.paused;gameAudio.setPaused(city.paused);notice(city.paused?'Город на паузе.':'Город снова живёт.');changed();};
     dialog.addEventListener('click',e=>{
-      const button=e.target.closest('button[data-audio-toggle]');if(!button)return;
+      const button=e.target.closest('button[data-audio-toggle],button[data-lighting-toggle]');if(!button)return;
       e.stopImmediatePropagation();
-      if(button.dataset.audioToggle==='music')gameAudio.setMusic(!gameAudio.preferences.music);
+      if(button.hasAttribute('data-lighting-toggle')){
+        lightingEnabled=saveLightingEnabled(lightingStorage,!lightingEnabled);
+        updateLighting();
+      }else if(button.dataset.audioToggle==='music')gameAudio.setMusic(!gameAudio.preferences.music);
       else if(button.dataset.audioToggle==='effects')gameAudio.setEffects(!gameAudio.preferences.effects);
       updateAudioUI();showSettings();
     },true);

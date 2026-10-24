@@ -6,16 +6,17 @@ const app=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
 const menuLine=app.split('\n').find(line=>line.includes('show(`<h2>Меню бухты'));
 const residentLine=app.split('\n').find(line=>line.includes('function renderUI(){'));
 
-test('settings menu keeps four useful controls plus two optional audio toggles',()=>{
+test('settings menu keeps four useful controls, two audio toggles, and optional lighting',()=>{
   assert.ok(menuLine);
   const labels=Array.from(menuLine.matchAll(/<button\b[^>]*>(.*?)<\/button>/g),m=>m[1]);
-  assert.equal(labels.length,6);
+  assert.equal(labels.length,7);
   assert.match(labels[0],/Музыка/);
   assert.match(labels[1],/Кнопки и монеты/);
-  assert.match(labels[2],/Семейный альбом/);
-  assert.match(labels[3],/Экспортировать сохранение/);
-  assert.match(labels[4],/Импортировать файл/);
-  assert.equal(labels[5],'Закрыть');
+  assert.match(labels[2],/Смена дня и ночи/);
+  assert.match(labels[3],/Семейный альбом/);
+  assert.match(labels[4],/Экспортировать сохранение/);
+  assert.match(labels[5],/Импортировать файл/);
+  assert.equal(labels[6],'Закрыть');
   assert.doesNotMatch(menuLine,/restore|Как играть|Копия до|Вернуть предыдущую/);
 });
 
