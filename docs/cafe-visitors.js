@@ -23,6 +23,31 @@ export const CAFE_RECIPES = [
     {question:'Выбери основу для напитка.',options:[['juice','🧃 Яблочный сок'],['milk','🥛 Тёплое молоко'],['water','🫧 Газированная вода']],answer:'milk',hint:'Домашнее какао в кофейне готовят на молоке.'},
     {question:'Что добавим в молоко?',options:[['cocoa','🍫 Какао-порошок'],['tea','🍃 Чайные листья'],['coffee','☕ Кофейные зёрна']],answer:'cocoa',hint:'Ищи какао-порошок.'},
     {question:'Чем украсим чашку?',options:[['marshmallow','☁️ Маршмеллоу'],['olives','🫒 Оливки'],['lemon','🍋 Лимон']],answer:'marshmallow',hint:'К горячему какао подходит воздушный маршмеллоу.'}
+  ]},
+  {id:'espresso',name:'Эспрессо',emoji:'☕',request:'Один крепкий эспрессо, пожалуйста. Без молока!',steps:[
+    {question:'Что отправим в кофемолку?',options:[['beans','🫘 Свежие кофейные зёрна'],['tea','🍃 Листья чая'],['cocoa','🍫 Какао-порошок']],answer:'beans',hint:'Для эспрессо нужны обжаренные кофейные зёрна.'},
+    {question:'Как подготовим зёрна?',options:[['grind','⚙️ Мелко смелем'],['whole','🫘 Оставим целыми'],['boil','♨️ Сварим целиком']],answer:'grind',hint:'Эспрессо готовят из молотого кофе.'},
+    {question:'Как получим крепкий маленький напиток?',options:[['press','☕ Пролив под давлением'],['milk','🥛 Зальём молоком'],['cold','🧊 Оставим в холодной воде']],answer:'press',hint:'Кофемашина пропускает горячую воду через молотый кофе под давлением.'}
+  ]},
+  {id:'cappuccino',name:'Капучино',emoji:'☕',request:'Мне капучино с пышной молочной пенкой.',steps:[
+    {question:'Что должно быть на дне чашки?',options:[['espresso','☕ Порция эспрессо'],['berry','🫐 Ягодный чай'],['water','💧 Просто вода']],answer:'espresso',hint:'Основа капучино — эспрессо.'},
+    {question:'Как подготовим молоко?',options:[['cold','🧊 Оставим холодным'],['steam','♨️ Нагреем паром'],['boil','🔥 Прокипятим в кастрюле']],answer:'steam',hint:'Капучинатор нагревает и взбивает молоко паром.'},
+    {question:'Что добавим сверху?',options:[['foam','☁️ Пышную молочную пену'],['syrup','🍯 Ложку варенья'],['ice','🧊 Горсть льда']],answer:'foam',hint:'Гость попросил именно пышную молочную пенку.'}
+  ]},
+  {id:'vanilla_latte',name:'Ванильный латте',emoji:'🥛',request:'Хочу мягкий ванильный латте. Побольше молока!',steps:[
+    {question:'С чего начнём латте?',options:[['cocoa','🍫 Какао'],['espresso','☕ Эспрессо'],['tea','🍃 Чёрный чай']],answer:'espresso',hint:'Латте, как и капучино, начинается с эспрессо.'},
+    {question:'Что сделает вкус нежным?',options:[['milk','🥛 Много тёплого молока'],['soda','🫧 Газировка'],['water','💧 Холодная вода']],answer:'milk',hint:'В латте больше молока, чем в эспрессо.'},
+    {question:'Какой сироп выберем?',options:[['caramel','🍬 Карамельный'],['vanilla','🌼 Ванильный'],['mint','🌿 Мятный']],answer:'vanilla',hint:'Посетитель попросил именно ванильный латте.'}
+  ]},
+  {id:'iced_caramel',name:'Карамельный айс-латте',emoji:'🧊',request:'Что-нибудь холодное! Карамельный айс-латте есть?',steps:[
+    {question:'Что станет кофейной основой?',options:[['espresso','☕ Порция эспрессо'],['tea','🫖 Заварка'],['cocoa','🍫 Какао-порошок']],answer:'espresso',hint:'Даже холодный латте начинают с эспрессо.'},
+    {question:'Как сделаем напиток холодным и молочным?',options:[['ice_milk','🧊 Лёд и холодное молоко'],['hot_milk','♨️ Горячее молоко'],['water','💧 Кипяток']],answer:'ice_milk',hint:'Для айс-латте понадобятся лёд и холодное молоко.'},
+    {question:'Чем закончим заказ?',options:[['caramel','🍬 Карамельный сироп'],['salt','🧂 Соль'],['vanilla','🌼 Ванильный сироп']],answer:'caramel',hint:'Гость любит карамель.'}
+  ]},
+  {id:'matcha',name:'Матча-латте',emoji:'🍵',request:'Приготовите мне нежный матча-латте?',steps:[
+    {question:'Какой порошок нужен для основы?',options:[['coffee','☕ Молотый кофе'],['matcha','🍵 Зелёный чай матча'],['cocoa','🍫 Какао']],answer:'matcha',hint:'Матча — это измельчённый зелёный чай, а не кофе.'},
+    {question:'Как уберём комочки?',options:[['whisk','🥣 Размешаем с тёплой водой венчиком'],['freeze','🧊 Заморозим порошок'],['boil','🔥 Прокипятим порошок']],answer:'whisk',hint:'Матча сначала растирают венчиком с небольшим количеством воды.'},
+    {question:'Что добавим в чашку для нежного вкуса?',options:[['lemon','🍋 Лимонный сок'],['soda','🫧 Газировку'],['milk','🥛 Взбитое молоко']],answer:'milk',hint:'В матча-латте добавляют молоко.'}
   ]}
 ];
 
@@ -55,7 +80,8 @@ export function inviteCafeGuests(service){
   while(service.queue.length<2&&service.next<1_000_000){
     const seq=service.next++;
     const slot=[0,1].find(candidate=>!service.queue.some(guest=>guest.slot===candidate));
-    service.queue.push({seq,recipeId:CAFE_RECIPES[(seq*2+Math.floor(seq/3))%CAFE_RECIPES.length].id,step:0,slot});
+    // For eight recipes, a stride of five shows every drink before repeating one.
+    service.queue.push({seq,recipeId:CAFE_RECIPES[(seq*5)%CAFE_RECIPES.length].id,step:0,slot});
     added++;
   }
   return added;

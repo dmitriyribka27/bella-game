@@ -115,6 +115,10 @@
     .dialog .cafeIngredientChoices button{margin:0;text-align:left;padding:11px;background:#fffaf2;border:1px solid #e5d8c5;font-size:12px;min-height:43px;}
     .cafeServiceNote{background:#e3ede0;color:#42634f;padding:10px 11px;border-radius:11px;font-size:12px;line-height:1.4;margin:8px 0;}
     .cafeGuestEmpty{padding:12px;background:#eef0e6;border-radius:12px;font-size:12px;}
+    .cafeMenu{margin:9px 0;padding:10px 12px;background:#e9eee4;border-radius:11px;}
+    .cafeMenu summary{font-size:12px;font-weight:800;cursor:pointer;}
+    .cafeMenuList{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;}
+    .cafeMenuList span{background:#fff9ed;border-radius:9px;padding:6px 8px;font-size:11px;}
     .cafeScene[data-view="bar"] .cafeCanvas { transform:translate(4%,20%) scale(1.85); }
     .cafeScene[data-view="tables"] .cafeCanvas { transform:translate(32%,-24%) scale(1.85); }
     .cafeViews { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin:0 0 10px; }
@@ -238,7 +242,7 @@
   <canvas id="world" aria-label="Карта города Тихая бухта"></canvas>
   <div id="catLabels" aria-hidden="true"></div>
   <header class="top">
-    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.9.0 · 2D</small></div>
+    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.9.1 · 2D</small></div>
     <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Сохранения и помощь">☰</button></div>
   </header>
   <div class="hint">Коснись здания · двумя пальцами меняй масштаб</div>
@@ -256,7 +260,7 @@ import {bookCoverMarkup} from "./book-covers.js?v=1";
 import {BOOK_SCENES,BOOK_SCENE_BY_ID,sanitizeBookScenes,availableBookScene,finishBookScene} from "./book-scenes.js?v=1";
 import {createBookVisitorMotion,syncBookVisitorMotion,focusBookVisitor,leaveBookVisitor,bookVisitorRoute,activeBookDeparture} from "./book-visitor-motion.js?v=1";
 import {CAFE_OPENING_STAGES,cafeStageDone,nextCafeStage,startCafeTask,answerCafeTask} from "./cafe-opening.js?v=1";
-import {CAFE_RECIPE_BY_ID,newCafeServiceState,sanitizeCafeServiceState,cafeGuestProfile,inviteCafeGuests,answerCafeIngredient,serveCafeGuest} from "./cafe-visitors.js?v=1";
+import {CAFE_RECIPES,CAFE_RECIPE_BY_ID,newCafeServiceState,sanitizeCafeServiceState,cafeGuestProfile,inviteCafeGuests,answerCafeIngredient,serveCafeGuest} from "./cafe-visitors.js?v=2";
 (()=>{"use strict";
     const FORMAT=11, DB='quiet-bay-save', KEY='city';
     const cafeSite={id:'cafe',name:'Кофейня',home:[5,11.2],roof:'#c98165'};
@@ -387,7 +391,7 @@ import {CAFE_RECIPE_BY_ID,newCafeServiceState,sanitizeCafeServiceState,cafeGuest
         if(!c.service.queue.some(guest=>guest.seq===cafeSelectedGuest))cafeSelectedGuest=c.service.queue[0]?.seq??null;
       }
       cafeSeen.clear();cafeDeparting=null;
-      show(`<h2>☕ Кофейня Рыжего</h2><div class="cafeScene" id="cafeScene" data-view="all" data-paused="${city.paused}"><div class="cafeCanvas"><img class="cafeInterior" src="./assets/interiors/ryzhiy-cafe-v1.webp" alt="Уютная кофейня Рыжего: стойка с выпечкой, кофемашина и столики у окон" draggable="false" decoding="async"><div class="cafeGuestLayer" id="cafeGuestLayer"></div></div></div><div class="cafeViews" aria-label="Рассмотреть интерьер"><button class="active" data-cafe-view="all" aria-pressed="true">Весь зал</button><button data-cafe-view="bar" aria-pressed="false">☕ Стойка</button><button data-cafe-view="tables" aria-pressed="false">🪑 Столики</button></div><span class="shopStatus" id="cafeShopStatus">${c.built?`Кофейня открыта · выполнено заказов: ${c.orders}`:'Кофейня готовится к открытию — зайти и рассмотреть интерьер уже можно.'}</span>${c.built?'<div id="cafeServicePanel"></div>':'<button data-cafe-interior-manage>📋 Заняться открытием кофейни</button>'}<button data-close>Вернуться в город</button>`);
+      show(`<h2>☕ Кофейня Рыжего</h2><div class="cafeScene" id="cafeScene" data-view="all" data-paused="${city.paused}"><div class="cafeCanvas"><img class="cafeInterior" src="./assets/interiors/ryzhiy-cafe-v1.webp" alt="Уютная кофейня Рыжего: стойка с выпечкой, кофемашина и столики у окон" draggable="false" decoding="async"><div class="cafeGuestLayer" id="cafeGuestLayer"></div></div></div><div class="cafeViews" aria-label="Рассмотреть интерьер"><button class="active" data-cafe-view="all" aria-pressed="true">Весь зал</button><button data-cafe-view="bar" aria-pressed="false">☕ Стойка</button><button data-cafe-view="tables" aria-pressed="false">🪑 Столики</button></div><span class="shopStatus" id="cafeShopStatus">${c.built?`Кофейня открыта · выполнено заказов: ${c.orders}`:'Кофейня готовится к открытию — зайти и рассмотреть интерьер уже можно.'}</span>${c.built?'<details class="cafeMenu"><summary>📖 Меню Рыжего · '+CAFE_RECIPES.length+' рецептов</summary><div class="cafeMenuList">'+CAFE_RECIPES.map(recipe=>'<span>'+recipe.emoji+' '+recipe.name+'</span>').join('')+'</div></details><div id="cafeServicePanel"></div>':'<button data-cafe-interior-manage>📋 Заняться открытием кофейни</button>'}<button data-close>Вернуться в город</button>`);
       dialog.classList.add('cafeInteriorDialog');
       if(c.built){renderCafeGuestLayer();renderCafeServicePanel();}
     }

@@ -19,6 +19,29 @@ test('cafe keeps at most two waiting guests with stable repeat visitors',()=>{
   assert.deepEqual(service.queue.map(guest=>guest.slot),[0,1]);
 });
 
+test('eight distinct recipes appear across the first eight served guests',()=>{
+  assert.deepEqual(CAFE_RECIPES.map(recipe=>recipe.id),[
+    'bun','tea','cocoa','espresso','cappuccino','vanilla_latte','iced_caramel','matcha'
+  ]);
+  const servedRecipes=new Set(),service=newCafeServiceState();
+  for(let seq=0;seq<8;seq++){
+    inviteCafeGuests(service);
+    const guest=service.queue.find(visit=>visit.seq===seq);
+    assert.ok(guest,`guest ${seq} should have arrived`);
+    const recipe=CAFE_RECIPE_BY_ID[guest.recipeId];
+    assert.equal(recipe.steps.length,3);
+    for(const step of recipe.steps){
+      assert.equal(step.options.length,3);
+      assert.equal(step.options.filter(option=>option[0]===step.answer).length,1);
+      assert.equal(new Set(step.options.map(option=>option[0])).size,3);
+      assert.equal(answerCafeIngredient(service,seq,step.answer).ok,true);
+    }
+    assert.ok(serveCafeGuest(service,seq));
+    servedRecipes.add(recipe.id);
+  }
+  assert.equal(servedRecipes.size,8,'no drink should repeat before trying the full menu');
+});
+
 test('each guest has a real three-step recipe, wrong ingredients do not advance',()=>{
   const service=newCafeServiceState();inviteCafeGuests(service);
   const guest=service.queue[0];
@@ -55,6 +78,10 @@ test('save sanitization preserves active orders and rejects corrupted extras',()
   assert.equal(restored.queue[0].seq,order.seq);
   assert.equal(restored.queue[0].slot,0);
   assert.equal(restored.next,19);
+  const existing=sanitizeCafeServiceState({next:20,queue:[{seq:19,recipeId:'tea',step:2,slot:1}]},19);
+  assert.equal(existing.queue[0].recipeId,'tea','an old pending tea order must remain tea');
+  assert.equal(existing.queue[0].step,2);
+  assert.equal(answerCafeIngredient(existing,19,'honey').complete,true);
   const corrupt=sanitizeCafeServiceState({next:-20,queue:[{seq:0,recipeId:'fake',step:999},{seq:7,recipeId:'tea',step:100},{seq:7,recipeId:'tea',step:2},{seq:8,recipeId:'bun',step:-4},{seq:9,recipeId:'bun',step:0}]});
   assert.equal(corrupt.queue.length,2);
   assert.deepEqual(corrupt.queue.map(guest=>guest.step),[3,0]);
@@ -62,7 +89,8 @@ test('save sanitization preserves active orders and rejects corrupted extras',()
 });
 
 test('cafe has animated guests, ingredient picking and save-aware progression outside map loop',()=>{
-  assert.match(app,/cafe-visitors\.js\?v=1/);
+  assert.match(app,/cafe-visitors\.js\?v=2/);
+  assert.match(app,/Меню Рыжего/);
   assert.match(app,/data-cafe-ingredient=/);
   assert.match(app,/data-cafe-serve=/);
   assert.match(app,/data-cafe-guest=/);
