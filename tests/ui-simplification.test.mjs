@@ -11,7 +11,7 @@ test('settings menu keeps four useful controls plus two optional audio toggles',
   const labels=Array.from(menuLine.matchAll(/<button\b[^>]*>(.*?)<\/button>/g),m=>m[1]);
   assert.equal(labels.length,6);
   assert.match(labels[0],/Музыка/);
-  assert.match(labels[1],/Звук кнопок/);
+  assert.match(labels[1],/Кнопки и монеты/);
   assert.match(labels[2],/Семейный альбом/);
   assert.match(labels[3],/Экспортировать сохранение/);
   assert.match(labels[4],/Импортировать файл/);

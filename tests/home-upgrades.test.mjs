@@ -79,7 +79,7 @@ test('home-management UI uses a separate panel with all three sectors and old sa
   assert.match(app,/data-house-upgrades="citera"/);
   assert.match(app,/data-action="home-upgrades"/);
   assert.match(app,/data-home-buy="\$\{key\}"/);
-  assert.match(app,/if\(result\.ok\)changed\(\)/);
+  assert.match(app,/if\(result\.ok\)\{gameAudio\.coinSpend\(\);changed\(\);\}/);
   assert.doesNotMatch(app,/data-upgrade="(?:bed|bowl|toy)"/);
   assert.match(app,/upgrades:\{bed:0,bowl:0,toy:0\}/);
   assert.match(app,/const FORMAT=14/);

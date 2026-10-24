@@ -561,7 +561,7 @@ import {OBSERVATORY_DISCOVERIES,OBSERVATORY_DIRECTIONS,OBSERVATORY_FOCUS,newObse
 import {HOME_UPGRADE_MAX_BONUS,HOME_UPGRADE_SECTORS,homeUpgradeBonus,homeUpgradeCost,homeRecoveryRate,purchaseHomeUpgrade} from "./home-upgrades.js?v=1";
 import {WORK_SHIFT_SECONDS,MIN_WORK_NEED,MANUAL_FEED_COST,HOSPITAL_COST,CAFE_OPENING_COST,CAFE_GUEST_INTERVAL_MS,CAFE_RECIPE_EARNINGS,canStartWork,workWage,buyManualFeed} from "./game-economy.js?v=1";
 import {newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditOfflineCoins} from "./game-time.js?v=1";
-import {createGameAudio} from "./game-audio.js?v=1";
+import {createGameAudio} from "./game-audio.js?v=3";
 (()=>{"use strict";
     const FORMAT=14, DB='quiet-bay-save', KEY='city';
     const cafeSite={id:'cafe',name:'Кофейня',home:[5,11.2],roof:'#c98165'};
@@ -722,7 +722,7 @@ import {createGameAudio} from "./game-audio.js?v=1";
       button.title=enabled?'Выключить музыку':'Включить музыку';
     }
     function showSettings(){
-      show(`<h2>Меню бухты</h2><button data-audio-toggle="music">${gameAudio.preferences.music?'🎵 Музыка · включена':'🔇 Музыка · выключена'}</button><button data-audio-toggle="effects">${gameAudio.preferences.effects?'✨ Звук кнопок · включён':'✨ Звук кнопок · выключен'}</button><button data-open-album>📖 Семейный альбом · ${city.memories.length}/${HOME_STORIES.length}</button><button id="export">Экспортировать сохранение</button><button id="import">Импортировать файл</button><button data-close>Закрыть</button>`);
+      show(`<h2>Меню бухты</h2><button data-audio-toggle="music">${gameAudio.preferences.music?'🎵 Музыка · включена':'🔇 Музыка · выключена'}</button><button data-audio-toggle="effects">${gameAudio.preferences.effects?'✨ Кнопки и монеты · включены':'✨ Кнопки и монеты · выключены'}</button><button data-open-album>📖 Семейный альбом · ${city.memories.length}/${HOME_STORIES.length}</button><button id="export">Экспортировать сохранение</button><button id="import">Импортировать файл</button><button data-close>Закрыть</button>`);
     }
     function cafeReady(){let c=city.coffee;return c.plan&&c.delivery&&c.recipe&&c.style;}
     function renderCafe(){
@@ -1137,7 +1137,7 @@ import {createGameAudio} from "./game-audio.js?v=1";
       if(city.paused){showHospital('Продолжи игру, чтобы Лев мог принимать пациентов.');return;}
       if(city.coins<HOSPITAL_COST){showHospital(`Для консультации необходимо ${HOSPITAL_COST} монет.`);return;}
       if(patient.energy>=95&&patient.mood>=95){showHospital('Этому жителю пока не нужна помощь.');return;}
-      city.coins-=HOSPITAL_COST;
+      city.coins-=HOSPITAL_COST;gameAudio.coinSpend();
       patient.energy=clamp(patient.energy+22,0,100);
       patient.mood=clamp(patient.mood+10,0,100);
       const doctor=cat('lev');doctor.xp+=4;
@@ -1187,7 +1187,7 @@ import {createGameAudio} from "./game-audio.js?v=1";
       notice(`${byId[resident].name} ${activity==='rest'?'возвращается домой':activity==='work'?'идёт на работу':'идёт к месту «'+locationInfo[id].name+'»'} по дорожке.${city.paused?' Город на паузе.':''}`);
     }
     function renderUI(){if(!city)return;updateGameClock();document.getElementById('money').textContent=`🪙 ${city.coins}`;document.getElementById('pause').textContent=city.paused?'▶':'Ⅱ';if(selected==='cafe'){renderCafe();return;}let c=cat(selected),d=byId[selected];let bella=c.id==='bella';details.innerHTML=`<div class="row"><div class="avatar">${d.symbol}</div><div><h1>${d.name} <span style="font-size:12px;font-weight:400">${bella?'':`· уровень ${c.level}`}</span></h1><p class="sub">${d.job} · ${activities[c.activity]}</p></div></div><div class="stats">${bella?'<span class="stat">Гуляет и навещает друзей</span>':`<span class="stat">🥣 ${Math.round(c.hunger)}%</span><span class="stat">💤 ${Math.round(c.energy)}%</span><span class="stat">♡ ${Math.round(c.mood)}%</span><span class="stat">✦ ${Math.floor(c.xp)}/${c.level*18} опыта</span>`}</div><div class="actions">${bella?'<button class="action primary" data-action="bella-home">🏡 Дом Беллы</button><button class="action" data-action="cafe">☕ Кофейня</button><button class="action" data-action="focus">Показать на карте</button>':`<button class="action primary" data-action="work">Работать 🪙</button><button class="action" data-action="rest">Отдыхать 💤</button><button class="action" data-action="eat">Кормить 🥣</button><button class="action" data-action="play">Играть 🎭</button><button class="action" data-action="walk">Гулять</button>${c.id==='citera'?'<button class="action primary" data-action="bookshop">📚 Войти в книжную лавку</button>':''}${c.id==='ryzhiy'?'<button class="action primary" data-action="ryzhiy-home">🏡 Войти в дом Рыжего</button>':''}${c.id==='lev'?'<button class="action primary" data-action="lev-home">🏡 Войти в дом Льва</button>':''}${c.id==='kent'?'<button class="action primary" data-action="kent-home">🏡 Войти в дом Кента</button>':''}${c.id==='mia'?'<button class="action primary" data-action="mia-home">🏡 Войти в дом Мии</button>':''}<button class="action" data-action="focus">Показать на карте</button><button class="action primary" data-action="home-upgrades">🏡 Улучшения дома</button>`}</div>`;}
-    details.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.cafe){coffeeAction(b.dataset.cafe);return;}if(b.dataset.action==='cafe'){selected='cafe';renderUI();notice('Помоги жителям открыть кофейню.');return;}if(b.dataset.action==='bookshop')showBookshop();else if(b.dataset.action==='ryzhiy-home')showRyzhiyHome();else if(b.dataset.action==='bella-home')showBellaHome();else if(b.dataset.action==='lev-home')showLevHome();else if(b.dataset.action==='kent-home')showKentHome();else if(b.dataset.action==='mia-home')showMiaHome();else if(b.dataset.action==='home-upgrades')showHomeUpgrades(selected,'resident');else if(b.dataset.action==='focus'){let c=cat(selected);focusCity(c.x,c.y);}else if(b.dataset.action==='work'){const resident=cat(selected);if(!canStartWork(resident)){notice('Для работы нужно не меньше 35% сытости и бодрости.');return;}assign(resident,'work');}else if(b.dataset.action==='eat'){const result=buyManualFeed(city,selected);if(!result.ok){notice('Для вкусного обеда нужно '+MANUAL_FEED_COST+' 🪙. Обычное автоматическое питание остаётся бесплатным.');return;}notice(byId[selected].name+' вкусно поел(а): +35% сытости и +3% настроения.');changed();}else if(b.dataset.action)assign(cat(selected),b.dataset.action);});
+    details.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.cafe){coffeeAction(b.dataset.cafe);return;}if(b.dataset.action==='cafe'){selected='cafe';renderUI();notice('Помоги жителям открыть кофейню.');return;}if(b.dataset.action==='bookshop')showBookshop();else if(b.dataset.action==='ryzhiy-home')showRyzhiyHome();else if(b.dataset.action==='bella-home')showBellaHome();else if(b.dataset.action==='lev-home')showLevHome();else if(b.dataset.action==='kent-home')showKentHome();else if(b.dataset.action==='mia-home')showMiaHome();else if(b.dataset.action==='home-upgrades')showHomeUpgrades(selected,'resident');else if(b.dataset.action==='focus'){let c=cat(selected);focusCity(c.x,c.y);}else if(b.dataset.action==='work'){const resident=cat(selected);if(!canStartWork(resident)){notice('Для работы нужно не меньше 35% сытости и бодрости.');return;}assign(resident,'work');}else if(b.dataset.action==='eat'){const result=buyManualFeed(city,selected);if(!result.ok){notice('Для вкусного обеда нужно '+MANUAL_FEED_COST+' 🪙. Обычное автоматическое питание остаётся бесплатным.');return;}gameAudio.coinSpend();notice(byId[selected].name+' вкусно поел(а): +35% сытости и +3% настроения.');changed();}else if(b.dataset.action)assign(cat(selected),b.dataset.action);});
     function cleanupCafeScene(){clearTimeout(cafeRefillTimer);clearTimeout(cafeDepartTimer);cafeDeparting=null;cafeSeen.clear();}
     function close(){bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;bookMode='shop';bookRoom='bookshop';cleanupCafeScene();overlay.hidden=true;dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','boathouseDialog','postOfficeDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');}
     function show(html){if(dialog.classList.contains('cafeInteriorDialog'))cleanupCafeScene();dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','boathouseDialog','postOfficeDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');dialog.innerHTML=html;overlay.hidden=false;}
@@ -1337,7 +1337,7 @@ import {createGameAudio} from "./game-audio.js?v=1";
         e.stopImmediatePropagation();
         if(!homeUpgradeOwner)return;
         const result=purchaseHomeUpgrade(city,homeUpgradeOwner,button.dataset.homeBuy);
-        if(result.ok)changed();
+        if(result.ok){gameAudio.coinSpend();changed();}
         const message=result.ok?`✓ Куплено: «${result.item.name}». Теперь бонус этого сектора +${result.bonus}%. Потрачено ${result.cost} 🪙.`:result.reason==='funds'?`🪙 Для покупки не хватает ${result.shortfall} монет.`:result.reason==='complete'?'Здесь уже куплены все предметы.':'Не удалось оформить покупку.';
         showHomeUpgrades(homeUpgradeOwner,homeUpgradeOrigin,message);
         return;
@@ -1417,7 +1417,7 @@ import {createGameAudio} from "./game-audio.js?v=1";
         e.stopImmediatePropagation();
         const view=dialog.querySelector('[data-town-hall-back]')?.dataset.townHallBack||'all';
         const result=holdTownHallFestival(city);
-        if(result.ok)changed();
+        if(result.ok){gameAudio.coinSpend();changed();}
         const message=result.ok?`🎊 Праздник состоялся! Кент объявил благодарность Белле. Настроение ${result.residents} котиков улучшилось, потрачено ${result.spent} 🪙.`:result.reason==='funds'?'🪙 В казне пока не хватает монет.':'💛 У всех котиков уже отличное настроение!';
         showTownHallPanel('festival',view,message);
         return;
@@ -1455,7 +1455,7 @@ import {createGameAudio} from "./game-audio.js?v=1";
           showMarketShop(purchase.reason==='funds'?'🪙 Для этой покупки пока не хватает монет. Их можно заработать обычными делами в городе.':'Этот товар больше не продаётся.');
           return;
         }
-        city.coins=purchase.balance;
+        city.coins=purchase.balance;gameAudio.coinSpend();
         changed();
         showMarketShop(`💛 Белла купила «${purchase.snack.name}» за ${purchase.snack.price} 🪙. ${purchase.snack.reaction}`);
         return;
@@ -1530,7 +1530,7 @@ import {createGameAudio} from "./game-audio.js?v=1";
       if(button.hasAttribute('data-cafe-open-confirm')){
         e.stopImmediatePropagation();
         if(city.coffee.built||!cafeReady()||city.coins<CAFE_OPENING_COST)return;
-        city.coins-=CAFE_OPENING_COST;city.coffee.built=true;
+        city.coins-=CAFE_OPENING_COST;gameAudio.coinSpend();city.coffee.built=true;
         cat('ryzhiy').mood=clamp(cat('ryzhiy').mood+10,0,100);
         changed();showCafeOpening('🎉 Рыжий распахнул двери! Первые заказы уже ждут.');
         return;
@@ -1623,7 +1623,7 @@ import {createGameAudio} from "./game-audio.js?v=1";
         if(city.paused){showBookshop('Сними игру с паузы перед заказом книг.');return;}
         const result=orderBook(city.books.inventory,d.bookBuy,Number(d.bookQty),city.coins);
         if(!result.ok){showBookshop(result.error);return;}
-        city.coins-=result.cost;changed();
+        city.coins-=result.cost;gameAudio.coinSpend();changed();
         showBookshop(`📦 Заказано ${d.bookQty} экз. «${BOOK_BY_ID[d.bookBuy].title}». Потрачено ${result.cost} 🪙. Книги уже в пути!`);
         return;
       }

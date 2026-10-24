@@ -17,8 +17,9 @@ export function createGameAudio({
 }={}){
   const preferences=audioPreferences(storage);
   const soundtrack=AudioCtor?new AudioCtor(musicUrl):null;
-  if(soundtrack){soundtrack.loop=true;soundtrack.preload='none';soundtrack.volume=.22;}
-  let unlocked=false,paused=false,context=null,lastTap=-Infinity,lastCoin=-Infinity;
+  if(soundtrack){soundtrack.loop=true;soundtrack.preload='none';soundtrack.volume=.09;}
+  let unlocked=false,paused=false,context=null,lastTap=-Infinity;
+  const lastJingle={gain:-Infinity,spend:-Infinity};
 
   function savePreferences(){
     try{storage?.setItem(AUDIO_STORAGE_KEY,JSON.stringify(preferences));}catch{}
@@ -52,27 +53,31 @@ export function createGameAudio({
       const at=ctx.currentTime;
       if(at-lastTap<.045)return;
       lastTap=at;
-      const oscillator=ctx.createOscillator(),volume=ctx.createGain();
-      oscillator.type='sine';
-      oscillator.frequency.setValueAtTime(720,at);
-      oscillator.frequency.exponentialRampToValueAtTime(510,at+.085);
-      volume.gain.setValueAtTime(.0001,at);
-      volume.gain.exponentialRampToValueAtTime(.105,at+.008);
-      volume.gain.exponentialRampToValueAtTime(.0001,at+.115);
-      oscillator.connect(volume);volume.connect(ctx.destination);
-      oscillator.start(at);oscillator.stop(at+.125);
+      // A brighter, louder double plink is audible over the quiet soundtrack.
+      for(const [from,to,peak] of [[880,600,.22],[1760,1200,.055]]){
+        const oscillator=ctx.createOscillator(),volume=ctx.createGain();
+        oscillator.type='sine';
+        oscillator.frequency.setValueAtTime(from,at);
+        oscillator.frequency.exponentialRampToValueAtTime(to,at+.10);
+        volume.gain.setValueAtTime(.0001,at);
+        volume.gain.exponentialRampToValueAtTime(peak,at+.006);
+        volume.gain.exponentialRampToValueAtTime(.0001,at+.14);
+        oscillator.connect(volume);volume.connect(ctx.destination);
+        oscillator.start(at);oscillator.stop(at+.15);
+      }
     }catch{/* Some browser settings prohibit audio; gameplay still works. */}
   }
-  function coinGain(){
+  function coinJingle(kind){
     try{
       const ctx=readyContext();if(!ctx)return;
       const now=ctx.currentTime;
-      if(now-lastCoin<.85)return; // Several residents can finish a shift at once.
-      lastCoin=now;
-      // Four tiny metallic notes, with a last tail fading just before one second.
-      for(const [index,[frequency,offset]] of [[988,0],[1318,.14],[1568,.28],[1760,.45]].entries()){
-        const start=now+offset,life=index===3?.47:.37;
-        for(const [pitch,peak] of [[frequency,.068],[frequency*2.57,.017]]){
+      if(now-lastJingle[kind]<.45)return; // Don't stack multiple simultaneous payments.
+      lastJingle[kind]=now;
+      // Earning coins rings upwards; spending them clinks downwards.
+      const notes=kind==='gain'?[988,1318,1568,1760]:[1760,1480,1175,880];
+      for(const [index,frequency] of notes.entries()){
+        const start=now+[0,.14,.28,.45][index],life=index===3?.45:.35;
+        for(const [pitch,peak] of [[frequency,.15],[frequency*2.57,.04]]){
           const oscillator=ctx.createOscillator(),volume=ctx.createGain();
           oscillator.type='sine';
           oscillator.frequency.setValueAtTime(pitch,start);
@@ -85,5 +90,7 @@ export function createGameAudio({
       }
     }catch{/* Audio is optional, including when the browser blocks playback. */}
   }
-  return {preferences,unlock,tap,coinGain,sync,setPaused,setMusic,setEffects};
+  function coinGain(){coinJingle('gain');}
+  function coinSpend(){coinJingle('spend');}
+  return {preferences,unlock,tap,coinGain,coinSpend,sync,setPaused,setMusic,setEffects};
 }

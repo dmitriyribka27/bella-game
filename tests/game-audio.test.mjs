@@ -37,7 +37,7 @@ test('music waits for first gesture and respects pause/background',()=>{
   audio.unlock();
   assert.equal(track.played,1);
   assert.equal(track.loop,true);
-  assert.equal(track.volume,.22);
+  assert.equal(track.volume,.09);
   audio.setPaused(true);
   assert.equal(track.paused,true);
   audio.setPaused(false);
@@ -54,10 +54,10 @@ test('music and effects can be switched independently, with persisted settings',
   state.audio.setMusic(false);
   assert.equal(state.track.paused,true);
   state.audio.tap();
-  assert.equal(state.clicks,1);
+  assert.equal(state.clicks,2);
   state.audio.setEffects(false);
   state.audio.tap();
-  assert.equal(state.clicks,1);
+  assert.equal(state.clicks,2);
   assert.deepEqual(JSON.parse(state.storage.getItem(AUDIO_STORAGE_KEY)),{music:false,effects:false});
   state.audio.setMusic(true);
   assert.equal(state.track.played,2);
@@ -72,17 +72,22 @@ test('sound stays quiet if restored game is paused',()=>{
   assert.equal(state.track.played,1);
 });
 
-test('button tap is louder and coin income has a short four-note chime',()=>{
+test('foreground music is quiet, button taps are obvious, and both coin changes chime',()=>{
   const state=setup();
   state.audio.unlock();
   state.audio.tap();
-  assert.equal(state.clicks,1);
-  assert.ok(state.peaks.includes(.105),'button sounds peak at the increased volume');
+  assert.equal(state.clicks,2,'button plink uses two audible tones');
+  assert.ok(state.peaks.includes(.22),'button sounds peak above the softer music');
   state.audio.coinGain();
-  assert.equal(state.clicks,9,'four notes with a metallic harmonic each');
+  assert.equal(state.clicks,10,'gain uses four notes with a metallic harmonic each');
   state.audio.coinGain();
-  assert.equal(state.clicks,9,'simultaneous income is throttled');
+  assert.equal(state.clicks,10,'simultaneous income is throttled');
+  state.audio.coinSpend();
+  assert.equal(state.clicks,18,'spending has its own descending four-note sound');
+  state.audio.coinSpend();
+  assert.equal(state.clicks,18,'simultaneous spending is throttled');
   state.audio.setEffects(false);
   state.audio.coinGain();
-  assert.equal(state.clicks,9,'muted effects include coin income');
+  state.audio.coinSpend();
+  assert.equal(state.clicks,18,'muted effects include both earning and spending');
 });

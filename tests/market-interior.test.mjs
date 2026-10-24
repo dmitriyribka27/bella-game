@@ -40,7 +40,7 @@ test('central market stall has touch-friendly buying and return actions',()=>{
   assert.match(app,/function showMarketShop\(message=''\)/);
   assert.match(app,/data-market-buy="\$\{item\.id\}"/);
   assert.match(app,/if\(button\.dataset\.marketBuy!==undefined\)/);
-  assert.match(app,/city\.coins=purchase\.balance;\s*changed\(\)/);
+  assert.match(app,/city\.coins=purchase\.balance;gameAudio\.coinSpend\(\);\s*changed\(\)/);
   assert.match(app,/data-market-shop-back/);
   assert.match(app,/dialog\.classList\.remove\([^\n]*'marketShopDialog'[^\n]*\)/);
 });
