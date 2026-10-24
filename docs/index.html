@@ -57,7 +57,36 @@
     .dialog.marketShopDialog { width:min(100%,520px); padding:16px; }
     .dialog.greenhouseDialog { width:min(100%,660px); padding:14px; }
     .dialog.cafeOpeningDialog { width:min(100%,510px); padding:17px; }
+    .dialog.homeUpgradeDialog { width:min(100%,510px); padding:17px; }
     .dialog.homeStoryDialog,.dialog.familyAlbumDialog { width:min(100%,500px); padding:17px; }
+    .homeUpgradeHero { display:flex; align-items:center; gap:11px; padding:13px; border-radius:16px; background:linear-gradient(135deg,#ebf0e9,#f6e5cb); margin:10px 0 12px; }
+    .homeUpgradeFace { display:grid; place-items:center; width:44px; height:44px; flex:none; border-radius:13px; background:#fff9ee; font-size:28px; }
+    .homeUpgradeHero strong { display:block; font-size:14px; }
+    .homeUpgradeHero small { display:block; font-size:11px; line-height:1.45; margin-top:3px; }
+    .homeUpgradeSector { margin:10px 0; padding:12px; border:1px solid #e3e2d6; border-radius:16px; background:#f6f4ec; }
+    .homeUpgradeHeading { display:flex; align-items:center; gap:9px; }
+    .homeUpgradeHeadingIcon { display:grid; place-items:center; width:34px; height:34px; flex:none; background:#e7e8dd; border-radius:11px; font-size:19px; }
+    .homeUpgradeHeading div { flex:1; min-width:0; }
+    .homeUpgradeHeading strong { display:block; font-size:13px; }
+    .homeUpgradeHeading small { display:block; margin-top:2px; line-height:1.25; font-size:10px; }
+    .homeUpgradeBonus { font-size:13px; white-space:nowrap; font-weight:850; color:#527767; }
+    .homeUpgradeTrack { height:6px; margin:9px 0 10px; overflow:hidden; border-radius:6px; background:#e0e7df; }
+    .homeUpgradeTrack span { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#87b69d,#d1af76); }
+    .homeUpgradeItems { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+    .homeUpgradeItem { display:flex; flex-direction:column; align-items:center; text-align:center; gap:4px; min-width:0; padding:7px 4px; border:1px solid #e2dfd6; background:#fbf8f0; border-radius:12px; }
+    .homeUpgradeItem.current { border-color:#e6ba83; background:#fff4e3; }
+    .homeUpgradeItem.done { border-color:#c8dfcb; background:#edf5ed; }
+    .homeUpgradeThumb { position:relative; display:grid; place-items:center; width:48px; height:43px; border-radius:12px; background:radial-gradient(circle at 25% 15%,#fffef9,#d9e7e1 76%); box-shadow:inset 0 0 0 1px #ffffff99; font-size:26px; }
+    .homeUpgradeItem[data-sector="bed"] .homeUpgradeThumb { background:radial-gradient(circle at 25% 15%,#fffef9,#dddaf0 80%); }
+    .homeUpgradeItem[data-sector="bowl"] .homeUpgradeThumb { background:radial-gradient(circle at 25% 15%,#fffef9,#d5ece6 80%); }
+    .homeUpgradeItem[data-sector="toy"] .homeUpgradeThumb { background:radial-gradient(circle at 25% 15%,#fffef9,#f5dec9 80%); }
+    .homeUpgradeItem.done .homeUpgradeThumb::after { content:'✓'; position:absolute; top:-3px; right:-3px; width:15px; height:15px; display:grid; place-items:center; border-radius:50%; background:#70a686; border:2px solid #fff; color:#fff; font-weight:850; font-size:10px; }
+    .homeUpgradeItemName { font-size:10px; line-height:1.18; min-height:24px; overflow-wrap:break-word; }
+    .homeUpgradeItemBonus { font-size:10px; color:#518064; font-weight:800; }
+    .dialog .homeUpgradeBuy,.dialog .homeUpgradeBuy:first-of-type { margin:10px 0 0; background:#edbd8b; color:#574b36; font-size:12px; padding:12px 9px; }
+    .dialog .homeUpgradeBuy:disabled { background:#e3e5df; color:#8c948f; opacity:1; }
+    .homeUpgradeComplete { margin-top:10px; padding:10px; background:#e4eee4; border-radius:11px; color:#548063; text-align:center; font-weight:750; font-size:11px; }
+    .homeUpgradeFeedback { margin:9px 0; padding:11px; border-radius:12px; color:#4e6b5a; background:#e8f0e5; font-size:12px; line-height:1.5; }
     .cafeOpeningIntro { margin:5px 0 12px; color:#526b65; }
     .cafeProgressSegments { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; margin:10px 0 15px; }
     .cafeProgressSegments span { height:8px; border-radius:8px; background:#dce5d9; }
@@ -504,7 +533,7 @@
   <canvas id="world" aria-label="Карта города Тихая бухта"></canvas>
   <div id="catLabels" aria-hidden="true"></div>
   <header class="top">
-    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.9.21 · 2D</small></div>
+    <div class="brand"><strong>Тихая бухта</strong><small>город Беллы · версия 0.9.22 · 2D</small></div>
     <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Сохранения и помощь">☰</button></div>
   </header>
   <div class="hint">Коснись здания · двумя пальцами меняй масштаб</div>
@@ -527,6 +556,7 @@ import {HOME_STORIES,HOME_STORY_BY_ID,RYZHIY_HOME_STORIES,CITERA_HOME_STORIES,BE
 import {MARKET_SNACKS,buyMarketSnack} from "./market-snacks.js?v=1";
 import {TOWN_HALL_FESTIVAL_COST,TOWN_HALL_FESTIVAL_MOOD,getTownHallReport,issueTownHallOrder,holdTownHallFestival} from "./townhall-management.js?v=1";
 import {OBSERVATORY_DISCOVERIES,OBSERVATORY_DIRECTIONS,OBSERVATORY_FOCUS,newObservatoryState,sanitizeObservatoryState,nextObservatoryDiscovery,telescopeIsAligned,skyPatternsFor,recordObservatoryDiscovery} from "./observatory-work.js?v=1";
+import {HOME_UPGRADE_MAX_BONUS,HOME_UPGRADE_SECTORS,homeUpgradeBonus,homeUpgradeCost,homeRecoveryRate,purchaseHomeUpgrade} from "./home-upgrades.js?v=1";
 (()=>{"use strict";
     const FORMAT=13, DB='quiet-bay-save', KEY='city';
     const cafeSite={id:'cafe',name:'Кофейня',home:[5,11.2],roof:'#c98165'};
@@ -590,6 +620,7 @@ import {OBSERVATORY_DISCOVERIES,OBSERVATORY_DIRECTIONS,OBSERVATORY_FOCUS,newObse
     let bookMode='shop',bookRoom='bookshop',bookTab='visitors',bookSelected=null,bookSupplier='needed',bookFocused=null,bookShelfFilter='stock',bookSceneSelected=null,bookSaleFlash=null;
     let cafeTask=null,cafeSelectedGuest=null,cafeDeparting=null,cafeRefillTimer=0,cafeDepartTimer=0;
     let ryzhiyRoom='all',bellaRoom='all';
+    let homeUpgradeOwner=null,homeUpgradeOrigin='location';
     let observatoryTargetId=null,observatoryDirection='sea',observatoryFocus='near',observatoryAligned=false,observatoryReplay=0;
     const cafeSeen=new Set();
     const bookMotion=createBookVisitorMotion();
@@ -638,14 +669,14 @@ import {OBSERVATORY_DISCOVERIES,OBSERVATORY_DIRECTIONS,OBSERVATORY_FOCUS,newObse
         c.phase+=dt;
         if(c.id==='bella'){if(c.phase>7)assign(c,'walk',false);continue;}
         c.hunger=clamp(c.hunger-dt*.18,0,100);
-        c.energy=clamp(c.energy-dt*(c.activity==='rest'?-1.5:.16),0,100);
+        c.energy=clamp(c.energy+(c.activity==='rest'?dt*homeRecoveryRate('rest',c.upgrades):-dt*.16),0,100);
         if(c.activity==='eat'){
-          c.hunger=clamp(c.hunger+dt*(1.7+c.upgrades.bowl*.6),0,100);
+          c.hunger=clamp(c.hunger+dt*homeRecoveryRate('eat',c.upgrades),0,100);
           if(c.phase>9)auto(c);
         }else if(c.activity==='rest'){
           if(c.phase>12||c.energy>=95)auto(c);
         }else if(c.activity==='play'){
-          c.mood=clamp(c.mood+dt*(1.5+c.upgrades.toy*.5),0,100);
+          c.mood=clamp(c.mood+dt*homeRecoveryRate('play',c.upgrades),0,100);
           if(c.phase>10)auto(c);
         }else if(c.activity==='work'){
           if(c.phase>11){
@@ -666,8 +697,6 @@ import {OBSERVATORY_DISCOVERIES,OBSERVATORY_DIRECTIONS,OBSERVATORY_FOCUS,newObse
       }
     }
     function offline(){let elapsed=clamp((Date.now()-city.savedAt)/1000,0,4*3600);let blocks=Math.min(24,Math.floor(elapsed/600));if(!blocks)return;let gain=city.paused?0:blocks*city.cats.filter(c=>c.id!=='bella').length*3;city.coins+=gain;notice(gain?`Пока тебя не было, жители принесли ${gain} монет. Начислено не больше чем за 4 часа.`:'Город был на паузе.');dirty=true;}
-    function homeCost(c,k){return {bed:20,bowl:15,toy:18}[k]*(c.upgrades[k]+1);}
-    function improve(k){let c=cat(selected),cost=homeCost(c,k);if(city.coins<cost){notice(`Нужно ещё ${cost-city.coins} монет.`);return;}city.coins-=cost;c.upgrades[k]++;let names={bed:'Кровать',bowl:'Миска',toy:'Игрушки'};notice(`${byId[c.id].name}: ${names[k].toLowerCase()}, уровень ${c.upgrades[k]}. ${k==='bed'?'Отдых теперь быстрее.':k==='bowl'?'Еда восполняется быстрее.':'Игра лучше поднимает настроение.'}`);changed();}
     function cafeReady(){let c=city.coffee;return c.plan&&c.delivery&&c.recipe&&c.style;}
     function renderCafe(){
       let c=city.coffee,done=[c.plan,c.delivery,c.recipe,!!c.style].filter(Boolean).length;
@@ -802,6 +831,24 @@ import {OBSERVATORY_DISCOVERIES,OBSERVATORY_DIRECTIONS,OBSERVATORY_FOCUS,newObse
     function showObservatoryResult(discovery,newlyFound){
       show(`<h2>✨ Мия сделала открытие!</h2><div class="obsResult"><span class="obsResultIcon">${discovery.icon}</span><strong>${discovery.name}</strong><p>${discovery.story}</p><small>${newlyFound?'Новая запись добавлена в звёздный журнал!':'Мия снова узнала знакомое созвездие.'}</small></div><p class="obsStatus">В журнале: ${observatoryProgress()}. Никаких расходов, заданий на каждый день и дополнительных монет.</p><button data-obs-open="align">🔭 Найти ещё созвездие</button><button data-obs-open="journal">📓 Посмотреть журнал</button><button data-obs-back>← К карточке обсерватории</button><button data-close>Вернуться в город</button>`);
       dialog.classList.add('observatoryDialog');
+    }
+    function showHomeUpgrades(id,origin='location',message=''){
+      if(!byId[id]||id==='bella')return;
+      const resident=cat(id);if(!resident)return;
+      homeUpgradeOwner=id;homeUpgradeOrigin=origin;
+      const bought=Object.keys(HOME_UPGRADE_SECTORS).reduce((sum,key)=>sum+resident.upgrades[key],0);
+      const sectors=Object.entries(HOME_UPGRADE_SECTORS).map(([key,sector])=>{
+        const level=resident.upgrades[key],bonus=homeUpgradeBonus(resident.upgrades,key),cost=homeUpgradeCost(resident.upgrades,key);
+        const items=sector.steps.map((step,index)=>{
+          const state=index<level?'done':index===level?'current':'locked';
+          return `<div class="homeUpgradeItem ${state}" data-sector="${key}"><span class="homeUpgradeThumb" aria-hidden="true">${step.icon}</span><span class="homeUpgradeItemName">${step.name}</span><span class="homeUpgradeItemBonus">${index<level?'✓ ':''}+${step.bonus}%</span></div>`;
+        }).join('');
+        const buy=cost===null?'<div class="homeUpgradeComplete">✓ Все улучшения в этом секторе куплены</div>':`<button class="homeUpgradeBuy" data-home-buy="${key}" ${city.coins<cost?'disabled':''}>${city.coins<cost?`Не хватает ${cost-city.coins} 🪙 · `:`Купить «${sector.steps[level].name}» · `}${cost} 🪙</button>`;
+        return `<section class="homeUpgradeSector"><div class="homeUpgradeHeading"><span class="homeUpgradeHeadingIcon" aria-hidden="true">${sector.icon}</span><div><strong>${sector.title} · ${level}/3</strong><small>${sector.need}: ${sector.description}</small></div><span class="homeUpgradeBonus">+${bonus}/${HOME_UPGRADE_MAX_BONUS}%</span></div><div class="homeUpgradeTrack" aria-label="Бонус ${bonus} из ${HOME_UPGRADE_MAX_BONUS} процентов"><span style="width:${bonus*10}%"></span></div><div class="homeUpgradeItems">${items}</div>${buy}</section>`;
+      }).join('');
+      const houseNames={kent:'Кента',mia:'Мии',lev:'Льва',citera:'Цитеры',ryzhiy:'Рыжего'};
+      show(`<h2>🏡 Улучшения дома</h2><div class="homeUpgradeHero"><span class="homeUpgradeFace">${byId[id].symbol}</span><div><strong>Дом ${houseNames[id]} · ${bought}/9 предметов</strong><small>Казна: ${city.coins} 🪙. Купленные предметы сохраняются и ускоряют отдых, питание или игры этого котика.</small></div></div>${message?`<div class="homeUpgradeFeedback" role="status">${message}</div>`:''}${sectors}<button data-home-upgrade-back>← ${origin==='bookshop'?'В личные комнаты Цитеры':origin==='resident'?'Вернуться к городу':'К карточке дома'}</button><button data-close>Вернуться в город</button>`);
+      dialog.classList.add('homeUpgradeDialog');
     }
     function showLevHome(view='all'){
       view=['all','workshop','play','lounge','loft'].includes(view)?view:'all';
@@ -1025,7 +1072,7 @@ import {OBSERVATORY_DISCOVERIES,OBSERVATORY_DIRECTIONS,OBSERVATORY_FOCUS,newObse
       const modes=`<div class="bookModeTabs" aria-label="Разделы здания Цитеры"><button data-book-mode="shop" class="${atHome?'':'active'}" aria-pressed="${!atHome}">📚 Лавка</button><button data-book-mode="home" class="${atHome?'active':''}" aria-pressed="${atHome}">🏡 Личные комнаты</button></div>`;
       const personalHotspots=atHome?CITERA_HOME_STORIES.map(story=>`<button class="bookHomeHotspot" data-home-story="${story.id}" aria-label="${story.label}: открыть историю" title="${story.label}">${story.emoji}</button>`).join(''):'';
       const found=CITERA_HOME_STORIES.filter(story=>city.memories.some(memory=>memory.id===story.id)).length;
-      const homePanel=`<div class="bookHomeStatus">🧡 Личные моменты Цитеры · ${found}/${CITERA_HOME_STORIES.length}<br>Выбери предмет прямо на картинке или нажми на историю ниже.</div><div class="bookHomeTasks">${CITERA_HOME_STORIES.map(story=>`<button data-home-story="${story.id}">${story.emoji} ${story.title}</button>`).join('')}</div><button data-open-album>📖 Семейный альбом Беллы · ${city.memories.length}/${HOME_STORIES.length}</button>`;
+      const homePanel=`<div class="bookHomeStatus">🧡 Личные моменты Цитеры · ${found}/${CITERA_HOME_STORIES.length}<br>Выбери предмет прямо на картинке или нажми на историю ниже.</div><div class="bookHomeTasks">${CITERA_HOME_STORIES.map(story=>`<button data-home-story="${story.id}">${story.emoji} ${story.title}</button>`).join('')}</div><button data-house-upgrades="citera">🏡 Улучшения личных комнат Цитеры</button><button data-open-album>📖 Семейный альбом Беллы · ${city.memories.length}/${HOME_STORIES.length}</button>`;
       const shopPanel=`<span class="shopStatus">📚 Обслужено гостей: ${b.orders} · 📖 На полке: ${totalCopies(b.inventory)} · 🐈 В лавке: ${vis.queue.length}</span><div class="bookPanelTabs"><button data-book-tab="visitors" class="${bookTab==='visitors'?'active':''}">Посетители</button><button data-book-tab="shelves" class="${bookTab==='shelves'?'active':''}">Витрина</button><button data-book-tab="supply" class="${bookTab==='supply'?'active':''}">Закупки</button><button data-book-tab="stories" class="${bookTab==='stories'?'active':''}">Журнал</button></div>${note?`<div class="bookMessage" role="status">${note}</div>`:''}${content}`;
       show(`<h2>Книжная лавка и дом Цитеры</h2>${modes}<div class="bookScene" id="bookScene" data-room="${bookRoom}" data-paused="${city.paused}"><div class="bookCanvas"><img id="bookInterior" class="bookInterior" src="./assets/interiors/citera-home-v1.webp" alt="Книжная лавка, гостиная и спальня Цитеры" draggable="false">${atHome?personalHotspots:`<div class="bookGuestLayer">${guestButtons}${exitGuest}</div>`}</div>${atHome?'':`<button class="sceneShelfHotspot" data-book-shelf>📚 Рассмотреть полки</button>${saleFlash}`}</div><div class="bookRooms" aria-label="Рассмотреть комнаты">${roomTabs}</div>${atHome?homePanel:shopPanel}<button data-close>Вернуться в город</button>`);
       dialog.classList.add('bookshop');
@@ -1091,7 +1138,7 @@ import {OBSERVATORY_DISCOVERIES,OBSERVATORY_DIRECTIONS,OBSERVATORY_FOCUS,newObse
         if(place.worker)actions+=`<button data-location-work="${id}">💼 Отправить ${nameAccusative[place.worker]} на работу</button>`;
         actions+=`<button data-location-visit="${id}">🚶 Отправить ${visitorName} сюда</button>`;
       }
-      show(`<div class="locationHead"><div class="locationIcon">${place.icon}</div><div><span class="locationType">${place.type}</span><h2>${place.name}</h2></div></div><p class="locationDesc">${place.description}</p>${actions}<button data-close>Вернуться к карте</button><small class="locationHint">${place.owner?'Улучшения дома доступны в карточке жителя.':`Выбран для прогулки: ${byId[visitor].name}. Чтобы отправить другого жителя, сначала выбери его в нижней панели.`}</small>`);
+      show(`<div class="locationHead"><div class="locationIcon">${place.icon}</div><div><span class="locationType">${place.type}</span><h2>${place.name}</h2></div></div><p class="locationDesc">${place.description}</p>${actions}<button data-close>Вернуться к карте</button><small class="locationHint">${place.owner?(id==='bella'?'Дом Беллы можно рассматривать и открывать истории.':'Улучшения и их бонусы доступны через кнопку «Управлять домом и улучшениями».'):`Выбран для прогулки: ${byId[visitor].name}. Чтобы отправить другого жителя, сначала выбери его в нижней панели.`}</small>`);
       dialog.classList.add('location');
     }
     function showPlaces(){
@@ -1110,12 +1157,12 @@ import {OBSERVATORY_DISCOVERIES,OBSERVATORY_DIRECTIONS,OBSERVATORY_FOCUS,newObse
       close();changed();focusCity(...entrance);
       notice(`${byId[resident].name} ${activity==='rest'?'возвращается домой':activity==='work'?'идёт на работу':'идёт к месту «'+locationInfo[id].name+'»'} по дорожке.${city.paused?' Город на паузе.':''}`);
     }
-    function renderUI(){if(!city)return;document.getElementById('money').textContent=`🪙 ${city.coins}`;document.getElementById('pause').textContent=city.paused?'▶':'Ⅱ';if(selected==='cafe'){renderCafe();return;}let c=cat(selected),d=byId[selected];let bella=c.id==='bella';details.innerHTML=`<div class="row"><div class="avatar">${d.symbol}</div><div><h1>${d.name} <span style="font-size:12px;font-weight:400">${bella?'':`· уровень ${c.level}`}</span></h1><p class="sub">${d.job} · ${activities[c.activity]}</p></div></div><div class="stats">${bella?'<span class="stat">Гуляет и навещает друзей</span>':`<span class="stat">🥣 ${Math.round(c.hunger)}%</span><span class="stat">💤 ${Math.round(c.energy)}%</span><span class="stat">♡ ${Math.round(c.mood)}%</span><span class="stat">✦ ${Math.floor(c.xp)}/${c.level*18} опыта</span>`}</div><div class="actions">${bella?'<button class="action primary" data-action="bella-home">🏡 Дом Беллы</button><button class="action" data-action="cafe">☕ Кофейня</button><button class="action" data-action="guide">Как играть</button><button class="action" data-action="focus">Показать на карте</button>':`<button class="action primary" data-action="work">Работать · +монеты</button><button class="action" data-action="rest">Отдыхать · +бодрость</button><button class="action" data-action="eat">Кормить · +сытость</button><button class="action" data-action="play">Играть · +настроение</button><button class="action" data-action="walk">Гулять</button>${c.id==='citera'?'<button class="action primary" data-action="bookshop">📚 Войти в книжную лавку</button>':''}${c.id==='ryzhiy'?'<button class="action primary" data-action="ryzhiy-home">🏡 Войти в дом Рыжего</button>':''}${c.id==='lev'?'<button class="action primary" data-action="lev-home">🏡 Войти в дом Льва</button>':''}${c.id==='kent'?'<button class="action primary" data-action="kent-home">🏡 Войти в дом Кента</button>':''}${c.id==='mia'?'<button class="action primary" data-action="mia-home">🏡 Войти в дом Мии</button>':''}<button class="action" data-action="focus">Показать на карте</button><button class="action" data-upgrade="bed" ${c.upgrades.bed>=3?'disabled':''}>🛏 Кровать ${c.upgrades.bed}/3 · ${homeCost(c,'bed')} 🪙</button><button class="action" data-upgrade="bowl" ${c.upgrades.bowl>=3?'disabled':''}>🥣 Миска ${c.upgrades.bowl}/3 · ${homeCost(c,'bowl')} 🪙</button><button class="action" data-upgrade="toy" ${c.upgrades.toy>=3?'disabled':''}>🧶 Игрушки ${c.upgrades.toy}/3 · ${homeCost(c,'toy')} 🪙</button>`}</div>`;}
-    details.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.cafe){coffeeAction(b.dataset.cafe);return;}if(b.dataset.action==='cafe'){selected='cafe';renderUI();notice('Помоги жителям открыть кофейню.');return;}if(b.dataset.action==='guide')showGuide();else if(b.dataset.action==='bookshop')showBookshop();else if(b.dataset.action==='ryzhiy-home')showRyzhiyHome();else if(b.dataset.action==='bella-home')showBellaHome();else if(b.dataset.action==='lev-home')showLevHome();else if(b.dataset.action==='kent-home')showKentHome();else if(b.dataset.action==='mia-home')showMiaHome();else if(b.dataset.action==='focus'){let c=cat(selected);focusCity(c.x,c.y);}else if(b.dataset.action)assign(cat(selected),b.dataset.action);else if(b.dataset.upgrade)improve(b.dataset.upgrade);});
+    function renderUI(){if(!city)return;document.getElementById('money').textContent=`🪙 ${city.coins}`;document.getElementById('pause').textContent=city.paused?'▶':'Ⅱ';if(selected==='cafe'){renderCafe();return;}let c=cat(selected),d=byId[selected];let bella=c.id==='bella';details.innerHTML=`<div class="row"><div class="avatar">${d.symbol}</div><div><h1>${d.name} <span style="font-size:12px;font-weight:400">${bella?'':`· уровень ${c.level}`}</span></h1><p class="sub">${d.job} · ${activities[c.activity]}</p></div></div><div class="stats">${bella?'<span class="stat">Гуляет и навещает друзей</span>':`<span class="stat">🥣 ${Math.round(c.hunger)}%</span><span class="stat">💤 ${Math.round(c.energy)}%</span><span class="stat">♡ ${Math.round(c.mood)}%</span><span class="stat">✦ ${Math.floor(c.xp)}/${c.level*18} опыта</span>`}</div><div class="actions">${bella?'<button class="action primary" data-action="bella-home">🏡 Дом Беллы</button><button class="action" data-action="cafe">☕ Кофейня</button><button class="action" data-action="guide">Как играть</button><button class="action" data-action="focus">Показать на карте</button>':`<button class="action primary" data-action="work">Работать · +монеты</button><button class="action" data-action="rest">Отдыхать · +бодрость</button><button class="action" data-action="eat">Кормить · +сытость</button><button class="action" data-action="play">Играть · +настроение</button><button class="action" data-action="walk">Гулять</button>${c.id==='citera'?'<button class="action primary" data-action="bookshop">📚 Войти в книжную лавку</button>':''}${c.id==='ryzhiy'?'<button class="action primary" data-action="ryzhiy-home">🏡 Войти в дом Рыжего</button>':''}${c.id==='lev'?'<button class="action primary" data-action="lev-home">🏡 Войти в дом Льва</button>':''}${c.id==='kent'?'<button class="action primary" data-action="kent-home">🏡 Войти в дом Кента</button>':''}${c.id==='mia'?'<button class="action primary" data-action="mia-home">🏡 Войти в дом Мии</button>':''}<button class="action" data-action="focus">Показать на карте</button><button class="action primary" data-action="home-upgrades">🏡 Улучшения дома</button>`}</div>`;}
+    details.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.cafe){coffeeAction(b.dataset.cafe);return;}if(b.dataset.action==='cafe'){selected='cafe';renderUI();notice('Помоги жителям открыть кофейню.');return;}if(b.dataset.action==='guide')showGuide();else if(b.dataset.action==='bookshop')showBookshop();else if(b.dataset.action==='ryzhiy-home')showRyzhiyHome();else if(b.dataset.action==='bella-home')showBellaHome();else if(b.dataset.action==='lev-home')showLevHome();else if(b.dataset.action==='kent-home')showKentHome();else if(b.dataset.action==='mia-home')showMiaHome();else if(b.dataset.action==='home-upgrades')showHomeUpgrades(selected,'resident');else if(b.dataset.action==='focus'){let c=cat(selected);focusCity(c.x,c.y);}else if(b.dataset.action)assign(cat(selected),b.dataset.action);});
     function cleanupCafeScene(){clearTimeout(cafeRefillTimer);clearTimeout(cafeDepartTimer);cafeDeparting=null;cafeSeen.clear();}
-    function close(){bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;bookMode='shop';bookRoom='bookshop';cleanupCafeScene();overlay.hidden=true;dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','boathouseDialog','postOfficeDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeStoryDialog','familyAlbumDialog');}
-    function show(html){if(dialog.classList.contains('cafeInteriorDialog'))cleanupCafeScene();dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','boathouseDialog','postOfficeDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeStoryDialog','familyAlbumDialog');dialog.innerHTML=html;overlay.hidden=false;}
-    function showGuide(){show(`<h2>Добро пожаловать в бухту</h2><p>Коснись кота, чтобы выбрать жителя. Коты сами работают, едят и отдыхают. Назначай занятия, помогай с настроением и улучшай их дома.</p><p>Коснись здания на карте, чтобы открыть его окно. Там можно отправить жителя к входу по дорожке, открыть существующие занятия или управление домом. Кнопка «Места» покажет все доступные локации. Обычные жилые дома без жителей не открываются.</p><p>Перетаскивай город одним пальцем, меняй масштаб двумя. Пауза останавливает жизнь котов; сохранения хранятся в Safari.</p><p>Кент работает в ратуше, Мия — в обсерватории, Лев лечит жителей в больнице. В лавке Цитеры гости входят через дверь, подходят к полкам, а при начале беседы идут к кассе. После покупки они уходят с книгой. На вкладке «Витрина» можно рассматривать обложки и проверять остатки. В «Закупках» пополняй склад: доставка займёт немного реального времени, даже если выйти из игры. Когда двое гостей заговорят у полок, присоединяйся к их небольшой истории. Кофейню Рыжего можно открыть через поручения.</p><p>В доме Рыжего нажимай на камин, кухню и кровать. В здании Цитеры выбери «Личные комнаты» и исследуй диван и книгу у кровати. В доме Беллы можно открыть три истории, касаясь шариков, стеллажа и кровати. В доме Льва исследуй находку в мастерской, прыгай по лазалкам и отдыхай в гамаке: у каждого предмета своя маленькая история. В доме Кента можно открыть указ мэра, сыграть на террасе и узнать, как Белла спасла его холодной зимой в Адыгее. В доме Мии можно открыть истории у окна с дождём, в уютном укрытии и возле коллекции ракушек, а также рассмотреть лунную террасу. Первый выбор сохраняет воспоминание в семейном альбоме. Альбом можно открыть через меню ☰; сценки можно повторять без штрафов. В обсерватории Мии можно настроить телескоп по подсказке, выбрать звёздный узор и постепенно заполнить журнал шестью открытиями. В ратуше Кента можно рассмотреть главный зал, кабинет мэра, городской совет, архив и часовую башню, а также открыть городской отчёт, выпустить распоряжение для жителей или устроить праздник за монеты. В маяк, лодочный домик, на почту и в оранжерею можно просто зайти и рассматривать декорации без заданий. На рынке Белла может купить свои любимые вкусняшки за городские монеты.</p><button data-close>Играть</button>`);}
+    function close(){bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;bookMode='shop';bookRoom='bookshop';cleanupCafeScene();overlay.hidden=true;dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','boathouseDialog','postOfficeDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');}
+    function show(html){if(dialog.classList.contains('cafeInteriorDialog'))cleanupCafeScene();dialog.classList.remove('bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','boathouseDialog','postOfficeDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');dialog.innerHTML=html;overlay.hidden=false;}
+    function showGuide(){show(`<h2>Добро пожаловать в бухту</h2><p>Коснись кота, чтобы выбрать жителя. Коты сами работают, едят и отдыхают. Назначай занятия, помогай с настроением и улучшай их дома.</p><p>Коснись здания на карте, чтобы открыть его окно. Там можно отправить жителя к входу по дорожке, открыть существующие занятия или управление домом. Кнопка «Места» покажет все доступные локации. Обычные жилые дома без жителей не открываются.</p><p>Перетаскивай город одним пальцем, меняй масштаб двумя. Пауза останавливает жизнь котов; сохранения хранятся в Safari.</p><p>Кент работает в ратуше, Мия — в обсерватории, Лев лечит жителей в больнице. В лавке Цитеры гости входят через дверь, подходят к полкам, а при начале беседы идут к кассе. После покупки они уходят с книгой. На вкладке «Витрина» можно рассматривать обложки и проверять остатки. В «Закупках» пополняй склад: доставка займёт немного реального времени, даже если выйти из игры. Когда двое гостей заговорят у полок, присоединяйся к их небольшой истории. Кофейню Рыжего можно открыть через поручения.</p><p>В доме Рыжего нажимай на камин, кухню и кровать. В здании Цитеры выбери «Личные комнаты» и исследуй диван и книгу у кровати. В доме Беллы можно открыть три истории, касаясь шариков, стеллажа и кровати. В доме Льва исследуй находку в мастерской, прыгай по лазалкам и отдыхай в гамаке: у каждого предмета своя маленькая история. В доме Кента можно открыть указ мэра, сыграть на террасе и узнать, как Белла спасла его холодной зимой в Адыгее. В доме Мии можно открыть истории у окна с дождём, в уютном укрытии и возле коллекции ракушек, а также рассмотреть лунную террасу. Первый выбор сохраняет воспоминание в семейном альбоме. Альбом можно открыть через меню ☰; сценки можно повторять без штрафов. У каждого котика теперь отдельная панель улучшений дома: купи кровать, предметы для кухни или игрушки, чтобы получить до +10% к восстановлению бодрости, сытости или настроения. В карточке дома нажми «Управлять домом и улучшениями»; для Цитеры эта кнопка есть в личных комнатах лавки. В обсерватории Мии можно настроить телескоп по подсказке, выбрать звёздный узор и постепенно заполнить журнал шестью открытиями. В ратуше Кента можно рассмотреть главный зал, кабинет мэра, городской совет, архив и часовую башню, а также открыть городской отчёт, выпустить распоряжение для жителей или устроить праздник за монеты. В маяк, лодочный домик, на почту и в оранжерею можно просто зайти и рассматривать декорации без заданий. На рынке Белла может купить свои любимые вкусняшки за городские монеты.</p><button data-close>Играть</button>`);}
     // Only the open interior mounts its image; none of these controls run in the map animation loop.
     details.addEventListener('click',e=>{
       if(!e.target.closest('button[data-cafe="interior"]'))return;
@@ -1250,6 +1297,29 @@ import {OBSERVATORY_DISCOVERIES,OBSERVATORY_DIRECTIONS,OBSERVATORY_FOCUS,newObse
       if(button.hasAttribute('data-location-market-enter')){e.stopImmediatePropagation();showMarket();return;}
       if(button.hasAttribute('data-location-greenhouse-enter')){e.stopImmediatePropagation();showGreenhouse();return;}
       if(button.hasAttribute('data-location-townhall-enter')){e.stopImmediatePropagation();showTownHall();return;}
+      if(button.dataset.houseUpgrades!==undefined){
+        e.stopImmediatePropagation();
+        const owner=button.dataset.houseUpgrades;
+        if(!byId[owner]||owner==='bella')return;
+        showHomeUpgrades(owner,owner==='citera'?'bookshop':'location');
+        return;
+      }
+      if(button.dataset.homeBuy!==undefined){
+        e.stopImmediatePropagation();
+        if(!homeUpgradeOwner)return;
+        const result=purchaseHomeUpgrade(city,homeUpgradeOwner,button.dataset.homeBuy);
+        if(result.ok)changed();
+        const message=result.ok?`✓ Куплено: «${result.item.name}». Теперь бонус этого сектора +${result.bonus}%. Потрачено ${result.cost} 🪙.`:result.reason==='funds'?`🪙 Для покупки не хватает ${result.shortfall} монет.`:result.reason==='complete'?'Здесь уже куплены все предметы.':'Не удалось оформить покупку.';
+        showHomeUpgrades(homeUpgradeOwner,homeUpgradeOrigin,message);
+        return;
+      }
+      if(button.hasAttribute('data-home-upgrade-back')){
+        e.stopImmediatePropagation();
+        if(homeUpgradeOrigin==='bookshop')showBookshop();
+        else if(homeUpgradeOrigin==='resident')close();
+        else showLocation(homeUpgradeOwner);
+        return;
+      }
       if(button.dataset.obsOpen!==undefined){
         e.stopImmediatePropagation();
         if(button.dataset.obsOpen==='align')showObservatoryAlign();
@@ -1460,7 +1530,7 @@ import {OBSERVATORY_DISCOVERIES,OBSERVATORY_DIRECTIONS,OBSERVATORY_FOCUS,newObse
       const d=button.dataset;
       if(d.locationOpen){e.stopPropagation();focusCity(...LOCATION_POINTS[d.locationOpen]);showLocation(d.locationOpen);return;}
       if(d.locationHome){e.stopPropagation();const owner=locationInfo[d.locationHome].owner;sendToLocation(d.locationHome,owner,owner==='bella'?'walk':'rest');return;}
-      if(d.locationManage){e.stopPropagation();selected=locationInfo[d.locationManage].owner;close();renderUI();notice('Открыта карточка жителя и улучшения дома.');return;}
+      if(d.locationManage){e.stopPropagation();const owner=locationInfo[d.locationManage]?.owner;if(!owner)return;if(owner==='bella'){selected=owner;close();renderUI();notice('Открыта карточка Беллы.');}else showHomeUpgrades(owner,'location');return;}
       if(d.locationWork){e.stopPropagation();sendToLocation(d.locationWork,locationInfo[d.locationWork].worker,'work');return;}
       if(d.locationVisit){e.stopPropagation();sendToLocation(d.locationVisit,currentVisitor(),'walk');return;}
       if(button.hasAttribute('data-location-cafe')){e.stopPropagation();selected='cafe';renderUI();showCafeOpening();}

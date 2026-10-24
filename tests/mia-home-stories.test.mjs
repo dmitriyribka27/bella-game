@@ -45,5 +45,5 @@ test('Mia story buttons work inside the interior, album and return navigation',(
   assert.match(app,/data-home-return="all" data-home-owner="mia"/);
   assert.match(app,/import \{[^\n]*MIA_HOME_STORIES[^\n]*\} from "\.\/home-stories\.js\?v=6"/);
   assert.match(app,/const FORMAT=13/);
-  assert.match(app,/город Беллы · версия 0\.9\.21 · 2D/);
+  assert.match(app,/город Беллы · версия 0\.9\.22 · 2D/);
 });
