@@ -570,7 +570,7 @@
   <div id="catLabels" aria-hidden="true"></div>
   <header class="top">
     <div class="brand"><strong>Тихая бухта</strong><small class="gameClock" id="gameClock" aria-label="Игровые часы">🕰️ 08:00 · день 1</small></div>
-    <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="soundToggle" aria-label="Выключить музыку" title="Музыка">♫</button><button class="icon speedButton" id="speed" aria-label="Ускорить время в 3 раза" aria-pressed="false" title="Ускорить время">⏩</button><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Меню">☰</button></div>
+    <div class="topRight"><div class="money" id="money">🪙 0</div><button class="icon" id="soundToggle" aria-label="Выключить музыку" title="Музыка">♫</button><button class="icon speedButton" id="speed" aria-label="Ускорить время в 5 раз" aria-pressed="false" title="Ускорить время">⏩</button><button class="icon" id="pause" aria-label="Пауза">Ⅱ</button><button class="icon" id="settings" aria-label="Меню">☰</button></div>
   </header>
   <div class="hint">Коснись здания · двумя пальцами меняй масштаб</div>
   <div class="mapTools" aria-label="Карта и места"><button id="places">Места</button><button id="fitMap">Весь остров</button><button id="zoomOut" aria-label="Отдалить">−</button><button id="zoomIn" aria-label="Приблизить">+</button></div>
@@ -594,7 +594,7 @@ import {TOWN_HALL_FESTIVAL_COST,TOWN_HALL_FESTIVAL_MOOD,getTownHallReport,issueT
 import {OBSERVATORY_DISCOVERIES,OBSERVATORY_DIRECTIONS,OBSERVATORY_FOCUS,newObservatoryState,sanitizeObservatoryState,nextObservatoryDiscovery,telescopeIsAligned,skyPatternsFor,recordObservatoryDiscovery} from "./observatory-work.js?v=1";
 import {HOME_UPGRADE_MAX_BONUS,HOME_UPGRADE_SECTORS,homeUpgradeBonus,homeUpgradeCost,homeRecoveryRate,purchaseHomeUpgrade} from "./home-upgrades.js?v=1";
 import {WORK_SHIFT_SECONDS,MIN_WORK_NEED,MANUAL_FEED_COST,HOSPITAL_COST,CAFE_OPENING_COST,CAFE_GUEST_INTERVAL_MS,CAFE_RECIPE_EARNINGS,canStartWork,workWage,buyManualFeed} from "./game-economy.js?v=1";
-import {FAST_FORWARD_MULTIPLIER,toggleTimeSpeed,newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditOfflineCoins} from "./game-time.js?v=2";
+import {FAST_FORWARD_MULTIPLIER,toggleTimeSpeed,newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditOfflineCoins} from "./game-time.js?v=3";
 import {chooseStoredSave,secondsSince,saveMarker,requestPersistentStorage} from "./save-health.js?v=2";
 import {catRoutinePeriod,chooseCatRoutine} from "./cat-routines.js?v=1";
 import {createGameAudio} from "./game-audio.js?v=3";
@@ -817,8 +817,8 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       button.textContent=fast?`×${FAST_FORWARD_MULTIPLIER}`:'⏩';
       button.classList.toggle('speedActive',fast);
       button.setAttribute('aria-pressed',String(fast));
-      button.setAttribute('aria-label',fast?'Вернуть обычную скорость':`Ускорить время в ${FAST_FORWARD_MULTIPLIER} раза`);
-      button.title=fast?'Обычная скорость':`Ускорить в ${FAST_FORWARD_MULTIPLIER} раза`;
+      button.setAttribute('aria-label',fast?'Вернуть обычную скорость':`Ускорить время в ${FAST_FORWARD_MULTIPLIER} раз`);
+      button.title=fast?'Обычная скорость':`Ускорить в ${FAST_FORWARD_MULTIPLIER} раз`;
     }
     function showSettings(){
       show(`<h2>Меню бухты</h2><button data-audio-toggle="music">${gameAudio.preferences.music?'🎵 Музыка · включена':'🔇 Музыка · выключена'}</button><button data-audio-toggle="effects">${gameAudio.preferences.effects?'✨ Кнопки и монеты · включены':'✨ Кнопки и монеты · выключены'}</button><button data-lighting-toggle>${lightingEnabled?'🌗 Смена дня и ночи · включена':'☀️ Смена дня и ночи · выключена'}</button><button data-open-album>📖 Семейный альбом · ${city.memories.length}/${HOME_STORIES.length}</button><button id="checkSave">🛡️ Проверить сохранение и офлайн</button><button id="export">Экспортировать сохранение</button><button id="import">Импортировать файл</button><button data-close>Закрыть</button>`);
@@ -1722,7 +1722,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
     document.getElementById('places').onclick=showPlaces;
     document.getElementById('settings').onclick=showSettings;
     document.getElementById('soundToggle').onclick=()=>{gameAudio.setMusic(!gameAudio.preferences.music);updateAudioUI();};
-    document.getElementById('speed').onclick=()=>{speedFactor=toggleTimeSpeed(speedFactor);updateSpeedUI();notice(speedFactor===1?'Время снова идёт как обычно.':`Время ускорено в ${FAST_FORWARD_MULTIPLIER} раза. Нажми ещё раз, чтобы замедлить.`);};
+    document.getElementById('speed').onclick=()=>{speedFactor=toggleTimeSpeed(speedFactor);updateSpeedUI();notice(speedFactor===1?'Время снова идёт как обычно.':`Время ускорено в ${FAST_FORWARD_MULTIPLIER} раз. Нажми ещё раз, чтобы замедлить.`);};
     document.getElementById('pause').onclick=()=>{city.paused=!city.paused;gameAudio.setPaused(city.paused);notice(city.paused?'Город на паузе.':'Город снова живёт.');changed();};
     dialog.addEventListener('click',e=>{
       const button=e.target.closest('button[data-audio-toggle],button[data-lighting-toggle]');if(!button)return;

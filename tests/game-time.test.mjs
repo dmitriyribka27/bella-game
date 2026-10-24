@@ -18,13 +18,13 @@ test('game days last thirty minutes of active time and begin in the morning',()=
   assert.equal(advanceGameClock(clock,-5),false);
 });
 
-test('single button toggles x3 simulation speed without skipping time or changing saves',()=>{
-  assert.equal(FAST_FORWARD_MULTIPLIER,3);
-  assert.equal(toggleTimeSpeed(1),3);
-  assert.equal(toggleTimeSpeed(3),1);
+test('single button toggles x5 simulation speed without skipping time or changing saves',()=>{
+  assert.equal(FAST_FORWARD_MULTIPLIER,5);
+  assert.equal(toggleTimeSpeed(1),5);
+  assert.equal(toggleTimeSpeed(5),1);
   const clock=newGameClock();
   advanceGameClock(clock,10*toggleTimeSpeed(1));
-  assert.equal(clock.activeSeconds,30,'ten real seconds advance thirty game seconds');
+  assert.equal(clock.activeSeconds,50,'ten real seconds advance fifty game seconds');
   assert.match(app,/id="speed"[^>]*aria-pressed="false"/);
   assert.match(app,/speedFactor=toggleTimeSpeed\(speedFactor\)/);
   assert.match(app,/simulate\(dt\*speedFactor\)/);

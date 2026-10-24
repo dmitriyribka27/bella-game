@@ -1,7 +1,7 @@
 // Thirty minutes of visible, unpaused play correspond to one game day.
 // Background time never advances the clock; it only provides a capped coin gift.
 export const GAME_DAY_SECONDS=30*60;
-export const FAST_FORWARD_MULTIPLIER=3;
+export const FAST_FORWARD_MULTIPLIER=5;
 export const OFFLINE_COIN_INTERVAL_SECONDS=60*60;
 export const OFFLINE_COIN_CAP=12;
 export const GAME_START_MINUTE=8*60;
