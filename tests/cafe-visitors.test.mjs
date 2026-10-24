@@ -99,5 +99,6 @@ test('cafe has animated guests, ingredient picking and save-aware progression ou
   assert.match(app,/service:sanitizeCafeServiceState\(v\.service,v\.orders\)/);
   assert.match(app,/cafeDepartTimer=setTimeout/);
   assert.doesNotMatch(app,/data-order=/,'the old single-choice order button must be gone');
-  assert.match(app,/const FORMAT=11/,'do not reset existing saved cities');
+  assert.match(app,/const FORMAT=12/,'memory migration keeps existing saved cities');
+  assert.match(app,/\[1,2,3,4,5,6,7,8,9,10,11,FORMAT\]/,'version 11 cities remain readable');
 });

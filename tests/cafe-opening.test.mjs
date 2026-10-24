@@ -72,7 +72,8 @@ test('opening is a dedicated screen; cost and saved schema remain protected',()=
   assert.match(app,/data-cafe-interior-manage/);
   assert.match(app,/data-cafe-open-confirm/);
   assert.match(app,/city\.coffee\.built\|\|!cafeReady\(\)\|\|city\.coins<80/);
-  assert.match(app,/const FORMAT=11/);
+  assert.match(app,/const FORMAT=12/);
+  assert.match(app,/\[1,2,3,4,5,6,7,8,9,10,11,FORMAT\]/);
   assert.doesNotMatch(app,/data-cafe="plan"/);
   assert.doesNotMatch(app,/data-cafe="delivery"/);
   assert.doesNotMatch(app,/data-cafe="recipe"/);
