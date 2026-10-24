@@ -1,11 +1,12 @@
 /* Quiet Bay offline app shell and artwork. Saves live in IndexedDB, not here. */
-const VERSION='v0.9.32';
+const VERSION='v0.9.33';
 const PREFIX='quiet-bay-pwa-';
 const SHELL_CACHE=`${PREFIX}${VERSION}-shell`;
 const MEDIA_CACHE=`${PREFIX}${VERSION}-media`;
 
 const SHELL=[
   './index.html','./manifest.webmanifest','./icon.svg',
+  './apple-touch-icon.png','./icon-192.png','./icon-512.png',
   './cats-art.js','./map2d.js','./book-visitors.js','./book-inventory.js',
   './book-covers.js','./book-scenes.js','./cafe-opening.js',
   './cafe-visitors.js','./home-stories.js','./market-snacks.js',

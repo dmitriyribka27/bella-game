@@ -12,9 +12,16 @@ test('offline manifest is installable, scoped, and includes every physical asset
   assert.equal(manifest.display,'standalone');
   assert.equal(manifest.scope,'./');
   assert.ok(manifest.icons.some(icon=>icon.src==='./icon.svg'));
+  assert.ok(manifest.icons.some(icon=>icon.src==='./icon-192.png'&&icon.sizes==='192x192'));
+  assert.ok(manifest.icons.some(icon=>icon.src==='./icon-512.png'&&icon.sizes==='512x512'));
   assert.ok(roots.length>65);
   assert.equal(new Set(roots).size,roots.length);
   for(const path of roots)assert.ok(existsSync(new URL(`../docs/${path}`,import.meta.url)),`${path} exists`);
+  const page=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+  assert.match(page,/rel="apple-touch-icon" sizes="180x180" href="\.\/apple-touch-icon\.png"/);
+  const icon=readFileSync(new URL('../docs/apple-touch-icon.png',import.meta.url));
+  assert.equal(icon.readUInt32BE(16),180);
+  assert.equal(icon.readUInt32BE(20),180);
 });
 
 test('service worker opens app and media offline after it has cached files',async()=>{
