@@ -4,13 +4,19 @@ export const MUSSEL_MENU=Object.freeze([
   {id:'creamy',name:'Сливочно-чесночные',emoji:'🧄',price:10,ingredients:['mussels','cream','garlic'],guest:'Оскар',request:'Хочу нежный сливочный соус.'},
   {id:'tomato',name:'С томатами и базиликом',emoji:'🍅',price:11,ingredients:['mussels','tomato','herbs'],guest:'Агата',request:'Томаты и зелень — мой любимый вкус.'},
   {id:'cheese',name:'Мидии в сырном соусе',emoji:'🧀',price:13,ingredients:['mussels','cheese','cream'],guest:'Матильда',request:'Побольше сыра!'},
-  {id:'special',name:'Фирменные мидии Беллы',emoji:'✨',price:16,ingredients:['mussels','garlic','tomato','cheese','lemon'],guest:'Тео',request:'Удиви меня своим фирменным блюдом!'}
+  {id:'special',name:'Фирменные мидии Беллы',emoji:'✨',price:16,ingredients:['mussels','garlic','tomato','cheese','lemon'],guest:'Тео',request:'Удиви меня своим фирменным блюдом!'},
+  {id:'butter',name:'Мидии в чесночном масле',emoji:'🧈',price:12,ingredients:['mussels','butter','garlic','herbs'],guest:'Жюль',request:'С чесночным маслом и зеленью, пожалуйста.'},
+  {id:'mushroom',name:'Мидии с грибами',emoji:'🍄',price:14,ingredients:['mussels','mushroom','cream','garlic'],guest:'Мира',request:'Люблю грибы в сливочном соусе!'},
+  {id:'spicy',name:'Острые мидии',emoji:'🌶️',price:15,ingredients:['mussels','chili','tomato','garlic'],guest:'Лука',request:'Хочу немного остроты и много томатов.'},
+  {id:'wine',name:'Мидии по-средиземноморски',emoji:'🌊',price:17,ingredients:['mussels','wine','butter','lemon','herbs'],guest:'Эмма',request:'Приготовь, пожалуйста, как у моря!'}
 ]);
 export const MUSSEL_INGREDIENTS=Object.freeze({
   mussels:{name:'Мидии',emoji:'🦪'},lemon:{name:'Лимон',emoji:'🍋'},
   garlic:{name:'Чеснок',emoji:'🧄'},cream:{name:'Сливки',emoji:'🥛'},
   cheese:{name:'Сыр',emoji:'🧀'},tomato:{name:'Томаты',emoji:'🍅'},
-  herbs:{name:'Зелень',emoji:'🌿'}
+  herbs:{name:'Зелень',emoji:'🌿'},butter:{name:'Сливочное масло',emoji:'🧈'},
+  mushroom:{name:'Грибы',emoji:'🍄'},chili:{name:'Острый перец',emoji:'🌶️'},
+  wine:{name:'Белое вино',emoji:'🍾'}
 });
 const bound=(v,max)=>Number.isSafeInteger(v)&&v>=0&&v<=max?v:0;
 export function newMusselRestaurantState(){return {served:0,earned:0,bestStars:0,last:null};}
@@ -21,7 +27,7 @@ export function sanitizeMusselRestaurantState(input){
   state.earned=bound(input.earned,10000000);
   state.bestStars=bound(input.bestStars,3);
   if(input.last&&MUSSEL_MENU.some(v=>v.id===input.last.id)&&bound(input.last.stars,3)>0){
-    state.last={id:input.last.id,stars:input.last.stars,coins:bound(input.last.coins,20)};
+    state.last={id:input.last.id,stars:input.last.stars,coins:bound(input.last.coins,24)};
   }
   return state;
 }

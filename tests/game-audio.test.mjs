@@ -12,18 +12,39 @@ function setup(saved){
     play(){this.paused=false;this.played++;return Promise.resolve();}
     pause(){this.paused=true;this.stopped++;}
   }
-  let clicks=0;
+  let clicks=0,sizzles=0;
   const peaks=[];
   class FakeContext{
-    constructor(){this.state='running';this.currentTime=1;this.destination={};}
+    constructor(){this.state='running';this.currentTime=1;this.destination={};this.sampleRate=8000;}
     createOscillator(){return {frequency:{setValueAtTime(){},exponentialRampToValueAtTime(){}},connect(){},start(){clicks++;},stop(){}};}
     createGain(){return {gain:{setValueAtTime(){},exponentialRampToValueAtTime(value){peaks.push(value);}},connect(){}};}
+    createBuffer(_channels,size){return {getChannelData:()=>new Float32Array(size)};}
+    createBufferSource(){return {connect(){},start(){sizzles++;},stop(){}};}
+    createBiquadFilter(){return {frequency:{value:0},connect(){}};}
     suspend(){this.state='suspended';return Promise.resolve();}
     resume(){this.state='running';return Promise.resolve();}
   }
   const audio=createGameAudio({storage,documentRef,AudioCtor:FakeAudio,AudioContextCtor:FakeContext});
-  return {audio,track:tracks[0],storage,documentRef,peaks,get clicks(){return clicks;}};
+  return {audio,track:tracks[0],storage,documentRef,peaks,get clicks(){return clicks;},get sizzles(){return sizzles;}};
 }
+
+test('cooking sizzle is short, throttled and respects effects and pause',()=>{
+  const state=setup();
+  state.audio.cookSizzle();
+  assert.equal(state.sizzles,0,'no sound before a gesture');
+  state.audio.unlock();
+  state.audio.cookSizzle();
+  assert.equal(state.sizzles,1);
+  state.audio.cookSizzle();
+  assert.equal(state.sizzles,1,'do not pile up sound bursts');
+  state.audio.setEffects(false);
+  state.audio.cookSizzle();
+  assert.equal(state.sizzles,1);
+  state.audio.setEffects(true);
+  state.audio.setPaused(true);
+  state.audio.cookSizzle();
+  assert.equal(state.sizzles,1);
+});
 
 test('sound defaults are both on; stored preferences are honored',()=>{
   assert.deepEqual(audioPreferences({getItem:()=>'{broken'}),{music:true,effects:true});

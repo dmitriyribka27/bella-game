@@ -18,7 +18,7 @@ export function createGameAudio({
   const preferences=audioPreferences(storage);
   const soundtrack=AudioCtor?new AudioCtor(musicUrl):null;
   if(soundtrack){soundtrack.loop=true;soundtrack.preload='none';soundtrack.volume=.09;}
-  let unlocked=false,paused=false,context=null,lastTap=-Infinity;
+  let unlocked=false,paused=false,context=null,lastTap=-Infinity,lastSizzle=-Infinity;
   const lastJingle={gain:-Infinity,spend:-Infinity};
 
   function savePreferences(){
@@ -92,5 +92,35 @@ export function createGameAudio({
   }
   function coinGain(){coinJingle('gain');}
   function coinSpend(){coinJingle('spend');}
-  return {preferences,unlock,tap,coinGain,coinSpend,sync,setPaused,setMusic,setEffects};
+  function cookSizzle(){
+    try{
+      const ctx=readyContext();if(!ctx||!ctx.createBuffer||!ctx.createBufferSource)return;
+      const now=ctx.currentTime;
+      if(now-lastSizzle<1.8)return;
+      lastSizzle=now;
+      // Short frying hiss and gentle crackles, generated locally; no audio file or network.
+      const duration=2.1,buffer=ctx.createBuffer(1,Math.floor(ctx.sampleRate*duration),ctx.sampleRate);
+      const samples=buffer.getChannelData(0);
+      let warm=0;
+      for(let i=0;i<samples.length;i++){
+        const noise=Math.random()*2-1;
+        warm=.94*warm+.06*noise;
+        const pop=Math.random()<.0012?(Math.random()*.8+.2):0;
+        samples[i]=noise*.42+warm*.75+pop;
+      }
+      const source=ctx.createBufferSource(),gain=ctx.createGain();
+      source.buffer=buffer;
+      gain.gain.setValueAtTime(.0001,now);
+      gain.gain.exponentialRampToValueAtTime(.09,now+.16);
+      gain.gain.setValueAtTime(.09,now+1.52);
+      gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
+      if(ctx.createBiquadFilter){
+        const filter=ctx.createBiquadFilter();filter.type='highpass';filter.frequency.value=540;
+        source.connect(filter);filter.connect(gain);
+      }else source.connect(gain);
+      gain.connect(ctx.destination);
+      source.start(now);source.stop(now+duration);
+    }catch{/* Effects are optional on devices without Web Audio support. */}
+  }
+  return {preferences,unlock,tap,coinGain,coinSpend,cookSizzle,sync,setPaused,setMusic,setEffects};
 }

@@ -13,10 +13,26 @@ test('all kitchen ingredient hotspots override full-width dialog buttons',()=>{
   assert.match(css,/\.dialog \.musselIngredientHotspot[^}]*width:clamp\(29px,6\.5vw,57px\)/);
 });
 
-test('menu has five distinct dishes, priced relative to the cafe',()=>{
-  assert.deepEqual(MUSSEL_MENU.map(v=>v.price),[8,10,11,13,16]);
-  assert.equal(new Set(MUSSEL_MENU.map(v=>v.id)).size,5);
+test('kitchen uses an empty pot, realistic layer sprites and a full-width fire control below the scene',()=>{
+  const app=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+  const worker=readFileSync(new URL('../docs/sw.js',import.meta.url),'utf8');
+  for(const filename of ['mussel-kitchen-empty-v2.webp','mussel-food-atlas-v2.webp']){
+    const asset=readFileSync(new URL('../docs/assets/interiors/'+filename,import.meta.url));
+    assert.equal(asset.toString('ascii',0,4),'RIFF');
+    assert.equal(asset.toString('ascii',8,12),'WEBP');
+    assert.match(worker,new RegExp(filename.replaceAll('.','\\.')));
+  }
+  assert.match(app,/const potFood=session\.added\.map/,'ingredients progressively appear');
+  assert.match(app,/musselSprite\('shell',`musselPlateFood/,'plates use illustrated mussels');
+  assert.match(app,/\$\{palette\}\$\{heatControl\}/,'fire slider is outside of the image');
+});
+
+test('menu has nine distinct dishes with real ingredient options',()=>{
+  assert.deepEqual(MUSSEL_MENU.map(v=>v.price),[8,10,11,13,16,12,14,15,17]);
+  assert.equal(new Set(MUSSEL_MENU.map(v=>v.id)).size,9);
   for(const v of MUSSEL_MENU)assert.ok(v.ingredients.includes('mussels'));
+  assert.equal(new Set(MUSSEL_MENU.flatMap(v=>v.ingredients)).size,11);
+  assert.equal(new Set(Array.from({length:9},(_,served)=>nextMusselOrder({served}).id)).size,9);
 });
 
 test('the full touch-driven order awards virtual coins once, on serving only',()=>{

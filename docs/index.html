@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Тихая бухта">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
-  <link rel="stylesheet" href="./mussel-restaurant.css?v=2">
+  <link rel="stylesheet" href="./mussel-restaurant.css?v=3">
   <title>Тихая бухта · город Беллы</title>
   <style>
     :root { color-scheme: light; font-family: ui-rounded, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:#273f40; background:#b6d8d0; }
@@ -927,6 +927,11 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       if(c.built){renderCafeGuestLayer();renderCafeServicePanel();}
     }
     const musselIngredientPositions={mussels:[12,51],lemon:[27,52],garlic:[12,68],cream:[30,64],cheese:[23,67],tomato:[10,81],herbs:[30,81]};
+    const musselSpriteCells={mussels:[0,0],shell:[1,0],lemon:[2,0],tomato:[3,0],herbs:[0,1],garlic:[1,1],cream:[2,1],cheese:[3,1],mushroom:[0,2],chili:[1,2],butter:[2,2],wine:[3,2]};
+    function musselSprite(id,classes=''){
+      const [col,row]=musselSpriteCells[id]||[0,0];
+      return `<span class="musselFoodSprite ${classes}" style="background-position:${col*100/3}% ${row*50}%" aria-hidden="true"></span>`;
+    }
     function showMusselInterior(note=''){
       const state=city.musselRestaurant,order=nextMusselOrder(state);
       show(`<div class="musselTitle"><h2>🦪 Мидийное место</h2><span class="musselStats">Подано: ${state.served} · заработано: ${state.earned} 🪙</span></div>
@@ -950,23 +955,26 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       const stepNames=['🥣 Ингредиенты','🔥 Огонь','🍽️ Подача'];
       const steps=stepNames.map((name,i)=>`<span class="${i===phaseNo?'active':i<phaseNo?'done':''}">${name}</span>`).join('');
       const required=recipe.ingredients;
-      const hotSpots=phase==='ingredients'?required.map(id=>{
+      const hotSpots=phase==='ingredients'?required.filter(id=>musselIngredientPositions[id]).map(id=>{
         const [x,y]=musselIngredientPositions[id];const added=session.added.includes(id);
         return `<button class="musselIngredientHotspot ${added?'added':''}" style="left:${x}%;top:${y}%" data-mussel-ingredient="${id}" aria-label="${MUSSEL_INGREDIENTS[id].name}: перетащить в кастрюлю" ${added||city.paused?'disabled':''}></button>`;
       }).join(''):'';
-      const palette=phase==='ingredients'?`<div class="musselPalette" aria-label="Ингредиенты для переноса в кастрюлю">${required.map(id=>`<button class="musselIngredientToken ${session.added.includes(id)?'added':''}" data-mussel-ingredient="${id}" title="${MUSSEL_INGREDIENTS[id].name}" aria-label="${MUSSEL_INGREDIENTS[id].name}" ${session.added.includes(id)||city.paused?'disabled':''}>${MUSSEL_INGREDIENTS[id].emoji}</button>`).join('')}</div><div class="musselProgress">В кастрюле: ${session.added.length} из ${required.length} ингредиентов</div>`:'';
-      const shells=Array.from({length:session.plated},(_,i)=>`<span class="musselPlateShell s${i+1}"></span>`).join('');
-      const heatControl=phase==='heat'?`<label class="musselHeatSlider" aria-label="Температура плиты"><input data-mussel-heat type="range" min="0" max="100" step="1" value="${musselHeatValue}" ${city.paused?'disabled':''} aria-label="Повернуть регулятор огня в зелёную зону"></label>`:'';
-      const plateSource=phase==='plating'?`<button class="musselPlateSource" data-mussel-plate-source aria-label="Перетащить мидию из кастрюли на тарелку" ${city.paused?'disabled':''}>🦪</button>`:'';
-      const garnishSpot=phase==='garnish'?`<button class="musselIngredientHotspot" style="left:92%;top:86%" data-mussel-garnish aria-label="Украсить тарелку лимоном и зеленью" ${city.paused?'disabled':''}>🍋</button>`:'';
-      const messages={ingredients:'Перетащи нужные продукты с лотка в кастрюлю. Можно просто нажимать на них.',heat:'Проведи пальцем по регулятору и отпусти его в зелёной зоне.',plating:'Перетащи три порции мидий из кастрюли на пустую тарелку.',garnish:'Перетащи зелень и лимон на тарелку или коснись их.',ready:'Идеально! Блюдо можно отнести гостю.'};
+      const palette=phase==='ingredients'?`<div class="musselPalette" aria-label="Ингредиенты для переноса в кастрюлю">${required.map(id=>`<button class="musselIngredientToken ${session.added.includes(id)?'added':''}" data-mussel-ingredient="${id}" title="${MUSSEL_INGREDIENTS[id].name}" aria-label="${MUSSEL_INGREDIENTS[id].name}" ${session.added.includes(id)||city.paused?'disabled':''}>${musselSprite(id)}<small>${MUSSEL_INGREDIENTS[id].name}</small></button>`).join('')}</div><div class="musselProgress">В кастрюле: ${session.added.length} из ${required.length} ингредиентов</div>`:'';
+      const potFood=session.added.map(id=>musselSprite(id,`musselPotFood food-${id}${id==='mussels'&&phase!=='ingredients'&&phase!=='heat'?` remaining-${3-session.plated}`:''}`)).join('');
+      const shells=Array.from({length:session.plated},(_,i)=>musselSprite('shell',`musselPlateFood s${i+1}`)).join('');
+      const garnishPrimary=required.includes('lemon')?'lemon':required.includes('tomato')?'tomato':required.includes('cheese')?'cheese':'herbs';
+      const garnishFood=session.garnished?musselSprite(garnishPrimary,'musselPlateFood garnish1')+musselSprite('herbs','musselPlateFood garnish2'):'';
+      const heatControl=phase==='heat'?`<section class="musselHeatCard" aria-label="Управление огнём"><div class="musselHeatHeading"><strong>🔥 Регулятор огня</strong><output data-mussel-heat-label>${musselHeatValue}%</output></div><label class="musselHeatSlider" aria-label="Температура плиты"><input data-mussel-heat type="range" min="0" max="100" step="1" value="${musselHeatValue}" ${city.paused?'disabled':''} aria-label="Повернуть регулятор огня в зелёную зону"></label><div class="musselHeatLegend"><span>❄️ Слабо</span><span>✓ Зелёная зона</span><span>🔥 Сильно</span></div></section>`:'';
+      const plateSource=phase==='plating'?`<button class="musselPlateSource" data-mussel-plate-source aria-label="Перетащить мидию из кастрюли на тарелку" ${city.paused?'disabled':''}>${musselSprite('shell')}</button>`:'';
+      const garnishSpot=phase==='garnish'?`<button class="musselIngredientHotspot" style="left:92%;top:86%" data-mussel-garnish aria-label="Украсить тарелку" ${city.paused?'disabled':''}>${musselSprite(garnishPrimary)}</button>`:'';
+      const messages={ingredients:'Добавляй продукты — кастрюля наполнится ими прямо на глазах. Можно нажимать или перетаскивать.',heat:'Регулятор теперь внизу. Проведи пальцем и отпусти в зелёной зоне.',plating:'Перетащи три настоящие мидии из кастрюли на пустую тарелку.',garnish:'Добавь украшение на тарелку.',ready:'Идеально! Блюдо можно отнести гостю.'};
       show(`<div class="musselTitle"><h2>${recipe.emoji} ${recipe.name}</h2><span class="musselStats">Заказ № ${session.orderNo+1}</span></div><div class="musselSteps">${steps}</div>
-        <div class="musselScene musselKitchenScene" id="musselKitchenScene"><img src="./assets/interiors/mussel-kitchen-v1.webp" alt="Белла в образе Hello Kitty готовит мидии: ингредиенты слева, кастрюля и огонь в центре, тарелка справа" draggable="false" decoding="async"><div class="musselSteam" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="musselScene musselKitchenScene ${phase==='ingredients'?'':'cooking'}" id="musselKitchenScene"><img src="./assets/interiors/mussel-kitchen-empty-v2.webp" alt="Белла в образе Hello Kitty готовит: сначала пустая кастрюля, ингредиенты слева, тарелка справа" draggable="false" decoding="async"><div class="musselSteam" aria-hidden="true"><span></span><span></span><span></span></div>
           <div class="musselDrop musselPotDrop ${phase==='ingredients'?'active':''}" data-mussel-drop="pot"></div><div class="musselDrop musselPlateDrop ${phase==='plating'||phase==='garnish'?'active':''}" data-mussel-drop="plate"></div>
-          ${hotSpots}${plateSource}${garnishSpot}${heatControl}${shells}${session.garnished?'<span class="musselPlateGarnish">🍋🌿</span>':''}
+          ${potFood}${hotSpots}${plateSource}${garnishSpot}${shells}${garnishFood}
         </div><p class="musselPhaseHint">${city.paused?'⏸️ Город на паузе. Включи время, чтобы продолжить.':messages[phase]||'Всё готово!'}</p>
-        ${palette}${phase==='plating'?`<div class="musselProgress">На тарелке: ${session.plated} из 3 порций</div>`:''}
-        ${phase==='garnish'?'<div class="musselPalette"><button class="musselIngredientToken" data-mussel-garnish aria-label="Украсить лимоном и зеленью">🍋🌿</button></div>':''}
+        ${palette}${heatControl}${phase==='plating'?`<div class="musselProgress">На тарелке: ${session.plated} из 3 порций</div>`:''}
+        ${phase==='garnish'?`<div class="musselPalette"><button class="musselIngredientToken" data-mussel-garnish aria-label="Украсить блюдо">${musselSprite(garnishPrimary)}<small>Украсить</small></button></div>`:''}
         ${phase==='ready'?'<button class="musselAction" data-mussel-serve>🍽️ Подать блюдо гостю</button>':''}
         <p class="musselFeedback" id="musselFeedback" role="status">${musselFeedback}</p><button class="musselQuiet" data-mussel-back>← В зал ресторана</button>`);
       dialog.classList.add('musselRestaurantDialog');
@@ -983,7 +991,10 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       if(city.paused||!musselSession)return;
       if(kind==='ingredient'){
         if(!addMusselIngredient(musselSession,id)){musselFeedback='Этот продукт уже добавлен или не нужен для блюда.';}
-        else musselFeedback=musselSession.phase==='heat'?'✨ Все ингредиенты на месте! Теперь настрой огонь.':`✓ ${MUSSEL_INGREDIENTS[id].name} в кастрюле.`;
+        else{
+          musselFeedback=musselSession.phase==='heat'?'✨ Все ингредиенты на месте! Теперь настрой огонь.':`✓ ${MUSSEL_INGREDIENTS[id].name} в кастрюле.`;
+          if(musselSession.phase==='heat')gameAudio.cookSizzle();
+        }
       }else if(kind==='plate'){
         if(!plateMussels(musselSession))return;
         musselFeedback=musselSession.phase==='garnish'?'✨ Три порции на тарелке. Осталось украсить!':'🦪 Порция на тарелке.';
@@ -1009,7 +1020,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       if(!source||source.disabled)return;
       const kind=source.hasAttribute('data-mussel-ingredient')?'ingredient':source.hasAttribute('data-mussel-plate-source')?'plate':'garnish';
       const id=source.dataset.musselIngredient;
-      const ghost=document.createElement('span');ghost.className='musselDragGhost';ghost.textContent=kind==='ingredient'?MUSSEL_INGREDIENTS[id]?.emoji:kind==='plate'?'🦪':'🍋🌿';
+      const ghost=document.createElement('span');ghost.className='musselDragGhost';ghost.innerHTML=musselSprite(kind==='ingredient'?id:kind==='plate'?'shell':'lemon');
       ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px';document.body.append(ghost);
       musselDrag={id,kind,ghost,pointerId:e.pointerId,startX:e.clientX,startY:e.clientY};
       e.preventDefault();
@@ -1028,9 +1039,16 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       else{musselFeedback='Попробуй перенести продукт прямо на '+(kind==='ingredient'?'кастрюлю.':'тарелку.');const message=document.getElementById('musselFeedback');if(message)message.textContent=musselFeedback;}
     });
     window.addEventListener('pointercancel',e=>{if(musselDrag?.pointerId===e.pointerId)cleanupMusselGesture();});
+    dialog.addEventListener('input',e=>{
+      if(!e.target.matches('input[data-mussel-heat]')||!musselSession||city.paused)return;
+      const label=dialog.querySelector('[data-mussel-heat-label]');
+      if(label)label.textContent=e.target.value+'%';
+      gameAudio.cookSizzle();
+    });
     dialog.addEventListener('change',e=>{
       if(!e.target.matches('input[data-mussel-heat]')||!musselSession||city.paused)return;
       musselHeatValue=Number(e.target.value);
+      gameAudio.cookSizzle();
       const result=setMusselHeat(musselSession,musselHeatValue/100);
       musselFeedback=result.ok?'🔥 Отлично! Мидии приготовлены. Переходим к подаче.':'Пока не та температура. Попробуй попасть в зелёную зону.';
       if(result.ok)renderMusselKitchen();else{const message=document.getElementById('musselFeedback');if(message)message.textContent=musselFeedback;}

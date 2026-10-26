@@ -1,5 +1,6 @@
 /* «Мидийное место»: a tactile little scene, not another list of quiz answers. */
-.dialog.musselRestaurantDialog{width:min(100%,840px);padding:12px;background:#fff6e8;overscroll-behavior:contain}
+.dialog.musselRestaurantDialog{width:min(100%,940px);max-height:calc(100svh - 28px);padding:12px;background:#fff6e8;overscroll-behavior:contain}
+.overlay:has(.musselRestaurantDialog){padding:8px}
 .musselTitle{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:1px 4px 9px}
 .dialog .musselTitle h2{font-size:clamp(18px,4vw,22px);margin:0;color:#443d36}
 .musselTitle .musselStats{font-size:11px;font-weight:750;color:#6b6559;white-space:nowrap}
@@ -7,6 +8,8 @@
 .musselScene img{display:block;width:100%;height:100%;pointer-events:none;user-select:none;-webkit-user-drag:none}
 .musselInteriorScene{aspect-ratio:1586/992}
 .musselKitchenScene{aspect-ratio:1672/941;touch-action:none}
+.musselKitchenScene .musselSteam{display:none}
+.musselKitchenScene.cooking .musselSteam{display:block}
 .musselSteam{position:absolute;z-index:2;left:47%;top:39%;width:13%;height:24%;pointer-events:none;overflow:visible}
 .musselSteam span{position:absolute;left:18%;top:6%;height:64%;width:34%;border-left:6px solid #fff9ded6;border-radius:55% 45% 35% 60%;filter:blur(5px);opacity:0;animation:musselSteamRise 3.6s ease-out infinite}
 .musselSteam span:nth-child(2){left:48%;top:12%;animation-delay:1.1s;animation-duration:4s}
@@ -32,28 +35,56 @@
 .musselPhaseHint{text-align:center;font-size:12px;font-weight:700;line-height:1.5;color:#6a5546;margin:8px 2px 4px}
 .dialog .musselIngredientHotspot,.dialog .musselIngredientHotspot:first-of-type{position:absolute;z-index:3;margin:0;padding:0;width:clamp(29px,6.5vw,57px);height:clamp(29px,6.5vw,57px);min-height:0;border:2px solid #fff3b2e3;border-radius:50%;background:#f4de8359;color:transparent;box-shadow:0 0 12px #ffdf6b55;transform:translate(-50%,-50%);touch-action:none;animation:musselPulse 2.5s ease-in-out infinite}
 .dialog .musselIngredientHotspot.added{pointer-events:none;border-color:#b6ffd2e1;background:#a9ecb847;box-shadow:none;animation:none}
+.musselIngredientHotspot .musselFoodSprite{width:100%;height:100%}
 .musselIngredientHotspot.added::after{content:'✓';display:grid;place-items:center;color:#236a4d;font-size:19px;font-weight:900;text-shadow:0 1px #fff5e7}
 .musselIngredientHotspot:focus-visible{outline:3px solid #fbe9a9}
 .musselDrop{position:absolute;z-index:2;border-radius:50%;pointer-events:none;transition:box-shadow .18s,background-color .18s}
 .musselDrop.active{border:2px dashed #fff3adcf;box-shadow:0 0 22px #fff3aa88;background:#fff9b21f}
 .musselPotDrop{left:36%;top:41%;width:29%;height:26%}
 .musselPlateDrop{left:64%;top:48%;width:30%;height:29%}
-.dialog .musselPlateSource,.dialog .musselPlateSource:first-of-type{position:absolute;left:50%;top:52%;width:22%;height:21%;border-radius:50%;transform:translate(-50%,-50%);margin:0;background:#ffc96a22;border:2px dashed #fff1aed9;color:#fff8e8;min-height:0;z-index:4;font-size:22px;touch-action:none}
+.dialog .musselPlateSource,.dialog .musselPlateSource:first-of-type{position:absolute;left:50%;top:52%;width:22%;height:21%;border-radius:50%;transform:translate(-50%,-50%);margin:0;background:#ffc96a22;border:2px dashed #fff1aed9;color:#fff8e8;min-height:0;z-index:4;display:grid;place-items:center;touch-action:none}
+.musselPlateSource .musselFoodSprite{width:65%;height:auto}
 .musselPalette{display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0 5px}
-.dialog .musselIngredientToken,.dialog .musselIngredientToken:first-of-type{width:45px;height:44px;min-width:0;min-height:0;margin:0;padding:0;display:grid;place-items:center;border:1px solid #eccfa7;border-radius:11px;background:#fff1d9;font-size:25px;box-shadow:0 3px 6px #ac88582a;touch-action:none}
+.dialog .musselIngredientToken,.dialog .musselIngredientToken:first-of-type{width:clamp(63px,16vw,91px);height:65px;min-width:0;min-height:0;margin:0;padding:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border:1px solid #eccfa7;border-radius:11px;background:#fff1d9;color:#5a493e;font-size:10px;font-weight:800;box-shadow:0 3px 6px #ac88582a;touch-action:none}
+.musselIngredientToken .musselFoodSprite{width:42px;height:40px;flex-shrink:0}
 .dialog .musselIngredientToken.added{background:#d8ebdf;border-color:#9fcbb0;opacity:.58}
 .musselIngredientToken:focus-visible{outline:3px solid #e3a758}
 .musselProgress{font-size:11px;text-align:center;color:#90755c;font-weight:800;min-height:18px}
 .musselDragGhost{position:fixed;z-index:80;pointer-events:none;display:grid;place-items:center;font-size:38px;width:52px;height:52px;border-radius:50%;background:#fff4dddf;box-shadow:0 6px 19px #231e16a0;transform:translate(-50%,-58%)}
-.musselPlateShell{position:absolute;width:8%;height:16%;z-index:3;pointer-events:none;border-radius:48% 60% 55% 38%;transform:translate(-50%,-50%) rotate(-25deg);background:radial-gradient(ellipse at 65% 50%,#eabf64 0 23%,#202e49 26% 47%,#101b2e 53%,#384960 76%,#101824 100%);box-shadow:1px 3px 5px #231e1c88,inset 1px 1px 3px #8aa2ae7c}
-.musselPlateShell.s1{left:73%;top:61%;transform:translate(-50%,-50%) rotate(-25deg)}
-.musselPlateShell.s2{left:79%;top:68%;transform:translate(-50%,-50%) rotate(28deg)}
-.musselPlateShell.s3{left:84%;top:59%;transform:translate(-50%,-50%) rotate(85deg)}
-.musselPlateGarnish{position:absolute;left:74%;top:56%;z-index:4;font-size:clamp(16px,3vw,35px);transform:rotate(-25deg);pointer-events:none;filter:drop-shadow(1px 2px 2px #312b24)}
-.musselHeatSlider{position:absolute;left:38%;top:73%;width:24%;height:14%;z-index:5;display:flex;align-items:end;padding:0 6px 3px;touch-action:none}
-.musselHeatSlider input{appearance:none;-webkit-appearance:none;width:100%;height:17px;border-radius:16px;border:2px solid #e2d59b;background:linear-gradient(90deg,#69aaae 0 41%,#88c8a0 42% 71%,#df8051 72% 100%);box-shadow:0 2px 9px #20201780;cursor:grab;touch-action:none}
-.musselHeatSlider input::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:30px;height:30px;border-radius:50%;border:3px solid #fff3d4;background:radial-gradient(circle at 25% 20%,#fcf4d5,#b67b36 75%);box-shadow:0 2px 8px #1a1c1d9e}
-.musselHeatSlider input::-moz-range-thumb{width:25px;height:25px;border:3px solid #fff3d4;border-radius:50%;background:#c9924d}
+.musselDragGhost .musselFoodSprite{width:48px;height:48px}
+.musselFoodSprite{display:block;aspect-ratio:1;background-image:url('./assets/interiors/mussel-food-atlas-v2.webp');background-size:400% 300%;background-repeat:no-repeat;pointer-events:none;flex-shrink:0}
+.musselPotFood{position:absolute;z-index:3;width:8%;transform:translate(-50%,-50%);filter:drop-shadow(0 2px 1px #16151366);animation:musselFoodAppear .35s ease-out both}
+.musselPotFood.food-mussels{left:48%;top:54%;width:19%}
+.musselPotFood.food-mussels.remaining-2{scale:.82}
+.musselPotFood.food-mussels.remaining-1{scale:.57}
+.musselPotFood.food-mussels.remaining-0{visibility:hidden;animation:none}
+.musselPotFood.food-lemon{left:54%;top:55%;width:8%;transform:translate(-50%,-50%) rotate(18deg)}
+.musselPotFood.food-garlic{left:42%;top:58%;width:7%}
+.musselPotFood.food-cream{left:50%;top:57%;width:12%;opacity:.88}
+.musselPotFood.food-cheese{left:53%;top:51%;width:8%}
+.musselPotFood.food-tomato{left:53%;top:52%;width:10%}
+.musselPotFood.food-herbs{left:46%;top:52%;width:8%}
+.musselPotFood.food-butter{left:54%;top:56%;width:8%}
+.musselPotFood.food-mushroom{left:52%;top:53%;width:11%}
+.musselPotFood.food-chili{left:53%;top:55%;width:7%}
+.musselPotFood.food-wine{left:51%;top:57%;width:9%;opacity:.7}
+.musselPlateFood{position:absolute;z-index:4;width:12%;transform:translate(-50%,-50%);filter:drop-shadow(1px 2px 2px #423c3266);animation:musselFoodAppear .35s ease-out both}
+.musselPlateFood.s1{left:75%;top:60%;transform:translate(-50%,-50%) rotate(-28deg)}
+.musselPlateFood.s2{left:82%;top:64%;transform:translate(-50%,-50%) rotate(22deg)}
+.musselPlateFood.s3{left:81%;top:54%;transform:translate(-50%,-50%) rotate(84deg)}
+.musselPlateFood.garnish1{left:78%;top:58%;width:8%;z-index:5}
+.musselPlateFood.garnish2{left:85%;top:62%;width:7%;z-index:5}
+.musselHeatCard{margin:11px 0 8px;padding:13px 17px 15px;background:#f8e7c9;border:1px solid #dfc99f;border-radius:17px;box-shadow:inset 0 1px #fff6e8}
+.musselHeatHeading{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#734c37;font-size:13px}
+.musselHeatHeading strong{font-size:14px}
+.musselHeatHeading output{min-width:52px;text-align:center;border-radius:10px;padding:5px 8px;background:#fff8e9;color:#42634e;font-weight:900;font-variant-numeric:tabular-nums}
+.musselHeatSlider{display:block;margin:15px 3px 9px;padding:5px 0;touch-action:pan-y}
+.musselHeatSlider input{appearance:none;-webkit-appearance:none;display:block;width:100%;height:24px;margin:0;border-radius:20px;border:3px solid #f3e2bf;background:linear-gradient(90deg,#72b1c8 0 41%,#8cc785 42% 71%,#e78e63 72% 100%);box-shadow:inset 0 2px 6px #243f3c4f,0 2px 5px #6a4b3630;cursor:grab;touch-action:pan-y}
+.musselHeatSlider input::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:43px;height:43px;border-radius:50%;border:4px solid #fff5d7;background:radial-gradient(circle at 28% 24%,#fcf3d4,#bc843e 75%);box-shadow:0 3px 12px #513d2a75}
+.musselHeatSlider input::-moz-range-thumb{width:38px;height:38px;border:4px solid #fff5d7;border-radius:50%;background:#c9924d}
+.musselHeatLegend{display:flex;justify-content:space-between;gap:3px;font-size:10px;font-weight:750;color:#88765e}
+.musselHeatLegend span:nth-child(2){color:#548253}
+@keyframes musselFoodAppear{from{opacity:.1;scale:.72}to{opacity:1;scale:1}}
 .musselFeedback{margin:8px 0 0;text-align:center;font-size:12px;font-weight:700;color:#5b7e66;min-height:18px}
 .musselResult{text-align:center;padding:10px 12px;border-radius:14px;background:linear-gradient(145deg,#e5f0da,#fbe9ce);margin:10px 0;font-size:14px;color:#527161;font-weight:800}
 .musselResult strong{display:block;font-size:24px;color:#a76c3a;margin:6px}
