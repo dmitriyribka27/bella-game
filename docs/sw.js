@@ -1,5 +1,5 @@
 /* Quiet Bay offline app shell and artwork. Saves live in IndexedDB, not here. */
-const VERSION='v1.0.6';
+const VERSION='v1.0.7';
 const PREFIX='quiet-bay-pwa-';
 const SHELL_CACHE=`${PREFIX}${VERSION}-shell`;
 const MEDIA_CACHE=`${PREFIX}${VERSION}-media`;
@@ -62,6 +62,7 @@ const MEDIA=[
   './assets/island-v1/citera-quarter-detail-v1.webp',
   './assets/island-v1/kent-hospital-lev-detail-v1.webp',
   './assets/island-v1/lighthouse-detail-v1.webp',
+  './assets/island-v1/mussel-restaurant-v1.webp',
   './assets/island-v1/pier-detail-v1.webp',
   './assets/island-v1/pond-detail-v1.webp',
   './assets/island-v1/restaurant-detail-v1.webp'

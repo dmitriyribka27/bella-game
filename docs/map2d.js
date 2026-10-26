@@ -20,8 +20,13 @@ const NIGHT_LIGHTS=[
   [.303,.462,65,.8,'lantern'],[.456,.519,62,.9,'lantern'],
   [.496,.344,61,.85,'lantern'],[.642,.663,65,.9,'lantern'],
   [.726,.434,62,.75,'lantern'],[.305,.701,58,.8,'lantern'],
+  [.389,.814,52,.66,'window'],[.415,.817,46,.63,'window'], // mussel restaurant by the lighthouse
   [.295,.714,139,1,'beacon'] // lighthouse
 ];
+// One shared high-resolution cutout renders at ALL zoom levels, above the
+// overview, the nine map tiles and the coastal detail paintings. It keeps the
+// mussel restaurant at precisely the same world coordinates in every view.
+const MUSSEL_RESTAURANT_ART={x:1320,y:1970,w:355,h:300};
 const xy=p=>[p[0]*20.5,p[1]*15];
 const points={
   observatory:[.293,.181],mia:[.352,.211],miaStairs:[.405,.255],
@@ -138,6 +143,9 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onLocation
   const camera={x:WIDTH/2,y:HEIGHT/2,scale:1,min:.1,max:1.15};
   const images=new Map(),tiles=new Map(),details=new Map(),pointers=new Map();let width=0,height=0,dpr=1,catDpr=1,glowDpr=1,overview=null,dirty=true,sceneDirty=true,last=0,gesture=null,hitCats=[];
   function invalidateScene(){sceneDirty=true;dirty=true;}
+  const musselRestaurant=new Image();let musselRestaurantReady=false;
+  musselRestaurant.onload=()=>{musselRestaurantReady=true;invalidateScene();};
+  musselRestaurant.src='./assets/island-v1/mussel-restaurant-v1.webp';
   const detailPatches=[
     // Kent's residence, Lev's cottage, and the former pink residential building
     // repurposed as the hospital. Later patches protect the restaurant facade.
@@ -215,6 +223,10 @@ export function createMap({canvas,catArt,getCity,getSelected,onSelect,onLocation
         if(state.image)mapCtx.drawImage(state.image,p.x,p.y,p.w,p.h);
       }
       mapCtx.globalAlpha=1;
+    }
+    if(musselRestaurantReady){
+      const p=MUSSEL_RESTAURANT_ART;
+      mapCtx.drawImage(musselRestaurant,p.x,p.y,p.w,p.h);
     }
     mapCtx.restore();
   }

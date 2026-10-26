@@ -7,9 +7,10 @@ const {createMap}=await import(`data:text/javascript;base64,${Buffer.from(source
 
 test('static island redraws only when camera or images change, while cats animate',()=>{
   const originals=Object.fromEntries(['document','window','innerWidth','innerHeight','devicePixelRatio','Image','ResizeObserver'].map(key=>[key,globalThis[key]]));
-  const paint={island:0,cats:0,glows:0};
+  const paint={island:0,cats:0,glows:0,restaurantRects:[]};
   const makeContext=layer=>new Proxy({}, {get(target,key){
     if(key==='fillRect'&&layer==='island')return ()=>paint.island++;
+    if(key==='drawImage'&&layer==='island')return (img,x,y,w,h)=>{if(img.source?.endsWith('mussel-restaurant-v1.webp'))paint.restaurantRects.push([x,y,w,h]);};
     if(key==='clearRect'&&layer==='cats')return ()=>paint.cats++;
     if(key==='fill'&&layer==='glows')return ()=>paint.glows++;
     if(key==='createRadialGradient'||key==='createLinearGradient')return ()=>({addColorStop(){}});
@@ -63,6 +64,14 @@ test('static island redraws only when camera or images change, while cats animat
     map.render(250);
     assert.equal(paint.island,3,'late-arriving map art repaints scenery');
     assert.equal(elements.mapLoading.hidden,true);
+    const musselRestaurant=loaded.find(image=>image.source?.endsWith('mussel-restaurant-v1.webp'));
+    assert.ok(musselRestaurant,'the mussel restaurant cutout is requested alongside the map');
+    musselRestaurant.onload();
+    map.render(300);
+    assert.deepEqual(paint.restaurantRects,[[1320,1970,355,300]],'restaurant is painted at its world coordinates even on the island overview');
+    elements.zoomIn.onclick();
+    map.render(350);
+    assert.deepEqual(paint.restaurantRects[1],paint.restaurantRects[0],'zoomed map uses exactly the same aligned cutout');
   }finally{
     for(const [key,value] of Object.entries(originals)){
       if(value===undefined)delete globalThis[key];else globalThis[key]=value;
