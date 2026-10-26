@@ -1,5 +1,5 @@
 /* Quiet Bay offline app shell and artwork. Saves live in IndexedDB, not here. */
-const VERSION='v1.0.5';
+const VERSION='v1.0.6';
 const PREFIX='quiet-bay-pwa-';
 const SHELL_CACHE=`${PREFIX}${VERSION}-shell`;
 const MEDIA_CACHE=`${PREFIX}${VERSION}-media`;

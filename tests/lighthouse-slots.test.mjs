@@ -38,6 +38,27 @@ test('spins use only virtual existing coins and persist a bounded last result',(
   assert.deepEqual(sanitizeLighthouseSlotState(JSON.parse(JSON.stringify(city.lighthouseSlots))),city.lighthouseSlots);
 });
 
+test('all six recorded spins credit the net result, not the full payout twice',()=>{
+  const city={coins:8025,lighthouseSlots:newLighthouseSlotState()};
+  const turns=[
+    {bet:50,roll:.4,prize:60,delta:10,balance:8035},
+    {bet:10,roll:.4,prize:12,delta:2,balance:8037},
+    {bet:20,roll:.91,prize:100,delta:80,balance:8117},
+    {bet:30,roll:.05,prize:30,delta:0,balance:8117},
+    {bet:40,roll:.4,prize:48,delta:8,balance:8125},
+    {bet:50,roll:.4,prize:60,delta:10,balance:8135}
+  ];
+  for(const turn of turns){
+    const result=spinLighthouseSlots(city,{bet:turn.bet,day:1},()=>turn.roll);
+    assert.equal(result.ok,true);
+    assert.equal(result.prize,turn.prize);
+    assert.equal(result.delta,turn.delta);
+    assert.equal(result.balance,turn.balance);
+    assert.equal(city.coins,turn.balance);
+  }
+  assert.equal(city.coins-8025,110);
+});
+
 test('one no-cost five-coin spin per in-game day cannot be claimed twice',()=>{
   const city={coins:0,lighthouseSlots:newLighthouseSlotState()};
   const first=spinLighthouseSlots(city,{bet:5,free:true,day:1},()=>.12);
