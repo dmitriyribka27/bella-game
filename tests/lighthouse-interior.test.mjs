@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const app=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
-const art=readFileSync(new URL('../docs/assets/interiors/lighthouse-v2.webp',import.meta.url));
+const art=readFileSync(new URL('../docs/assets/interiors/lighthouse-v3-slots.webp',import.meta.url));
 
 test('lighthouse uses optimized portrait WebP and lazy interior markup',()=>{
   assert.equal(art.toString('ascii',0,4),'RIFF');
   assert.equal(art.toString('ascii',8,12),'WEBP');
   assert.ok(art.byteLength>100_000);
   assert.ok(art.byteLength<500_000);
-  assert.match(app,/src="\.\/assets\/interiors\/lighthouse-v2\.webp"/);
+  assert.match(app,/src="\.\/assets\/interiors\/lighthouse-v3-slots\.webp"/);
   assert.match(app,/function showLighthouse\(\)/);
 });
 
@@ -27,11 +27,15 @@ test('map location opens lighthouse and its four visual views, then exits cleanl
   assert.match(app,/dialog\.classList\.remove\([^\n]*'lighthouseDialog'[^\n]*\)/);
 });
 
-test('lighthouse is visual-only and does not alter save format or reward mechanics',()=>{
+test('lighthouse keeps original four-view scene and adds a separate machine',()=>{
   const start=app.indexOf('function showLighthouse(){');
-  const end=app.indexOf('function showBoathouse(',start);
+  const end=app.indexOf('function showLighthouseSlots(',start);
   assert.ok(start>=0&&end>start);
   const lighthouse=app.slice(start,end);
-  assert.doesNotMatch(lighthouse,/unlockMemory\(|changed\(|coins\s*[+\-]=|xp\s*[+\-]=|data-home-story/);
+  assert.match(lighthouse,/data-lighthouse-slot-open/);
+  assert.doesNotMatch(lighthouse,/changed\(|coins\s*[+\-]=|xp\s*[+\-]=/);
+  assert.match(app,/function showLighthouseSlots\(/);
+  assert.match(app,/async function doLighthouseSlotSpin\(/);
+  assert.match(app,/out\.lighthouseSlots=sanitizeLighthouseSlotState\(s\.lighthouseSlots\)/);
   assert.match(app,/const FORMAT=14/);
 });

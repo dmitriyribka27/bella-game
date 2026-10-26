@@ -29,6 +29,7 @@ test('offline preload excludes legacy artwork without omitting live imports',()=
     'environment-art.js','quarter-art.js','bookshop-art.js','site-art.js',
     'beach-art.js','environment.js','promenade-art.js','seaside-art.js',
     'assets/interiors/lighthouse-v1.webp',
+    'assets/interiors/lighthouse-v2.webp',
     'assets/island-v1/ryzhiy-east-detail-v1.webp',
     'assets/island-v1/ryzhiy-townhall-detail-v1.webp'
   ];
@@ -36,7 +37,7 @@ test('offline preload excludes legacy artwork without omitting live imports',()=
   const page=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
   const liveImports=[...page.matchAll(/from ["']\.\/([^"']+\.js)(?:\?[^"']*)?["']/g)].map(match=>match[1]);
   for(const path of liveImports)assert.ok(roots.includes(path),`${path} is available offline`);
-  assert.match(source,/const VERSION='v1\.0\.3'/);
+  assert.match(source,/const VERSION='v1\.0\.4'/);
 });
 
 test('service worker opens app and media offline after it has cached files',async()=>{

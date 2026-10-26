@@ -233,6 +233,41 @@
     .dialog .lighthouseViews button { margin:0; width:auto; padding:11px 6px; background:#e6eae3; font-size:12px; }
     .dialog .lighthouseViews button.active { background:#f4d1a2; color:#65431f; }
     .lighthouseNote { padding:11px 12px; margin:10px 0; border-radius:12px; background:#edf1e8; color:#516962; font-size:12px; line-height:1.45; }
+    .dialog .lighthouseSlotHotspot { position:absolute;left:54%;top:71%;width:14%;height:15%;min-height:0;margin:0;padding:0;z-index:3;border-radius:12px;background:transparent;box-shadow:none;border:2px solid transparent; }
+    .dialog .lighthouseSlotHotspot::after { content:'🎰';position:absolute;bottom:-9px;right:-6px;font-size:17px;line-height:1;padding:4px;background:#fff4dce8;border:1px solid #f3d7a6;border-radius:50%;box-shadow:0 2px 8px #402d1b90; }
+    .dialog .lighthouseSlotHotspot:focus-visible { outline:3px solid #ffe7a4;outline-offset:3px; }
+    .dialog .lighthouseSlotLaunch { background:#f1d3aa;font-size:13px; }
+    .dialog.lighthouseSlotDialog { width:min(100%,430px);padding:16px;background:linear-gradient(180deg,#fff9ed,#f3eee3); }
+    .slotIntro { color:#6e685d;font-size:12px;text-align:center;margin:0 0 9px; }
+    .slotCabinet { max-width:320px;margin:9px auto 13px;padding:15px 15px 17px;border:5px solid #a26e43;border-radius:100px 100px 24px 24px;background:linear-gradient(105deg,#7faeac,#c7e2d6 22%,#a2c9bf 53%,#dfb9a0 83%,#d69b89);box-shadow:inset 0 0 0 4px #f9da9c,inset 0 0 0 8px #769a91,0 9px 0 #7b594a,0 13px 19px #342a2540;color:#684c38;text-align:center; }
+    .slotCabinetTop { font-size:10px;font-weight:900;letter-spacing:.17em;color:#5d695e;text-shadow:0 1px #fff5dc; }
+    .slotCabinetIcon { display:block;font-size:30px;line-height:1.2;filter:drop-shadow(0 2px 1px #b67b48); }
+    .slotLights { font-size:12px;letter-spacing:8px;margin:3px auto 7px;color:#f5d58c;text-shadow:0 1px 2px #996a33; }
+    .slotReels { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:10px 8px;background:linear-gradient(#885e4c,#c18b5f);border:3px solid #f9d899;border-radius:15px;box-shadow:inset 0 4px 7px #3b272151,0 3px 5px #fff1d7; }
+    .slotReels>span { display:grid;place-items:center;min-width:0;height:78px;border:2px solid #bda681;border-radius:10px;background:linear-gradient(#e3dcc4,#fff9e9 28% 72%,#dcd3ba);font-size:clamp(35px,12vw,52px);box-shadow:inset 0 2px 5px #523c3154;text-shadow:0 3px 2px #a16c4238; }
+    .slotReels.rolling>span { animation:slotWiggle .13s infinite alternate;filter:blur(1px); }
+    .slotReels.rolling>span:nth-child(2){animation-delay:-.08s;}
+    .slotReels.rolling>span:nth-child(3){animation-delay:-.04s;}
+    @keyframes slotWiggle{from{transform:translateY(-7px)}to{transform:translateY(7px)}}
+    .slotCabinetFoot { display:flex;align-items:center;justify-content:center;gap:9px;margin-top:10px;font-size:11px;font-weight:800;color:#78583c; }
+    .slotCabinetFoot::before,.slotCabinetFoot::after{content:'✦';font-size:18px;color:#c08857;}
+    .slotWallet { display:flex;align-items:center;justify-content:space-between;gap:9px;padding:10px 13px;margin:6px 0 12px;background:#eaf0e8;border-radius:13px;font-size:13px; }
+    .slotWallet strong{font-size:16px;white-space:nowrap;}
+    .slotStakeTitle { display:block;margin:4px 0 7px;font-size:12px;font-weight:800;color:#576962; }
+    .slotStakeGrid { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 0 10px; }
+    .dialog .slotStakeGrid button { margin:0;padding:10px 2px;font-size:12px;background:#e6eae2;border:1px solid #d2d8c8; }
+    .dialog .slotStakeGrid button.active { background:#f3c897;border-color:#d9aa72;color:#765332;box-shadow:inset 0 0 0 1px #fff6df; }
+    .dialog .slotStakeGrid button:disabled { opacity:.45; }
+    .dialog .slotSpin { margin-top:4px;padding:14px;background:#dba17c;color:#4e3429;font-size:15px;box-shadow:0 3px 0 #bb8265; }
+    .dialog .slotFree { margin-top:10px;background:#dcebe2;font-size:12px; }
+    .dialog .slotSpin:disabled,.dialog .slotFree:disabled{opacity:.55;box-shadow:none;}
+    .slotMessage { margin:11px 0 3px;min-height:36px;padding:10px 12px;border:1px solid #e4d6b9;background:#fff2da;border-radius:12px;color:#6a4d39;font-size:12px;line-height:1.4;text-align:center; }
+    .slotPaytable { margin-top:12px;padding:9px 10px;border-radius:12px;background:#f5f1e7;font-size:11px;color:#53655c; }
+    .slotPaytable summary { cursor:pointer;font-weight:800; }
+    .slotPaytableRow { display:flex;justify-content:space-between;gap:12px;padding:6px 2px;border-bottom:1px solid #dfe2d6; }
+    .slotPaytableRow:last-child{border:0;}
+    .slotPaytableRow strong{white-space:nowrap;}
+    @media(prefers-reduced-motion:reduce){.slotReels.rolling>span{animation:none;filter:none;}}
     .boathouseScene { position:relative; width:100%; aspect-ratio:1586/992; margin:10px 0 9px; overflow:hidden; border-radius:17px; background:linear-gradient(160deg,#f3ac86,#418caa 63%,#22b4bc); }
     .boathouseCanvas { position:relative; width:100%; height:100%; transform-origin:center; transition:transform .35s ease; }
     .boathouseInterior { display:block; width:100%; height:100%; object-fit:contain; }
@@ -596,6 +631,7 @@ import {HOME_UPGRADE_MAX_BONUS,HOME_UPGRADE_SECTORS,homeUpgradeBonus,homeUpgrade
 import {WORK_SHIFT_SECONDS,MIN_WORK_NEED,MANUAL_FEED_COST,HOSPITAL_COST,CAFE_OPENING_COST,CAFE_GUEST_INTERVAL_MS,CAFE_RECIPE_EARNINGS,canStartWork,workWage,buyManualFeed} from "./game-economy.js?v=1";
 import {FAST_FORWARD_MULTIPLIER,toggleTimeSpeed,newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditOfflineCoins} from "./game-time.js?v=3";
 import {chooseStoredSave,secondsSince,saveMarker,requestPersistentStorage} from "./save-health.js?v=2";
+import {SLOT_STAKES,SLOT_FREE_BET,SLOT_OUTCOMES,newLighthouseSlotState,sanitizeLighthouseSlotState,spinLighthouseSlots} from "./lighthouse-slots.js?v=1";
 import {catRoutinePeriod,chooseCatRoutine} from "./cat-routines.js?v=1";
 import {createGameAudio} from "./game-audio.js?v=3";
 import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForMinute,readLightingEnabled,saveLightingEnabled} from "./daylight.js?v=2";
@@ -676,7 +712,8 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
     let lastFrame=performance.now(), lastClockRender=0, hiddenAt=null, saveTimer=0, dirty=false;
     let saveQueue=Promise.resolve(),lastStoredMarker=null,lastWriteStamp=0,saveConflict=false,recoverySnapshot=null;
     let offlineCacheStatus='Подготовка офлайн-копии ещё не проверена.';
-    function initial(){const visitors=newBookVisitorState();return {version:FORMAT,coins:30,paused:false,savedAt:Date.now(),clock:newGameClock(),coffee:{built:false,plan:false,delivery:false,recipe:false,style:null,orders:0,service:newCafeServiceState()},books:{orders:0,nextAt:0,visitors,inventory:newBookInventory(visitors),scenes:[]},memories:newMemoryBook(),observatory:newObservatoryState(),cats:defs.map(d=>({id:d.id,x:d.home[0],y:d.home[1],target:[...d.home],activity:d.id==='bella'?'walk':'work',hunger:80,energy:80,mood:75,xp:0,level:1,phase:0,upgrades:{bed:0,bowl:0,toy:0}}))};}
+    let slotBet=5,slotBusy=false,slotSpinId=0,slotSaveFailed=false,slotRenderedDay=0;
+    function initial(){const visitors=newBookVisitorState();return {version:FORMAT,coins:30,paused:false,savedAt:Date.now(),clock:newGameClock(),lighthouseSlots:newLighthouseSlotState(),coffee:{built:false,plan:false,delivery:false,recipe:false,style:null,orders:0,service:newCafeServiceState()},books:{orders:0,nextAt:0,visitors,inventory:newBookInventory(visitors),scenes:[]},memories:newMemoryBook(),observatory:newObservatoryState(),cats:defs.map(d=>({id:d.id,x:d.home[0],y:d.home[1],target:[...d.home],activity:d.id==='bella'?'walk':'work',hunger:80,energy:80,mood:75,xp:0,level:1,phase:0,upgrades:{bed:0,bowl:0,toy:0}}))};}
     function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
     function valid(s){return s&&[1,2,3,4,5,6,7,8,9,10,11,12,13,FORMAT].includes(s.version)&&Number.isFinite(s.coins)&&s.coins>=0&&(s.version<5||s.books&&Number.isInteger(s.books.orders)&&Number.isFinite(s.books.nextAt))&&Array.isArray(s.cats)&&s.cats.length===defs.length&&defs.every(d=>{let c=s.cats.find(x=>x.id===d.id);return c&&[c.x,c.y,c.hunger,c.energy,c.mood,c.xp,c.level].every(Number.isFinite)&&c.upgrades&&['bed','bowl','toy'].every(k=>Number.isInteger(c.upgrades[k])&&c.upgrades[k]>=0&&c.upgrades[k]<=3);});}
     function sanitize(s){
@@ -685,6 +722,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       out.paused=!!s.paused;
       out.savedAt=Number.isFinite(s.savedAt)?s.savedAt:Date.now();
       out.clock=sanitizeGameClock(s.clock);
+      out.lighthouseSlots=sanitizeLighthouseSlotState(s.lighthouseSlots);
       if(s.version>=2&&s.coffee&&typeof s.coffee==='object'){
         let v=s.coffee;
         out.coffee={built:!!v.built,plan:!!v.plan,delivery:!!v.delivery,recipe:!!v.recipe,style:['coral','mint','blue'].includes(v.style)?v.style:null,orders:clamp(Number.isFinite(v.orders)?Math.floor(v.orders):0,0,100000),service:sanitizeCafeServiceState(v.service,v.orders)};
@@ -796,6 +834,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       element.textContent=`🕰️ ${clock.time} · день ${clock.day}`;
       element.setAttribute('aria-label',`Игровое время ${clock.time}, день ${clock.day}`);
       updateLighting();
+      if(!slotBusy&&dialog.classList.contains('lighthouseSlotDialog')&&slotRenderedDay!==clock.day)showLighthouseSlots('🎁 Наступил новый игровой день! Бесплатное вращение снова доступно.');
     }
     function updateLighting(){
       const tint=document.getElementById('timeTint');
@@ -896,8 +935,49 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
     function showLighthouse(){
       const views=[['all','Весь маяк'],['keeper','Комната смотрителя'],['navigation','Навигационная'],['lantern','Фонарь и смотровая']]
         .map(([id,label])=>`<button class="${id==='all'?'active':''}" data-lighthouse-level="${id}" aria-pressed="${id==='all'}">${label}</button>`).join('');
-      show(`<h2>🔦 Старый маяк</h2><div class="lighthouseScene" id="lighthouseScene" data-level="all"><div class="lighthouseCanvas"><img class="lighthouseInterior" src="./assets/interiors/lighthouse-v2.webp" alt="Маяк на вечернем пляже: лодки в море, фонари у берега, комната смотрителя, винтовая лестница и светящаяся линза наверху" draggable="false" decoding="async"></div></div><div class="lighthouseViews" aria-label="Рассмотреть этажи маяка">${views}</div><p class="lighthouseNote">🌊 Просто побудь здесь. Рассматривай старинные карты, винтовую лестницу и огни над морем. Никаких заданий и монет.</p><button data-close>Вернуться в город</button>`);
+      show(`<h2>🔦 Старый маяк</h2><div class="lighthouseScene" id="lighthouseScene" data-level="all"><div class="lighthouseCanvas"><img class="lighthouseInterior" src="./assets/interiors/lighthouse-v3-slots.webp" alt="Маяк на вечернем пляже: винтовая лестница, комната смотрителя с маленьким фруктовым автоматом, старинные карты и светящаяся линза наверху" draggable="false" decoding="async"><button class="lighthouseSlotHotspot" data-lighthouse-slot-open aria-label="Играть на фруктовом автомате в комнате смотрителя" title="Фруктовый автомат"></button></div></div><div class="lighthouseViews" aria-label="Рассмотреть этажи маяка">${views}</div><p class="lighthouseNote">🌊 На первом этаже рядом с креслом появился маленький фруктовый автомат. Коснись его или кнопки ниже. Остальные комнаты по-прежнему можно просто рассматривать.</p><button class="lighthouseSlotLaunch" data-lighthouse-slot-open>🎰 Сыграть на фруктовом автомате</button><button data-close>Вернуться в город</button>`);
       dialog.classList.add('lighthouseDialog');
+    }
+    function showLighthouseSlots(message='',rolling=false){
+      const state=city.lighthouseSlots,day=gameClockDisplay(city.clock).day;
+      slotRenderedDay=day;
+      const freeReady=state.freeDay!==day;
+      const reels=rolling?['🍒','🍋','🍊']:state.last?.symbols||['🍒','🍋','🍊'];
+      const bets=SLOT_STAKES.map(bet=>`<button data-slot-bet="${bet}" class="${bet===slotBet?'active':''}" aria-pressed="${bet===slotBet}" ${slotBusy||city.paused?'disabled':''}>${bet} 🪙</button>`).join('');
+      const rows=SLOT_OUTCOMES.map(item=>`<div class="slotPaytableRow"><span>${item.emoji?item.emoji.repeat(3):item.id==='pair'?'🍒🍒🍋':'🍒🍋🍊'} ${item.label}</span><strong>${item.multiplier?'×'+String(item.multiplier).replace('.',','):'0'} · ${item.chance}%</strong></div>`).join('');
+      let status=message;
+      if(!status&&state.last){
+        const last=state.last;
+        status=last.prize?`${last.symbols.join(' ')} · ${last.free?'Бесплатное вращение':`Ставка ${last.bet} 🪙`} · выигрыш ${last.prize} 🪙`:`${last.symbols.join(' ')} · В этот раз без приза. Попробуй ещё!`;
+      }
+      if(!status)status='Выбирай ставку и запускай барабаны. Удачи, Белла! ♡';
+      show(`<h2>🎰 Фруктовый автомат</h2><p class="slotIntro">Маленькая находка в старом маяке · только игровые монеты</p><div class="slotCabinet"><div class="slotCabinetTop">ТИХАЯ БУХТА</div><span class="slotCabinetIcon" aria-hidden="true">⚓</span><div class="slotLights" aria-hidden="true">✦ ✦ ✦ ✦ ✦</div><div class="slotReels ${rolling?'rolling':''}" id="slotReels" aria-label="Три фруктовых барабана">${reels.map(symbol=>`<span>${symbol}</span>`).join('')}</div><div class="slotCabinetFoot">МОРСКАЯ УДАЧА</div></div><div class="slotWallet"><span>Монетки Беллы</span><strong>🪙 ${city.coins}</strong></div><span class="slotStakeTitle">Выбери ставку</span><div class="slotStakeGrid" aria-label="Размер ставки">${bets}</div><button class="slotSpin" data-slot-spin ${slotBusy||city.paused||slotSaveFailed||city.coins<slotBet?'disabled':''}>${slotBusy?'🎲 Барабаны крутятся…':`🎰 Крутить · ${slotBet} 🪙`}</button><button class="slotFree" data-slot-free ${slotBusy||city.paused||slotSaveFailed||!freeReady?'disabled':''}>${freeReady?'🎁 Бесплатное вращение · сегодня':'✓ Бесплатное вращение сегодня использовано'}</button><div class="slotMessage" role="status" aria-live="polite">${status}</div><details class="slotPaytable"><summary>🎁 Комбинации, выплаты и вероятности</summary>${rows}<p>Выплаты округляются до целых монет. За два одинаковых возвращается ставка. Бесплатный спин считается как ставка 5 🪙 без списания и обновляется каждый игровой день.</p><p>Всего вращений: ${state.spins} · выиграно: ${state.won} 🪙.</p></details><button data-slot-back>← Вернуться в маяк</button><button data-close>Вернуться в город</button>`);
+      dialog.classList.add('lighthouseSlotDialog');
+    }
+    async function doLighthouseSlotSpin(free=false){
+      if(slotBusy||slotSaveFailed||city.paused)return;
+      const day=gameClockDisplay(city.clock).day;
+      const result=spinLighthouseSlots(city,{bet:free?SLOT_FREE_BET:slotBet,free,day});
+      if(!result.ok){
+        const msg=result.reason==='funds'?`Не хватает ${result.shortfall} 🪙. Попробуй уменьшить ставку.`:result.reason==='free-used'?'Сегодня бесплатный спин уже был. Завтра появится новый.':'Не удалось запустить барабаны.';
+        showLighthouseSlots(msg);return;
+      }
+      slotBusy=true;
+      const spinId=++slotSpinId;
+      changed();clearTimeout(saveTimer);
+      showLighthouseSlots('🎲 Барабаны крутятся…',true);
+      const interval=setInterval(()=>{
+        if(spinId!==slotSpinId){clearInterval(interval);return;}
+        for(const reel of dialog.querySelectorAll('.slotReels.rolling>span'))reel.textContent=['🍒','🍋','🍊','🍇'][Math.floor(Math.random()*4)];
+      },85);
+      let saved=true;
+      try{await Promise.all([write(),new Promise(resolve=>setTimeout(resolve,1550))]);}
+      catch{saved=false;slotSaveFailed=true;saveWarning();}
+      clearInterval(interval);
+      if(spinId!==slotSpinId)return;
+      slotBusy=false;
+      if(saved){if(result.delta>0)gameAudio.coinGain();else if(result.delta<0)gameAudio.coinSpend();}
+      if(dialog.classList.contains('lighthouseSlotDialog'))showLighthouseSlots(saved?'':`⚠️ Не удалось сохранить вращение. Новые ставки заблокированы. Экспортируй сохранение через меню ☰ и перезапусти игру.`);
     }
     function showBoathouse(){
       const views=[['all','Вся пристань'],['workshop','Мастерская'],['boat','Деревянная лодка'],['pier','Причал и море']]
@@ -1330,8 +1410,8 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
     function renderUI(){if(!city)return;updateGameClock();document.getElementById('money').textContent=`🪙 ${city.coins}`;document.getElementById('pause').textContent=city.paused?'▶':'Ⅱ';if(selected==='cafe'){renderCafe();return;}let c=cat(selected),d=byId[selected];let bella=c.id==='bella';details.innerHTML=`<div class="row"><div class="avatar">${d.symbol}</div><div><h1>${d.name} <span style="font-size:12px;font-weight:400">${bella?'':`· уровень ${c.level}`}</span></h1><p class="sub">${d.job} · ${activities[c.activity]}</p></div></div><div class="stats">${bella?'<span class="stat">Гуляет и навещает друзей</span>':`<span class="stat">🥣 ${Math.round(c.hunger)}%</span><span class="stat">💤 ${Math.round(c.energy)}%</span><span class="stat">♡ ${Math.round(c.mood)}%</span><span class="stat">✦ ${Math.floor(c.xp)}/${c.level*18} опыта</span>`}</div><div class="actions">${bella?'<button class="action primary" data-action="bella-home">🏡 Дом Беллы</button><button class="action" data-action="cafe">☕ Кофейня</button><button class="action" data-action="focus">Показать на карте</button>':`<button class="action primary" data-action="work">Работать 🪙</button><button class="action" data-action="rest">Отдыхать 💤</button><button class="action" data-action="eat">Кормить 🥣</button><button class="action" data-action="play">Играть 🎭</button><button class="action" data-action="walk">Гулять</button>${c.id==='citera'?'<button class="action primary" data-action="bookshop">📚 Войти в книжную лавку</button>':''}${c.id==='ryzhiy'?'<button class="action primary" data-action="ryzhiy-home">🏡 Войти в дом Рыжего</button>':''}${c.id==='lev'?'<button class="action primary" data-action="lev-home">🏡 Войти в дом Льва</button>':''}${c.id==='kent'?'<button class="action primary" data-action="kent-home">🏡 Войти в дом Кента</button>':''}${c.id==='mia'?'<button class="action primary" data-action="mia-home">🏡 Войти в дом Мии</button>':''}<button class="action" data-action="focus">Показать на карте</button><button class="action primary" data-action="home-upgrades">🏡 Улучшения дома</button>`}</div>`;}
     details.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.cafe){coffeeAction(b.dataset.cafe);return;}if(b.dataset.action==='cafe'){selected='cafe';renderUI();notice('Помоги жителям открыть кофейню.');return;}if(b.dataset.action==='bookshop')showBookshop();else if(b.dataset.action==='ryzhiy-home')showRyzhiyHome();else if(b.dataset.action==='bella-home')showBellaHome();else if(b.dataset.action==='lev-home')showLevHome();else if(b.dataset.action==='kent-home')showKentHome();else if(b.dataset.action==='mia-home')showMiaHome();else if(b.dataset.action==='home-upgrades')showHomeUpgrades(selected,'resident');else if(b.dataset.action==='focus'){let c=cat(selected);focusCity(c.x,c.y);}else if(b.dataset.action==='work'){const resident=cat(selected);if(!canStartWork(resident)){notice('Для работы нужно не меньше 35% сытости и бодрости.');return;}assign(resident,'work');}else if(b.dataset.action==='eat'){const result=buyManualFeed(city,selected);if(!result.ok){notice('Для вкусного обеда нужно '+MANUAL_FEED_COST+' 🪙. Обычное автоматическое питание остаётся бесплатным.');return;}gameAudio.coinSpend();notice(byId[selected].name+' вкусно поел(а): +35% сытости и +3% настроения.');changed();}else if(b.dataset.action)assign(cat(selected),b.dataset.action);});
     function cleanupCafeScene(){clearTimeout(cafeRefillTimer);clearTimeout(cafeDepartTimer);cafeDeparting=null;cafeSeen.clear();}
-    function close(){bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;bookMode='shop';bookRoom='bookshop';cleanupCafeScene();overlay.hidden=true;dialog.classList.remove('welcomeDialog','bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','boathouseDialog','postOfficeDialog','postLetterDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');}
-    function show(html){if(dialog.classList.contains('cafeInteriorDialog'))cleanupCafeScene();dialog.classList.remove('welcomeDialog','bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','boathouseDialog','postOfficeDialog','postLetterDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');dialog.innerHTML=html;overlay.hidden=false;}
+    function close(){bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;bookMode='shop';bookRoom='bookshop';cleanupCafeScene();overlay.hidden=true;dialog.classList.remove('welcomeDialog','bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','lighthouseSlotDialog','boathouseDialog','postOfficeDialog','postLetterDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');}
+    function show(html){if(dialog.classList.contains('cafeInteriorDialog'))cleanupCafeScene();dialog.classList.remove('welcomeDialog','bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','lighthouseSlotDialog','boathouseDialog','postOfficeDialog','postLetterDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');dialog.innerHTML=html;overlay.hidden=false;}
     async function welcomeWasSeen(){
       try{if(db&&await read(WELCOME_KEY))return true;}catch{}
       try{return localStorage.getItem('quiet-bay-welcome-seen')==='yes';}catch{return false;}
@@ -1671,6 +1751,16 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
         }
         return;
       }
+      if(button.hasAttribute('data-lighthouse-slot-open')){e.stopImmediatePropagation();showLighthouseSlots();return;}
+      if(button.dataset.slotBet!==undefined){
+        e.stopImmediatePropagation();if(slotBusy)return;
+        const bet=Number(button.dataset.slotBet);
+        if(!SLOT_STAKES.includes(bet))return;
+        slotBet=bet;showLighthouseSlots();return;
+      }
+      if(button.hasAttribute('data-slot-spin')){e.stopImmediatePropagation();void doLighthouseSlotSpin();return;}
+      if(button.hasAttribute('data-slot-free')){e.stopImmediatePropagation();void doLighthouseSlotSpin(true);return;}
+      if(button.hasAttribute('data-slot-back')){e.stopImmediatePropagation();showLighthouse();return;}
       if(button.hasAttribute('data-location-cafe-enter')){e.stopImmediatePropagation();showCafeInterior();return;}
       if(button.hasAttribute('data-cafe-back-interior')){e.stopImmediatePropagation();showCafeInterior();return;}
       if(button.hasAttribute('data-cafe-task-answer')){
