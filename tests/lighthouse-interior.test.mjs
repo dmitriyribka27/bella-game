@@ -33,6 +33,7 @@ test('lighthouse keeps original four-view scene and adds a separate machine',()=
   assert.ok(start>=0&&end>start);
   const lighthouse=app.slice(start,end);
   assert.match(lighthouse,/data-lighthouse-slot-open/);
+  assert.match(app,/\.dialog \.lighthouseSlotHotspot:first-of-type\s*\{[^}]*background:transparent/);
   assert.doesNotMatch(lighthouse,/changed\(|coins\s*[+\-]=|xp\s*[+\-]=/);
   assert.match(app,/function showLighthouseSlots\(/);
   assert.match(app,/async function doLighthouseSlotSpin\(/);

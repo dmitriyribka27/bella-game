@@ -37,7 +37,7 @@ test('offline preload excludes legacy artwork without omitting live imports',()=
   const page=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
   const liveImports=[...page.matchAll(/from ["']\.\/([^"']+\.js)(?:\?[^"']*)?["']/g)].map(match=>match[1]);
   for(const path of liveImports)assert.ok(roots.includes(path),`${path} is available offline`);
-  assert.match(source,/const VERSION='v1\.0\.4'/);
+  assert.match(source,/const VERSION='v1\.0\.5'/);
 });
 
 test('service worker opens app and media offline after it has cached files',async()=>{
