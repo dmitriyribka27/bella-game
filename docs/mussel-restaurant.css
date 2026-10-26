@@ -1,0 +1,63 @@
+/* «Мидийное место»: a tactile little scene, not another list of quiz answers. */
+.dialog.musselRestaurantDialog{width:min(100%,840px);padding:12px;background:#fff6e8;overscroll-behavior:contain}
+.musselTitle{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:1px 4px 9px}
+.dialog .musselTitle h2{font-size:clamp(18px,4vw,22px);margin:0;color:#443d36}
+.musselTitle .musselStats{font-size:11px;font-weight:750;color:#6b6559;white-space:nowrap}
+.musselScene{position:relative;overflow:hidden;isolation:isolate;border-radius:17px;background:#30352e;box-shadow:0 3px 15px #53381d24}
+.musselScene img{display:block;width:100%;height:100%;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.musselInteriorScene{aspect-ratio:1586/992}
+.musselKitchenScene{aspect-ratio:1672/941;touch-action:none}
+.musselSteam{position:absolute;z-index:2;left:47%;top:39%;width:13%;height:24%;pointer-events:none;overflow:visible}
+.musselSteam span{position:absolute;left:18%;top:6%;height:64%;width:34%;border-left:6px solid #fff9ded6;border-radius:55% 45% 35% 60%;filter:blur(5px);opacity:0;animation:musselSteamRise 3.6s ease-out infinite}
+.musselSteam span:nth-child(2){left:48%;top:12%;animation-delay:1.1s;animation-duration:4s}
+.musselSteam span:nth-child(3){left:70%;top:0;animation-delay:2.1s;animation-duration:3.9s}
+.musselInteriorScene .musselSteam{left:31%;top:46%;width:12%;height:15%}
+.dialog .musselSpot,.dialog .musselSpot:first-of-type{position:absolute;margin:0;padding:0;transform:translate(-50%,-50%);display:grid;place-items:center;min-height:0;border-radius:50%;border:2px solid #fce4a8cc;background:#e5ba6880;box-shadow:0 0 0 5px #f6ddae26,0 2px 15px #1b231b69;color:#fff7e1;font-size:clamp(16px,3.2vw,24px);text-shadow:0 1px 3px #362219b0;z-index:3;animation:musselPulse 2.5s ease-in-out infinite}
+.musselSpot:focus-visible{outline:3px solid #fcbe68;outline-offset:3px}
+.dialog .musselSpot[data-mussel-order]{left:71%;top:72%;width:46px;height:46px}
+.dialog .musselSpot[data-mussel-cook]{left:34%;top:55%;width:56px;height:56px}
+.musselOrder{display:flex;align-items:center;gap:10px;background:linear-gradient(120deg,#f9e4c5,#f7eee1);border:1px solid #e8dac6;border-radius:14px;padding:10px 12px;margin:10px 0}
+.musselOrder .musselOrderEmoji{font-size:30px;line-height:1}
+.musselOrder div{min-width:0;flex:1}
+.musselOrder strong{display:block;font-size:13px;color:#543e36}
+.musselOrder small{display:block;font-size:11px;line-height:1.5;color:#806b5e;margin-top:2px}
+.musselOrder b{font-size:13px;white-space:nowrap;color:#77543d}
+.musselHint{margin:9px 2px;color:#6d6254;font-size:12px;line-height:1.5}
+.dialog .musselAction,.dialog .musselAction:first-of-type{background:#cc7256;color:#fffdf4;margin:8px 0 0;border-radius:13px;font-size:13px;min-height:43px}
+.dialog .musselQuiet,.dialog .musselQuiet:first-of-type{background:#ece6db;color:#6b6055;margin:8px 0 0;border-radius:13px;font-size:12px;min-height:40px}
+.musselSteps{display:flex;gap:6px;margin:8px 2px 12px}
+.musselSteps span{flex:1;text-align:center;font-size:10px;font-weight:800;padding:7px 2px;border-radius:9px;background:#e7e4db;color:#968b7c}
+.musselSteps span.active{color:#704b30;background:#f1d2a5}
+.musselSteps span.done{color:#406b58;background:#d8e9d8}
+.musselPhaseHint{text-align:center;font-size:12px;font-weight:700;line-height:1.5;color:#6a5546;margin:8px 2px 4px}
+.musselIngredientHotspot,.dialog .musselIngredientHotspot:first-of-type{position:absolute;z-index:3;margin:0;padding:0;width:clamp(29px,6.5vw,57px);height:clamp(29px,6.5vw,57px);min-height:0;border:2px solid #fff3b2e3;border-radius:50%;background:#f4de8359;color:transparent;box-shadow:0 0 12px #ffdf6b55;transform:translate(-50%,-50%);touch-action:none;animation:musselPulse 2.5s ease-in-out infinite}
+.dialog .musselIngredientHotspot.added{pointer-events:none;border-color:#b6ffd2e1;background:#a9ecb847;box-shadow:none;animation:none}
+.musselIngredientHotspot.added::after{content:'✓';display:grid;place-items:center;color:#236a4d;font-size:19px;font-weight:900;text-shadow:0 1px #fff5e7}
+.musselIngredientHotspot:focus-visible{outline:3px solid #fbe9a9}
+.musselDrop{position:absolute;z-index:2;border-radius:50%;pointer-events:none;transition:box-shadow .18s,background-color .18s}
+.musselDrop.active{border:2px dashed #fff3adcf;box-shadow:0 0 22px #fff3aa88;background:#fff9b21f}
+.musselPotDrop{left:36%;top:41%;width:29%;height:26%}
+.musselPlateDrop{left:64%;top:48%;width:30%;height:29%}
+.dialog .musselPlateSource,.dialog .musselPlateSource:first-of-type{position:absolute;left:50%;top:52%;width:22%;height:21%;border-radius:50%;transform:translate(-50%,-50%);margin:0;background:#ffc96a22;border:2px dashed #fff1aed9;color:#fff8e8;min-height:0;z-index:4;font-size:22px;touch-action:none}
+.musselPalette{display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0 5px}
+.dialog .musselIngredientToken,.dialog .musselIngredientToken:first-of-type{width:45px;height:44px;min-width:0;min-height:0;margin:0;padding:0;display:grid;place-items:center;border:1px solid #eccfa7;border-radius:11px;background:#fff1d9;font-size:25px;box-shadow:0 3px 6px #ac88582a;touch-action:none}
+.dialog .musselIngredientToken.added{background:#d8ebdf;border-color:#9fcbb0;opacity:.58}
+.musselIngredientToken:focus-visible{outline:3px solid #e3a758}
+.musselProgress{font-size:11px;text-align:center;color:#90755c;font-weight:800;min-height:18px}
+.musselDragGhost{position:fixed;z-index:80;pointer-events:none;display:grid;place-items:center;font-size:38px;width:52px;height:52px;border-radius:50%;background:#fff4dddf;box-shadow:0 6px 19px #231e16a0;transform:translate(-50%,-58%)}
+.musselPlateShell{position:absolute;width:8%;height:16%;z-index:3;pointer-events:none;border-radius:48% 60% 55% 38%;transform:translate(-50%,-50%) rotate(-25deg);background:radial-gradient(ellipse at 65% 50%,#eabf64 0 23%,#202e49 26% 47%,#101b2e 53%,#384960 76%,#101824 100%);box-shadow:1px 3px 5px #231e1c88,inset 1px 1px 3px #8aa2ae7c}
+.musselPlateShell.s1{left:73%;top:61%;transform:translate(-50%,-50%) rotate(-25deg)}
+.musselPlateShell.s2{left:79%;top:68%;transform:translate(-50%,-50%) rotate(28deg)}
+.musselPlateShell.s3{left:84%;top:59%;transform:translate(-50%,-50%) rotate(85deg)}
+.musselPlateGarnish{position:absolute;left:74%;top:56%;z-index:4;font-size:clamp(16px,3vw,35px);transform:rotate(-25deg);pointer-events:none;filter:drop-shadow(1px 2px 2px #312b24)}
+.musselHeatSlider{position:absolute;left:38%;top:73%;width:24%;height:14%;z-index:5;display:flex;align-items:end;padding:0 6px 3px;touch-action:none}
+.musselHeatSlider input{appearance:none;-webkit-appearance:none;width:100%;height:17px;border-radius:16px;border:2px solid #e2d59b;background:linear-gradient(90deg,#69aaae 0 41%,#88c8a0 42% 71%,#df8051 72% 100%);box-shadow:0 2px 9px #20201780;cursor:grab;touch-action:none}
+.musselHeatSlider input::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:30px;height:30px;border-radius:50%;border:3px solid #fff3d4;background:radial-gradient(circle at 25% 20%,#fcf4d5,#b67b36 75%);box-shadow:0 2px 8px #1a1c1d9e}
+.musselHeatSlider input::-moz-range-thumb{width:25px;height:25px;border:3px solid #fff3d4;border-radius:50%;background:#c9924d}
+.musselFeedback{margin:8px 0 0;text-align:center;font-size:12px;font-weight:700;color:#5b7e66;min-height:18px}
+.musselResult{text-align:center;padding:10px 12px;border-radius:14px;background:linear-gradient(145deg,#e5f0da,#fbe9ce);margin:10px 0;font-size:14px;color:#527161;font-weight:800}
+.musselResult strong{display:block;font-size:24px;color:#a76c3a;margin:6px}
+@keyframes musselPulse{50%{box-shadow:0 0 0 9px #f6ddae18,0 0 12px #ffe9aa95}}
+@keyframes musselSteamRise{0%{opacity:0;transform:translateY(30%) scale(.8)}25%{opacity:.52}100%{opacity:0;transform:translateY(-72%) translateX(10%) scale(1.3)}}
+@media(max-width:520px){.dialog.musselRestaurantDialog{padding:9px;border-radius:18px}.musselTitle{gap:4px}.musselOrder{padding:8px;gap:7px}.musselOrder .musselOrderEmoji{font-size:23px}.musselOrder strong{font-size:12px}.musselSteps span{font-size:9px}.dialog .musselSpot[data-mussel-order]{width:38px;height:38px}.dialog .musselSpot[data-mussel-cook]{width:43px;height:43px}}
+@media(prefers-reduced-motion:reduce){.dialog .musselSpot,.dialog .musselIngredientHotspot,.musselSteam span{animation:none}}

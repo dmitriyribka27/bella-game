@@ -45,7 +45,7 @@ const points={
   post:[.672,.580],eastWalk:[.732,.555],east:[.754,.490],
   eastStairs:[.752,.440],cafe:[.713,.394],ryzhiy:[.651,.361],
   marketStairs:[.738,.387],lighthouseUpper:[.354,.719],
-  lighthouseStairs:[.336,.780],lighthouse:[.290,.805],
+  lighthouseStairs:[.336,.780],lighthouse:[.290,.805],musselRestaurant:[.398,.816],
   promStairsEast:[.647,.663],
   marinaSide:[.642,.715],marina:[.682,.748],pier:[.732,.820]
 };
@@ -65,6 +65,7 @@ const paths=[
   'eastWalk residenceFront residence',
   'bella bellaGate promWest promMiddle promEast',
   'promWest lighthouseUpper lighthouseStairs lighthouse',
+  'lighthouseStairs musselRestaurant',
   'promEast promStairsEast marinaSide marina',
   'marina pier',
   'eastWalk eastStairs'
@@ -76,7 +77,7 @@ for(const [a,b] of pairs){links[a].push(b);links[b].push(a);}
 export const HOME_POINTS={kent:NODES.kent,mia:NODES.mia,lev:NODES.lev,citera:NODES.citera,ryzhiy:NODES.ryzhiy,bella:NODES.bella};
 // Kent now works as mayor in the clock-tower town hall.
 export const WORK_POINTS={kent:NODES.townhall,mia:NODES.observatory,lev:NODES.hospital,citera:NODES.citera,ryzhiy:NODES.cafe,bella:NODES.square};
-export const SITE_POINTS={cafe:NODES.cafe,restaurant:NODES.restaurant,hospital:NODES.hospital,post:NODES.post,observatory:NODES.observatory,market:NODES.market,greenhouse:NODES.greenhouse,townhall:NODES.townhall};
+export const SITE_POINTS={cafe:NODES.cafe,restaurant:NODES.restaurant,musselRestaurant:NODES.musselRestaurant,hospital:NODES.hospital,post:NODES.post,observatory:NODES.observatory,market:NODES.market,greenhouse:NODES.greenhouse,townhall:NODES.townhall};
 export const BUILDING_POINTS={...HOME_POINTS,...SITE_POINTS,townhouse:NODES.townhouse,residence:NODES.residence,lighthouse:NODES.lighthouse,marina:NODES.marina};
 // The gameplay layer has one named touch target for every occupied house,
 // workplace or destination. Ordinary unoccupied residences deliberately have
@@ -98,6 +99,7 @@ export const LOCATIONS=[
   {id:'citera',u:.568,v:.528,rx:.054,ry:.052},
   {id:'bella',u:.325,v:.619,rx:.055,ry:.051},
   {id:'lighthouse',u:.293,v:.745,rx:.041,ry:.056},
+  {id:'musselRestaurant',u:.395,v:.813,rx:.050,ry:.055},
   {id:'marina',u:.684,v:.680,rx:.051,ry:.051},
   {id:'pier',u:.732,v:.818,rx:.038,ry:.062},
   {id:'pond',u:.454,v:.573,rx:.049,ry:.040}

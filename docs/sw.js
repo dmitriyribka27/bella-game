@@ -1,5 +1,5 @@
 /* Quiet Bay offline app shell and artwork. Saves live in IndexedDB, not here. */
-const VERSION='v1.0.7';
+const VERSION='v1.0.8';
 const PREFIX='quiet-bay-pwa-';
 const SHELL_CACHE=`${PREFIX}${VERSION}-shell`;
 const MEDIA_CACHE=`${PREFIX}${VERSION}-media`;
@@ -13,7 +13,7 @@ const SHELL=[
   './townhall-management.js','./observatory-work.js','./home-upgrades.js',
   './game-economy.js','./game-time.js','./save-health.js','./cat-routines.js',
   './game-audio.js','./daylight.js','./book-visitor-motion.js',
-  './lighthouse-slots.js',
+  './lighthouse-slots.js','./mussel-restaurant.js','./mussel-restaurant.css',
   './assets/island-v1/overview.webp'
 ];
 const MEDIA=[
@@ -28,6 +28,8 @@ const MEDIA=[
   './assets/interiors/lev-home-v1.webp',
   './assets/interiors/lighthouse-v3-slots.webp',
   './assets/interiors/market-v1.webp',
+  './assets/interiors/mussel-kitchen-v1.webp',
+  './assets/interiors/mussel-restaurant-v1.webp',
   './assets/interiors/mia-home-v1.webp',
   './assets/interiors/post-office-v1.webp',
   './assets/interiors/ryzhiy-cafe-v1.webp',

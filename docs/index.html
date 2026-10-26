@@ -8,6 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Тихая бухта">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+  <link rel="stylesheet" href="./mussel-restaurant.css?v=1">
   <title>Тихая бухта · город Беллы</title>
   <style>
     :root { color-scheme: light; font-family: ui-rounded, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:#273f40; background:#b6d8d0; }
@@ -638,6 +639,7 @@ import {WORK_SHIFT_SECONDS,MIN_WORK_NEED,MANUAL_FEED_COST,HOSPITAL_COST,CAFE_OPE
 import {FAST_FORWARD_MULTIPLIER,toggleTimeSpeed,newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditOfflineCoins} from "./game-time.js?v=3";
 import {chooseStoredSave,secondsSince,saveMarker,requestPersistentStorage} from "./save-health.js?v=2";
 import {SLOT_STAKES,SLOT_FREE_BET,SLOT_OUTCOMES,newLighthouseSlotState,sanitizeLighthouseSlotState,spinLighthouseSlots} from "./lighthouse-slots.js?v=1";
+import {MUSSEL_MENU,MUSSEL_INGREDIENTS,newMusselRestaurantState,sanitizeMusselRestaurantState,nextMusselOrder,newMusselKitchen,addMusselIngredient,setMusselHeat,plateMussels,garnishMussels,serveMusselOrder} from "./mussel-restaurant.js?v=1";
 import {catRoutinePeriod,chooseCatRoutine} from "./cat-routines.js?v=1";
 import {createGameAudio} from "./game-audio.js?v=3";
 import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForMinute,readLightingEnabled,saveLightingEnabled} from "./daylight.js?v=2";
@@ -686,6 +688,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       townhall:{name:'Ратуша',icon:'🏛️',type:'Городское здание',worker:'kent',description:'Здание с часами, где Кент работает мэром и следит за жизнью бухты.'},
       cafe:{name:'Кофейня Рыжего',icon:'☕',type:'Городское заведение',worker:'ryzhiy',description:'Место встреч жителей. Здесь можно открыть кофейню, выполнять поручения и принимать заказы.'},
       restaurant:{name:'Ресторан',icon:'🍽️',type:'Городское заведение',description:'Солнечная терраса и столики для будущих встреч и ужинов.'},
+      musselRestaurant:{name:'Мидийное место',icon:'🦪',type:'Ресторан у маяка',description:'Тёплый морской ресторан с открытой кухней. Здесь Белла сама готовит мидии для гостей.'},
       hospital:{name:'Больница',icon:'🏥',type:'Городское здание',worker:'lev',description:'Доктор Лев принимает жителей и помогает восстановить силы.'},
       post:{name:'Почта',icon:'✉️',type:'Городское здание',description:'Сюда приходят письма и посылки для жителей Тихой бухты.'},
       observatory:{name:'Обсерватория',icon:'🔭',type:'Особое место',worker:'mia',description:'Мия наблюдает за звёздами через телескоп на высокой скале.'},
@@ -719,7 +722,8 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
     let saveQueue=Promise.resolve(),lastStoredMarker=null,lastWriteStamp=0,saveConflict=false,recoverySnapshot=null;
     let offlineCacheStatus='Подготовка офлайн-копии ещё не проверена.';
     let slotBet=5,slotBusy=false,slotSpinId=0,slotSaveFailed=false,slotRenderedDay=0,slotVisibleBalance=null;
-    function initial(){const visitors=newBookVisitorState();return {version:FORMAT,coins:30,paused:false,savedAt:Date.now(),clock:newGameClock(),lighthouseSlots:newLighthouseSlotState(),coffee:{built:false,plan:false,delivery:false,recipe:false,style:null,orders:0,service:newCafeServiceState()},books:{orders:0,nextAt:0,visitors,inventory:newBookInventory(visitors),scenes:[]},memories:newMemoryBook(),observatory:newObservatoryState(),cats:defs.map(d=>({id:d.id,x:d.home[0],y:d.home[1],target:[...d.home],activity:d.id==='bella'?'walk':'work',hunger:80,energy:80,mood:75,xp:0,level:1,phase:0,upgrades:{bed:0,bowl:0,toy:0}}))};}
+    let musselSession=null,musselDrag=null,musselHeatValue=20,musselFeedback='';
+    function initial(){const visitors=newBookVisitorState();return {version:FORMAT,coins:30,paused:false,savedAt:Date.now(),clock:newGameClock(),lighthouseSlots:newLighthouseSlotState(),musselRestaurant:newMusselRestaurantState(),coffee:{built:false,plan:false,delivery:false,recipe:false,style:null,orders:0,service:newCafeServiceState()},books:{orders:0,nextAt:0,visitors,inventory:newBookInventory(visitors),scenes:[]},memories:newMemoryBook(),observatory:newObservatoryState(),cats:defs.map(d=>({id:d.id,x:d.home[0],y:d.home[1],target:[...d.home],activity:d.id==='bella'?'walk':'work',hunger:80,energy:80,mood:75,xp:0,level:1,phase:0,upgrades:{bed:0,bowl:0,toy:0}}))};}
     function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
     function valid(s){return s&&[1,2,3,4,5,6,7,8,9,10,11,12,13,FORMAT].includes(s.version)&&Number.isFinite(s.coins)&&s.coins>=0&&(s.version<5||s.books&&Number.isInteger(s.books.orders)&&Number.isFinite(s.books.nextAt))&&Array.isArray(s.cats)&&s.cats.length===defs.length&&defs.every(d=>{let c=s.cats.find(x=>x.id===d.id);return c&&[c.x,c.y,c.hunger,c.energy,c.mood,c.xp,c.level].every(Number.isFinite)&&c.upgrades&&['bed','bowl','toy'].every(k=>Number.isInteger(c.upgrades[k])&&c.upgrades[k]>=0&&c.upgrades[k]<=3);});}
     function sanitize(s){
@@ -729,6 +733,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       out.savedAt=Number.isFinite(s.savedAt)?s.savedAt:Date.now();
       out.clock=sanitizeGameClock(s.clock);
       out.lighthouseSlots=sanitizeLighthouseSlotState(s.lighthouseSlots);
+      out.musselRestaurant=sanitizeMusselRestaurantState(s.musselRestaurant);
       if(s.version>=2&&s.coffee&&typeof s.coffee==='object'){
         let v=s.coffee;
         out.coffee={built:!!v.built,plan:!!v.plan,delivery:!!v.delivery,recipe:!!v.recipe,style:['coral','mint','blue'].includes(v.style)?v.style:null,orders:clamp(Number.isFinite(v.orders)?Math.floor(v.orders):0,0,100000),service:sanitizeCafeServiceState(v.service,v.orders)};
@@ -921,6 +926,115 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       dialog.classList.add('cafeInteriorDialog');
       if(c.built){renderCafeGuestLayer();renderCafeServicePanel();}
     }
+    const musselIngredientPositions={mussels:[12,51],lemon:[27,52],garlic:[12,68],cream:[30,64],cheese:[23,67],tomato:[10,81],herbs:[30,81]};
+    function showMusselInterior(note=''){
+      const state=city.musselRestaurant,order=nextMusselOrder(state);
+      show(`<div class="musselTitle"><h2>🦪 Мидийное место</h2><span class="musselStats">Подано: ${state.served} · заработано: ${state.earned} 🪙</span></div>
+        <div class="musselScene musselInteriorScene"><img src="./assets/interiors/mussel-restaurant-v1.webp" alt="Мидийное место: Белла готовит на открытой кухне, гости сидят у моря" draggable="false" decoding="async"><div class="musselSteam" aria-hidden="true"><span></span><span></span><span></span></div>
+          <button class="musselSpot" data-mussel-cook aria-label="Подойти к кухне и готовить мидии">🍳</button>
+          <button class="musselSpot" data-mussel-order aria-label="Принять заказ у гостя">💬</button></div>
+        <div class="musselOrder"><span class="musselOrderEmoji">${order.emoji}</span><div><strong>${order.guest} заказывает: ${order.name}</strong><small>«${order.request}»</small></div><b>${order.price}–${order.price+4} 🪙</b></div>
+        ${note?`<p class="musselFeedback" role="status">${note}</p>`:''}<p class="musselHint">Нажми на гостя или на плиту прямо в ресторане. Здесь можно готовить руками, не выбирая ответы на вопросы.</p>
+        <button class="musselAction" data-mussel-cook>🍳 Начать готовить</button><button class="musselQuiet" data-close>Вернуться в город</button>`);
+      dialog.classList.add('musselRestaurantDialog');
+    }
+    function showMusselKitchen(){
+      const order=nextMusselOrder(city.musselRestaurant);
+      if(!musselSession||musselSession.orderNo!==order.number){musselSession=newMusselKitchen(order);musselHeatValue=20;}
+      musselFeedback='';renderMusselKitchen();
+    }
+    function renderMusselKitchen(){
+      if(!musselSession)return;
+      const session=musselSession,recipe=MUSSEL_MENU.find(v=>v.id===session.recipeId),phase=session.phase;
+      const phaseNo=phase==='ingredients'?0:phase==='heat'?1:2;
+      const stepNames=['🥣 Ингредиенты','🔥 Огонь','🍽️ Подача'];
+      const steps=stepNames.map((name,i)=>`<span class="${i===phaseNo?'active':i<phaseNo?'done':''}">${name}</span>`).join('');
+      const required=recipe.ingredients;
+      const hotSpots=phase==='ingredients'?required.map(id=>{
+        const [x,y]=musselIngredientPositions[id];const added=session.added.includes(id);
+        return `<button class="musselIngredientHotspot ${added?'added':''}" style="left:${x}%;top:${y}%" data-mussel-ingredient="${id}" aria-label="${MUSSEL_INGREDIENTS[id].name}: перетащить в кастрюлю" ${added||city.paused?'disabled':''}></button>`;
+      }).join(''):'';
+      const palette=phase==='ingredients'?`<div class="musselPalette" aria-label="Ингредиенты для переноса в кастрюлю">${required.map(id=>`<button class="musselIngredientToken ${session.added.includes(id)?'added':''}" data-mussel-ingredient="${id}" title="${MUSSEL_INGREDIENTS[id].name}" aria-label="${MUSSEL_INGREDIENTS[id].name}" ${session.added.includes(id)||city.paused?'disabled':''}>${MUSSEL_INGREDIENTS[id].emoji}</button>`).join('')}</div><div class="musselProgress">В кастрюле: ${session.added.length} из ${required.length} ингредиентов</div>`:'';
+      const shells=Array.from({length:session.plated},(_,i)=>`<span class="musselPlateShell s${i+1}"></span>`).join('');
+      const heatControl=phase==='heat'?`<label class="musselHeatSlider" aria-label="Температура плиты"><input data-mussel-heat type="range" min="0" max="100" step="1" value="${musselHeatValue}" ${city.paused?'disabled':''} aria-label="Повернуть регулятор огня в зелёную зону"></label>`:'';
+      const plateSource=phase==='plating'?`<button class="musselPlateSource" data-mussel-plate-source aria-label="Перетащить мидию из кастрюли на тарелку" ${city.paused?'disabled':''}>🦪</button>`:'';
+      const garnishSpot=phase==='garnish'?`<button class="musselIngredientHotspot" style="left:92%;top:86%" data-mussel-garnish aria-label="Украсить тарелку лимоном и зеленью" ${city.paused?'disabled':''}>🍋</button>`:'';
+      const messages={ingredients:'Перетащи нужные продукты с лотка в кастрюлю. Можно просто нажимать на них.',heat:'Проведи пальцем по регулятору и отпусти его в зелёной зоне.',plating:'Перетащи три порции мидий из кастрюли на пустую тарелку.',garnish:'Перетащи зелень и лимон на тарелку или коснись их.',ready:'Идеально! Блюдо можно отнести гостю.'};
+      show(`<div class="musselTitle"><h2>${recipe.emoji} ${recipe.name}</h2><span class="musselStats">Заказ № ${session.orderNo+1}</span></div><div class="musselSteps">${steps}</div>
+        <div class="musselScene musselKitchenScene" id="musselKitchenScene"><img src="./assets/interiors/mussel-kitchen-v1.webp" alt="Белла в образе Hello Kitty готовит мидии: ингредиенты слева, кастрюля и огонь в центре, тарелка справа" draggable="false" decoding="async"><div class="musselSteam" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div class="musselDrop musselPotDrop ${phase==='ingredients'?'active':''}" data-mussel-drop="pot"></div><div class="musselDrop musselPlateDrop ${phase==='plating'||phase==='garnish'?'active':''}" data-mussel-drop="plate"></div>
+          ${hotSpots}${plateSource}${garnishSpot}${heatControl}${shells}${session.garnished?'<span class="musselPlateGarnish">🍋🌿</span>':''}
+        </div><p class="musselPhaseHint">${city.paused?'⏸️ Город на паузе. Включи время, чтобы продолжить.':messages[phase]||'Всё готово!'}</p>
+        ${palette}${phase==='plating'?`<div class="musselProgress">На тарелке: ${session.plated} из 3 порций</div>`:''}
+        ${phase==='garnish'?'<div class="musselPalette"><button class="musselIngredientToken" data-mussel-garnish aria-label="Украсить лимоном и зеленью">🍋🌿</button></div>':''}
+        ${phase==='ready'?'<button class="musselAction" data-mussel-serve>🍽️ Подать блюдо гостю</button>':''}
+        <p class="musselFeedback" id="musselFeedback" role="status">${musselFeedback}</p><button class="musselQuiet" data-mussel-back>← В зал ресторана</button>`);
+      dialog.classList.add('musselRestaurantDialog');
+    }
+    function showMusselSuccess(result){
+      const state=city.musselRestaurant,order=MUSSEL_MENU.find(v=>v.id===state.last?.id);
+      show(`<div class="musselTitle"><h2>🦪 Мидийное место</h2><span class="musselStats">Подано: ${state.served}</span></div>
+        <div class="musselScene musselInteriorScene"><img src="./assets/interiors/mussel-restaurant-v1.webp" alt="Уютный зал ресторана у моря" draggable="false"><div class="musselSteam" aria-hidden="true"><span></span><span></span><span></span></div></div>
+        <div class="musselResult" role="status">${'⭐'.repeat(result.stars)}<br>${order?.guest||'Гость'} в восторге от ужина!<strong>+${result.coins} 🪙</strong>${result.tip?`Включая чаевые за отличный заказ`:'Спасибо за угощение!'}</div>
+        <button class="musselAction" data-mussel-next>🍋 Принять следующий заказ</button><button class="musselQuiet" data-close>Вернуться в город</button>`);
+      dialog.classList.add('musselRestaurantDialog');
+    }
+    function musselItemAction(kind,id){
+      if(city.paused||!musselSession)return;
+      if(kind==='ingredient'){
+        if(!addMusselIngredient(musselSession,id)){musselFeedback='Этот продукт уже добавлен или не нужен для блюда.';}
+        else musselFeedback=musselSession.phase==='heat'?'✨ Все ингредиенты на месте! Теперь настрой огонь.':`✓ ${MUSSEL_INGREDIENTS[id].name} в кастрюле.`;
+      }else if(kind==='plate'){
+        if(!plateMussels(musselSession))return;
+        musselFeedback=musselSession.phase==='garnish'?'✨ Три порции на тарелке. Осталось украсить!':'🦪 Порция на тарелке.';
+      }else if(kind==='garnish'){
+        if(!garnishMussels(musselSession))return;
+        musselFeedback='🍋🌿 Красота! Можно подавать.';
+      }else return;
+      renderMusselKitchen();
+    }
+    function cleanupMusselGesture(){
+      if(musselDrag?.ghost)musselDrag.ghost.remove();
+      musselDrag=null;
+      const scene=document.getElementById('musselKitchenScene');
+      if(scene)for(const zone of scene.querySelectorAll('.musselDrop'))zone.classList.remove('hover');
+    }
+    function pointInMusselZone(zone,x,y){
+      if(!zone)return false;
+      const box=zone.getBoundingClientRect();return x>=box.left&&x<=box.right&&y>=box.top&&y<=box.bottom;
+    }
+    dialog.addEventListener('pointerdown',e=>{
+      if(!dialog.classList.contains('musselRestaurantDialog')||city?.paused||musselDrag||e.pointerType==='mouse'&&e.button!==0)return;
+      const source=e.target.closest('button[data-mussel-ingredient],button[data-mussel-plate-source],button[data-mussel-garnish]');
+      if(!source||source.disabled)return;
+      const kind=source.hasAttribute('data-mussel-ingredient')?'ingredient':source.hasAttribute('data-mussel-plate-source')?'plate':'garnish';
+      const id=source.dataset.musselIngredient;
+      const ghost=document.createElement('span');ghost.className='musselDragGhost';ghost.textContent=kind==='ingredient'?MUSSEL_INGREDIENTS[id]?.emoji:kind==='plate'?'🦪':'🍋🌿';
+      ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px';document.body.append(ghost);
+      musselDrag={id,kind,ghost,pointerId:e.pointerId,startX:e.clientX,startY:e.clientY};
+      e.preventDefault();
+    });
+    window.addEventListener('pointermove',e=>{
+      const drag=musselDrag;if(!drag||drag.pointerId!==e.pointerId)return;
+      drag.ghost.style.left=e.clientX+'px';drag.ghost.style.top=e.clientY+'px';
+    });
+    window.addEventListener('pointerup',e=>{
+      const drag=musselDrag;if(!drag||drag.pointerId!==e.pointerId)return;
+      const moved=Math.hypot(e.clientX-drag.startX,e.clientY-drag.startY)>14;
+      const target=dialog.querySelector(`[data-mussel-drop="${drag.kind==='ingredient'?'pot':'plate'}"]`);
+      const validDrop=!moved||pointInMusselZone(target,e.clientX,e.clientY);
+      const kind=drag.kind,id=drag.id;cleanupMusselGesture();
+      if(validDrop)musselItemAction(kind,id);
+      else{musselFeedback='Попробуй перенести продукт прямо на '+(kind==='ingredient'?'кастрюлю.':'тарелку.');const message=document.getElementById('musselFeedback');if(message)message.textContent=musselFeedback;}
+    });
+    window.addEventListener('pointercancel',e=>{if(musselDrag?.pointerId===e.pointerId)cleanupMusselGesture();});
+    dialog.addEventListener('change',e=>{
+      if(!e.target.matches('input[data-mussel-heat]')||!musselSession||city.paused)return;
+      musselHeatValue=Number(e.target.value);
+      const result=setMusselHeat(musselSession,musselHeatValue/100);
+      musselFeedback=result.ok?'🔥 Отлично! Мидии приготовлены. Переходим к подаче.':'Пока не та температура. Попробуй попасть в зелёную зону.';
+      if(result.ok)renderMusselKitchen();else{const message=document.getElementById('musselFeedback');if(message)message.textContent=musselFeedback;}
+    });
     function showRyzhiyHome(room='all'){
       ryzhiyRoom=['all','lounge','kitchen','bedroom'].includes(room)?room:'all';
       const hotSpots=RYZHIY_HOME_STORIES.map(story=>`<button class="ryzhiyHomeHotspot" data-home-story="${story.id}" aria-label="${story.label}: открыть историю" title="${story.label}">${story.emoji}</button>`).join('');
@@ -1392,6 +1506,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
         actions=`${id==='ryzhiy'?'<button data-location-ryzhiy-enter>🚪 Войти в дом Рыжего</button>':''}${id==='bella'?'<button data-location-bella-enter>🚪 Войти в дом Беллы</button>':''}${id==='lev'?'<button data-location-lev-enter>🚪 Войти в дом Льва</button>':''}${id==='kent'?'<button data-location-kent-enter>🚪 Войти в дом Кента</button>':''}${id==='mia'?'<button data-location-mia-enter>🚪 Войти в дом Мии</button>':''}<button data-location-home="${id}">🏠 Позвать ${ownerName} домой</button><button data-location-manage="${id}">${id==='bella'?'Открыть карточку Беллы':'Управлять домом и улучшениями'}</button>`;
       }else{
         if(id==='cafe')actions+='<button data-location-cafe-enter>🚪 Войти в кофейню</button><button data-location-cafe>☕ Открыть дела кофейни</button>';
+        if(id==='musselRestaurant')actions+='<button data-location-mussel-enter>🦪 Войти в «Мидийное место»</button>';
         if(id==='lighthouse')actions+='<button data-location-lighthouse-enter>🚪 Войти в маяк</button>';
         if(id==='marina')actions+='<button data-location-boathouse-enter>🚪 Войти в лодочный домик</button>';
         if(id==='post')actions+='<button data-location-post-office-enter>🚪 Войти на почту</button>';
@@ -1409,7 +1524,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       const groups=[
         ['Дома жителей',['bella','kent','mia','lev','citera','ryzhiy']],
         ['Городские заведения',['townhall','cafe','restaurant','hospital','post','market','greenhouse','observatory']],
-        ['У моря и в парке',['lighthouse','marina','pier','pond']]
+        ['У моря и в парке',['lighthouse','musselRestaurant','marina','pier','pond']]
       ];
       const entries=groups.map(([title,ids])=>`<section class="placeGroup"><h3>${title}</h3>${ids.map(id=>`<button class="placeItem" data-location-open="${id}"><span>${locationInfo[id].icon}</span><span>${locationInfo[id].name}</span></button>`).join('')}</section>`).join('');
       show(`<h2>Места Тихой бухты</h2><p>Выбери здание или коснись его на карте. Обычные пустые жилые дома не открываются.</p>${entries}<button data-close>Вернуться к карте</button>`);
@@ -1425,8 +1540,8 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
     function renderUI(){if(!city)return;updateGameClock();const visibleCoins=slotBusy&&slotVisibleBalance!==null?slotVisibleBalance:city.coins;document.getElementById('money').textContent=`🪙 ${visibleCoins}`;const slotWallet=dialog.classList.contains('lighthouseSlotDialog')?dialog.querySelector('[data-slot-wallet]'):null;if(slotWallet)slotWallet.textContent=`🪙 ${visibleCoins}`;document.getElementById('pause').textContent=city.paused?'▶':'Ⅱ';if(selected==='cafe'){renderCafe();return;}let c=cat(selected),d=byId[selected];let bella=c.id==='bella';details.innerHTML=`<div class="row"><div class="avatar">${d.symbol}</div><div><h1>${d.name} <span style="font-size:12px;font-weight:400">${bella?'':`· уровень ${c.level}`}</span></h1><p class="sub">${d.job} · ${activities[c.activity]}</p></div></div><div class="stats">${bella?'<span class="stat">Гуляет и навещает друзей</span>':`<span class="stat">🥣 ${Math.round(c.hunger)}%</span><span class="stat">💤 ${Math.round(c.energy)}%</span><span class="stat">♡ ${Math.round(c.mood)}%</span><span class="stat">✦ ${Math.floor(c.xp)}/${c.level*18} опыта</span>`}</div><div class="actions">${bella?'<button class="action primary" data-action="bella-home">🏡 Дом Беллы</button><button class="action" data-action="cafe">☕ Кофейня</button><button class="action" data-action="focus">Показать на карте</button>':`<button class="action primary" data-action="work">Работать 🪙</button><button class="action" data-action="rest">Отдыхать 💤</button><button class="action" data-action="eat">Кормить 🥣</button><button class="action" data-action="play">Играть 🎭</button><button class="action" data-action="walk">Гулять</button>${c.id==='citera'?'<button class="action primary" data-action="bookshop">📚 Войти в книжную лавку</button>':''}${c.id==='ryzhiy'?'<button class="action primary" data-action="ryzhiy-home">🏡 Войти в дом Рыжего</button>':''}${c.id==='lev'?'<button class="action primary" data-action="lev-home">🏡 Войти в дом Льва</button>':''}${c.id==='kent'?'<button class="action primary" data-action="kent-home">🏡 Войти в дом Кента</button>':''}${c.id==='mia'?'<button class="action primary" data-action="mia-home">🏡 Войти в дом Мии</button>':''}<button class="action" data-action="focus">Показать на карте</button><button class="action primary" data-action="home-upgrades">🏡 Улучшения дома</button>`}</div>`;}
     details.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.cafe){coffeeAction(b.dataset.cafe);return;}if(b.dataset.action==='cafe'){selected='cafe';renderUI();notice('Помоги жителям открыть кофейню.');return;}if(b.dataset.action==='bookshop')showBookshop();else if(b.dataset.action==='ryzhiy-home')showRyzhiyHome();else if(b.dataset.action==='bella-home')showBellaHome();else if(b.dataset.action==='lev-home')showLevHome();else if(b.dataset.action==='kent-home')showKentHome();else if(b.dataset.action==='mia-home')showMiaHome();else if(b.dataset.action==='home-upgrades')showHomeUpgrades(selected,'resident');else if(b.dataset.action==='focus'){let c=cat(selected);focusCity(c.x,c.y);}else if(b.dataset.action==='work'){const resident=cat(selected);if(!canStartWork(resident)){notice('Для работы нужно не меньше 35% сытости и бодрости.');return;}assign(resident,'work');}else if(b.dataset.action==='eat'){const result=buyManualFeed(city,selected);if(!result.ok){notice('Для вкусного обеда нужно '+MANUAL_FEED_COST+' 🪙. Обычное автоматическое питание остаётся бесплатным.');return;}gameAudio.coinSpend();notice(byId[selected].name+' вкусно поел(а): +35% сытости и +3% настроения.');changed();}else if(b.dataset.action)assign(cat(selected),b.dataset.action);});
     function cleanupCafeScene(){clearTimeout(cafeRefillTimer);clearTimeout(cafeDepartTimer);cafeDeparting=null;cafeSeen.clear();}
-    function close(){bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;bookMode='shop';bookRoom='bookshop';cleanupCafeScene();overlay.hidden=true;dialog.classList.remove('welcomeDialog','bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','lighthouseSlotDialog','boathouseDialog','postOfficeDialog','postLetterDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');}
-    function show(html){if(dialog.classList.contains('cafeInteriorDialog'))cleanupCafeScene();dialog.classList.remove('welcomeDialog','bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','lighthouseSlotDialog','boathouseDialog','postOfficeDialog','postLetterDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');dialog.innerHTML=html;overlay.hidden=false;}
+    function close(){bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;bookMode='shop';bookRoom='bookshop';cleanupCafeScene();cleanupMusselGesture();musselSession=null;overlay.hidden=true;dialog.classList.remove('welcomeDialog','bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','musselRestaurantDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','lighthouseSlotDialog','boathouseDialog','postOfficeDialog','postLetterDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');}
+    function show(html){if(dialog.classList.contains('cafeInteriorDialog'))cleanupCafeScene();cleanupMusselGesture();dialog.classList.remove('welcomeDialog','bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','musselRestaurantDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','lighthouseSlotDialog','boathouseDialog','postOfficeDialog','postLetterDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');dialog.innerHTML=html;overlay.hidden=false;}
     async function welcomeWasSeen(){
       try{if(db&&await read(WELCOME_KEY))return true;}catch{}
       try{return localStorage.getItem('quiet-bay-welcome-seen')==='yes';}catch{return false;}
@@ -1448,6 +1563,18 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
     },true);
     dialog.addEventListener('click',e=>{
       const button=e.target.closest('button');if(!button)return;
+      if(button.hasAttribute('data-mussel-cook')||button.hasAttribute('data-mussel-order')){e.stopImmediatePropagation();showMusselKitchen();return;}
+      if(button.hasAttribute('data-mussel-back')){e.stopImmediatePropagation();showMusselInterior();return;}
+      if(button.hasAttribute('data-mussel-next')){e.stopImmediatePropagation();musselSession=null;showMusselInterior();return;}
+      if(button.dataset.musselIngredient!==undefined){e.stopImmediatePropagation();musselItemAction('ingredient',button.dataset.musselIngredient);return;}
+      if(button.hasAttribute('data-mussel-plate-source')){e.stopImmediatePropagation();musselItemAction('plate');return;}
+      if(button.hasAttribute('data-mussel-garnish')){e.stopImmediatePropagation();musselItemAction('garnish');return;}
+      if(button.hasAttribute('data-mussel-serve')){
+        e.stopImmediatePropagation();if(city.paused||!musselSession)return;
+        const result=serveMusselOrder(city,musselSession);
+        if(!result.ok)return;
+        gameAudio.coinGain();changed();showMusselSuccess(result);return;
+      }
       if(button.dataset.homeStory){e.stopImmediatePropagation();showHomeStory(button.dataset.homeStory);return;}
       if(button.dataset.homeChoice!==undefined){
         e.stopImmediatePropagation();
@@ -1508,6 +1635,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       if(button.hasAttribute('data-location-lev-enter')){e.stopImmediatePropagation();showLevHome();return;}
       if(button.hasAttribute('data-location-kent-enter')){e.stopImmediatePropagation();showKentHome();return;}
       if(button.hasAttribute('data-location-mia-enter')){e.stopImmediatePropagation();showMiaHome();return;}
+      if(button.hasAttribute('data-location-mussel-enter')){e.stopImmediatePropagation();showMusselInterior();return;}
       if(button.dataset.miaHomeView!==undefined){
         e.stopImmediatePropagation();
         const view=button.dataset.miaHomeView,scene=document.getElementById('miaHomeScene');

@@ -9,7 +9,7 @@ const appSource = readFileSync(new URL('../docs/index.html', import.meta.url), '
 const map = await import(`data:text/javascript;base64,${Buffer.from(mapSource).toString('base64')}`);
 
 test('every meaningful location has an independently clickable center', () => {
-  assert.equal(map.LOCATIONS.length, 18);
+  assert.equal(map.LOCATIONS.length, 19);
   assert.equal(new Set(map.LOCATIONS.map(location => location.id)).size, map.LOCATIONS.length);
   for (const location of map.LOCATIONS) {
     assert.equal(map.locationAt(location.u, location.v), location.id, location.id);
