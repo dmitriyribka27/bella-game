@@ -1,10 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {
   MUSSEL_MENU,newMusselRestaurantState,sanitizeMusselRestaurantState,
   nextMusselOrder,newMusselKitchen,addMusselIngredient,setMusselHeat,
   plateMussels,garnishMussels,serveMusselOrder
 } from '../docs/mussel-restaurant.js';
+
+test('all kitchen ingredient hotspots override full-width dialog buttons',()=>{
+  const css=readFileSync(new URL('../docs/mussel-restaurant.css',import.meta.url),'utf8');
+  assert.match(css,/\.dialog \.musselIngredientHotspot,\.dialog \.musselIngredientHotspot:first-of-type\s*\{/);
+  assert.match(css,/\.dialog \.musselIngredientHotspot[^}]*width:clamp\(29px,6\.5vw,57px\)/);
+});
 
 test('menu has five distinct dishes, priced relative to the cafe',()=>{
   assert.deepEqual(MUSSEL_MENU.map(v=>v.price),[8,10,11,13,16]);
