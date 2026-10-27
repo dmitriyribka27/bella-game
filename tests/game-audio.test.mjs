@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {AUDIO_STORAGE_KEY,audioPreferences,createGameAudio} from '../docs/game-audio.js';
+
+test('restaurant uses updated audio cache key and keeps cooking compatible with old offline audio',()=>{
+  const app=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
+  assert.match(app,/import \{createGameAudio\} from "\.\/game-audio\.js\?v=4"/);
+  assert.equal((app.match(/gameAudio\.cookSizzle\?\.\(\)/g)||[]).length,3);
+});
 
 function setup(saved){
   const data=new Map(saved?[[AUDIO_STORAGE_KEY,JSON.stringify(saved)]]:[]);
