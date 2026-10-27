@@ -622,7 +622,7 @@
   <input id="file" type="file" accept="application/json,.json">
   <script type="module">
 import {CAT_ART} from "./cats-art.js?v=1";
-import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,LOCATION_POINTS,LOCATIONS,NODES,advance,walkTarget} from "./map2d.js?v=14";
+import {createMap,HOME_POINTS,WORK_POINTS,SITE_POINTS,LOCATION_POINTS,LOCATIONS,NODES,advance,walkTarget} from "./map2d.js?v=15";
 import {BOOK_VISITORS,BOOK_VISITOR_BY_ID,newBookVisitorState,sanitizeBookVisitorState,chapterForVisitor,bringNextBookVisitor,finishBookVisit} from "./book-visitors.js?v=1";
 import {BOOK_SUPPLIERS,BOOK_CATALOG,BOOK_BY_ID,SUPPLIER_BY_ID,chapterBook,newBookInventory,sanitizeBookInventory,pendingCopies,totalCopies,orderBook,receiveBookShipments,sellBook} from "./book-inventory.js?v=1";
 import {bookCoverMarkup} from "./book-covers.js?v=1";
@@ -635,12 +635,12 @@ import {MARKET_SNACKS,buyMarketSnack} from "./market-snacks.js?v=1";
 import {TOWN_HALL_FESTIVAL_COST,TOWN_HALL_FESTIVAL_MOOD,getTownHallReport,issueTownHallOrder,holdTownHallFestival} from "./townhall-management.js?v=1";
 import {OBSERVATORY_DISCOVERIES,OBSERVATORY_DIRECTIONS,OBSERVATORY_FOCUS,newObservatoryState,sanitizeObservatoryState,nextObservatoryDiscovery,telescopeIsAligned,skyPatternsFor,recordObservatoryDiscovery} from "./observatory-work.js?v=1";
 import {HOME_UPGRADE_MAX_BONUS,HOME_UPGRADE_SECTORS,homeUpgradeBonus,homeUpgradeCost,homeRecoveryRate,purchaseHomeUpgrade} from "./home-upgrades.js?v=1";
-import {WORK_SHIFT_SECONDS,MIN_WORK_NEED,MANUAL_FEED_COST,HOSPITAL_COST,CAFE_OPENING_COST,CAFE_GUEST_INTERVAL_MS,CAFE_RECIPE_EARNINGS,canStartWork,workWage,buyManualFeed} from "./game-economy.js?v=1";
+import {WORK_SHIFT_SECONDS,MIN_WORK_NEED,MANUAL_FEED_COST,HOSPITAL_COST,CAFE_OPENING_COST,CAFE_GUEST_INTERVAL_MS,CAFE_RECIPE_EARNINGS,canStartWork,workWage,buyManualFeed} from "./game-economy.js?v=2";
 import {FAST_FORWARD_MULTIPLIER,toggleTimeSpeed,newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditOfflineCoins} from "./game-time.js?v=3";
 import {chooseStoredSave,secondsSince,saveMarker,requestPersistentStorage} from "./save-health.js?v=2";
 import {SLOT_STAKES,SLOT_FREE_BET,SLOT_OUTCOMES,newLighthouseSlotState,sanitizeLighthouseSlotState,spinLighthouseSlots} from "./lighthouse-slots.js?v=1";
 import {MUSSEL_MENU,MUSSEL_INGREDIENTS,newMusselRestaurantState,sanitizeMusselRestaurantState,musselGuestFlow,nextMusselOrder,newMusselKitchen,addMusselIngredient,setMusselHeat,plateMussels,garnishMussels,serveMusselOrder} from "./mussel-restaurant.js?v=2";
-import {catRoutinePeriod,chooseCatRoutine} from "./cat-routines.js?v=1";
+import {catRoutinePeriod,chooseCatRoutine} from "./cat-routines.js?v=2";
 import {createGameAudio} from "./game-audio.js?v=4";
 import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForMinute,readLightingEnabled,saveLightingEnabled} from "./daylight.js?v=2";
 (()=>{"use strict";
@@ -670,7 +670,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       {id:'lev',name:'Лев',job:'доктор',color:'#f4eee2',roof:'#9b8167',home:[12.6,6.1],work:[8.5,5.2],face:'lev',symbol:'🩺'},
       {id:'citera',name:'Цитера',job:'хозяйка книжной лавки',color:'#383b3d',roof:'#b08791',home:[16.7,11.0],work:[16.3,12.0],face:'citera',symbol:'📚'},
       {id:'ryzhiy',name:'Рыжий',job:'пекарь',color:'#d98546',roof:'#d2946a',home:[2.1,12.4],work:[5,11.2],face:'ryzhiy',symbol:'🥐'},
-      {id:'bella',name:'Белла',job:'хозяйка города',color:'#fff8f0',roof:'#e8a0ae',home:[9,13],work:[8.3,8.2],face:'bella',symbol:'♡'}
+      {id:'bella',name:'Белла',job:'хозяйка города · повар',color:'#fff8f0',roof:'#e8a0ae',home:[9,13],work:[8.3,8.2],face:'bella',symbol:'♡'}
     ];
     for(const d of defs){d.home=[...HOME_POINTS[d.id]];d.work=[...WORK_POINTS[d.id]];}
     cafeSite.home=[...NODES.cafe];for(const d of scenicSites){if(SITE_POINTS[d.id])d.home=[...SITE_POINTS[d.id]];}
@@ -688,7 +688,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       townhall:{name:'Ратуша',icon:'🏛️',type:'Городское здание',worker:'kent',description:'Здание с часами, где Кент работает мэром и следит за жизнью бухты.'},
       cafe:{name:'Кофейня Рыжего',icon:'☕',type:'Городское заведение',worker:'ryzhiy',description:'Место встреч жителей. Здесь можно открыть кофейню, выполнять поручения и принимать заказы.'},
       restaurant:{name:'Ресторан',icon:'🍽️',type:'Городское заведение',description:'Солнечная терраса и столики для будущих встреч и ужинов.'},
-      musselRestaurant:{name:'Мидийное место',icon:'🦪',type:'Ресторан у маяка',description:'Тёплый морской ресторан с открытой кухней. Здесь Белла сама готовит мидии для гостей.'},
+      musselRestaurant:{name:'Мидийное место',icon:'🦪',type:'Ресторан у маяка',worker:'bella',description:'Тёплый морской ресторан с открытой кухней. Здесь Белла сама готовит мидии для гостей.'},
       hospital:{name:'Больница',icon:'🏥',type:'Городское здание',worker:'lev',description:'Доктор Лев принимает жителей и помогает восстановить силы.'},
       post:{name:'Почта',icon:'✉️',type:'Городское здание',description:'Сюда приходят письма и посылки для жителей Тихой бухты.'},
       observatory:{name:'Обсерватория',icon:'🔭',type:'Особое место',worker:'mia',description:'Мия наблюдает за звёздами через телескоп на высокой скале.'},
@@ -794,7 +794,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
     function cat(id){return city.cats.find(c=>c.id===id);}
     function targetFor(c,a){let d=byId[c.id];if(a==='rest'||a==='eat')return [...d.home];if(a==='work')return [...d.work];if(a==='play')return [...NODES.square];return walkTarget();}
     function assign(c,a,announce=true){c.activity=a;c.target=targetFor(c,a);c.phase=0;if(announce){notice(`${byId[c.id].name}: ${activities[a]}. ${a==='work'?'Заработает монеты и опыт после работы.':a==='rest'?'Восстановит бодрость дома.':a==='eat'?'Восполнит сытость дома.':a==='play'?'Поднимет настроение.':'Идёт на прогулку.'}`);changed();}}
-    function auto(c){if(c.id==='bella')return;assign(c,chooseCatRoutine(c,minuteOfGameDay(city.clock)),false);dirty=true;}
+    function auto(c){assign(c,chooseCatRoutine(c,minuteOfGameDay(city.clock)),false);dirty=true;if(selected===c.id)renderUI();}
     function simulate(dt){
       if(city.paused||document.hidden)return;
       if(advanceGameClock(city.clock,dt))dirty=true;
@@ -802,7 +802,6 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
         const dist=Math.hypot(c.target[0]-c.x,c.target[1]-c.y);
         if(dist>.03){advance(c,dt);continue;}
         c.phase+=dt;
-        if(c.id==='bella'){if(c.phase>7)assign(c,'walk',false);continue;}
         c.hunger=clamp(c.hunger-dt*.18,0,100);
         c.energy=clamp(c.energy+(c.activity==='rest'?dt*homeRecoveryRate('rest',c.upgrades):-dt*.16),0,100);
         if(c.activity==='eat'){
@@ -820,7 +819,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
           if(c.phase>WORK_SHIFT_SECONDS){
             const reward=workWage(c);
             city.coins+=reward;gameAudio.coinGain();c.xp+=4;c.mood=clamp(c.mood-2,0,100);
-            const female=['mia','citera'].includes(c.id);
+            const female=['mia','citera','bella'].includes(c.id);
             if(c.xp>=c.level*18&&c.level<100){
               c.xp-=c.level*18;c.level++;
               notice(`${byId[c.id].name} достиг${female?'ла':''} уровня ${c.level}!`);
@@ -1592,8 +1591,27 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       close();changed();focusCity(...entrance);
       notice(`${byId[resident].name} ${activity==='rest'?'возвращается домой':activity==='work'?'идёт на работу':'идёт к месту «'+locationInfo[id].name+'»'} по дорожке.${city.paused?' Город на паузе.':''}`);
     }
-    function renderUI(){if(!city)return;updateGameClock();const visibleCoins=slotBusy&&slotVisibleBalance!==null?slotVisibleBalance:city.coins;document.getElementById('money').textContent=`🪙 ${visibleCoins}`;const slotWallet=dialog.classList.contains('lighthouseSlotDialog')?dialog.querySelector('[data-slot-wallet]'):null;if(slotWallet)slotWallet.textContent=`🪙 ${visibleCoins}`;document.getElementById('pause').textContent=city.paused?'▶':'Ⅱ';if(selected==='cafe'){renderCafe();return;}let c=cat(selected),d=byId[selected];let bella=c.id==='bella';details.innerHTML=`<div class="row"><div class="avatar">${d.symbol}</div><div><h1>${d.name} <span style="font-size:12px;font-weight:400">${bella?'':`· уровень ${c.level}`}</span></h1><p class="sub">${d.job} · ${activities[c.activity]}</p></div></div><div class="stats">${bella?'<span class="stat">Гуляет и навещает друзей</span>':`<span class="stat">🥣 ${Math.round(c.hunger)}%</span><span class="stat">💤 ${Math.round(c.energy)}%</span><span class="stat">♡ ${Math.round(c.mood)}%</span><span class="stat">✦ ${Math.floor(c.xp)}/${c.level*18} опыта</span>`}</div><div class="actions">${bella?'<button class="action primary" data-action="bella-home">🏡 Дом Беллы</button><button class="action" data-action="cafe">☕ Кофейня</button><button class="action" data-action="focus">Показать на карте</button>':`<button class="action primary" data-action="work">Работать 🪙</button><button class="action" data-action="rest">Отдыхать 💤</button><button class="action" data-action="eat">Кормить 🥣</button><button class="action" data-action="play">Играть 🎭</button><button class="action" data-action="walk">Гулять</button>${c.id==='citera'?'<button class="action primary" data-action="bookshop">📚 Войти в книжную лавку</button>':''}${c.id==='ryzhiy'?'<button class="action primary" data-action="ryzhiy-home">🏡 Войти в дом Рыжего</button>':''}${c.id==='lev'?'<button class="action primary" data-action="lev-home">🏡 Войти в дом Льва</button>':''}${c.id==='kent'?'<button class="action primary" data-action="kent-home">🏡 Войти в дом Кента</button>':''}${c.id==='mia'?'<button class="action primary" data-action="mia-home">🏡 Войти в дом Мии</button>':''}<button class="action" data-action="focus">Показать на карте</button><button class="action primary" data-action="home-upgrades">🏡 Улучшения дома</button>`}</div>`;}
-    details.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.cafe){coffeeAction(b.dataset.cafe);return;}if(b.dataset.action==='cafe'){selected='cafe';renderUI();notice('Помоги жителям открыть кофейню.');return;}if(b.dataset.action==='bookshop')showBookshop();else if(b.dataset.action==='ryzhiy-home')showRyzhiyHome();else if(b.dataset.action==='bella-home')showBellaHome();else if(b.dataset.action==='lev-home')showLevHome();else if(b.dataset.action==='kent-home')showKentHome();else if(b.dataset.action==='mia-home')showMiaHome();else if(b.dataset.action==='home-upgrades')showHomeUpgrades(selected,'resident');else if(b.dataset.action==='focus'){let c=cat(selected);focusCity(c.x,c.y);}else if(b.dataset.action==='work'){const resident=cat(selected);if(!canStartWork(resident)){notice('Для работы нужно не меньше 35% сытости и бодрости.');return;}assign(resident,'work');}else if(b.dataset.action==='eat'){const result=buyManualFeed(city,selected);if(!result.ok){notice('Для вкусного обеда нужно '+MANUAL_FEED_COST+' 🪙. Обычное автоматическое питание остаётся бесплатным.');return;}gameAudio.coinSpend();notice(byId[selected].name+' вкусно поел(а): +35% сытости и +3% настроения.');changed();}else if(b.dataset.action)assign(cat(selected),b.dataset.action);});
+    function renderUI(){
+      if(!city)return;
+      updateGameClock();
+      const visibleCoins=slotBusy&&slotVisibleBalance!==null?slotVisibleBalance:city.coins;
+      document.getElementById('money').textContent=`🪙 ${visibleCoins}`;
+      const slotWallet=dialog.classList.contains('lighthouseSlotDialog')?dialog.querySelector('[data-slot-wallet]'):null;
+      if(slotWallet)slotWallet.textContent=`🪙 ${visibleCoins}`;
+      document.getElementById('pause').textContent=city.paused?'▶':'Ⅱ';
+      if(selected==='cafe'){renderCafe();return;}
+      const c=cat(selected),d=byId[selected],bella=c.id==='bella';
+      const isNight=catRoutinePeriod(minuteOfGameDay(city.clock))==='night';
+      const activityName=bella&&c.activity==='rest'&&isNight?'спит':activities[c.activity];
+      const restLabel=bella&&isNight?'Спать 💤':'Отдыхать 💤';
+      const extraActions=bella
+        ? '<button class="action primary" data-action="bella-home">🏡 Дом Беллы</button><button class="action" data-action="mussel-restaurant">🦪 Мидийное место</button><button class="action" data-action="cafe">☕ Кофейня</button>'
+        : `${c.id==='citera'?'<button class="action primary" data-action="bookshop">📚 Войти в книжную лавку</button>':''}${c.id==='ryzhiy'?'<button class="action primary" data-action="ryzhiy-home">🏡 Войти в дом Рыжего</button>':''}${c.id==='lev'?'<button class="action primary" data-action="lev-home">🏡 Войти в дом Льва</button>':''}${c.id==='kent'?'<button class="action primary" data-action="kent-home">🏡 Войти в дом Кента</button>':''}${c.id==='mia'?'<button class="action primary" data-action="mia-home">🏡 Войти в дом Мии</button>':''}`;
+      details.innerHTML=`<div class="row"><div class="avatar">${d.symbol}</div><div><h1>${d.name} <span style="font-size:12px;font-weight:400">· уровень ${c.level}</span></h1><p class="sub">${d.job} · ${activityName}</p></div></div>
+        <div class="stats"><span class="stat">🥣 ${Math.round(c.hunger)}%</span><span class="stat">💤 ${Math.round(c.energy)}%</span><span class="stat">♡ ${Math.round(c.mood)}%</span><span class="stat">✦ ${Math.floor(c.xp)}/${c.level*18} опыта</span></div>
+        <div class="actions"><button class="action primary" data-action="work">Работать 🪙</button><button class="action" data-action="rest">${restLabel}</button><button class="action" data-action="eat">${bella?'Поесть':'Кормить'} 🥣</button><button class="action" data-action="play">Играть 🎭</button><button class="action" data-action="walk">Гулять</button>${extraActions}<button class="action" data-action="focus">Показать на карте</button>${bella?'':'<button class="action primary" data-action="home-upgrades">🏡 Улучшения дома</button>'}</div>`;
+    }
+    details.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.cafe){coffeeAction(b.dataset.cafe);return;}if(b.dataset.action==='cafe'){selected='cafe';renderUI();notice('Помоги жителям открыть кофейню.');return;}if(b.dataset.action==='bookshop')showBookshop();else if(b.dataset.action==='ryzhiy-home')showRyzhiyHome();else if(b.dataset.action==='bella-home')showBellaHome();else if(b.dataset.action==='mussel-restaurant')showMusselInterior();else if(b.dataset.action==='lev-home')showLevHome();else if(b.dataset.action==='kent-home')showKentHome();else if(b.dataset.action==='mia-home')showMiaHome();else if(b.dataset.action==='home-upgrades')showHomeUpgrades(selected,'resident');else if(b.dataset.action==='focus'){let c=cat(selected);focusCity(c.x,c.y);}else if(b.dataset.action==='work'){const resident=cat(selected);if(!canStartWork(resident)){notice('Для работы нужно не меньше 35% сытости и бодрости.');return;}assign(resident,'work');}else if(b.dataset.action==='eat'){const result=buyManualFeed(city,selected);if(!result.ok){notice('Для вкусного обеда нужно '+MANUAL_FEED_COST+' 🪙. Обычное автоматическое питание остаётся бесплатным.');return;}gameAudio.coinSpend();notice(byId[selected].name+' вкусно поел(а): +35% сытости и +3% настроения.');changed();}else if(b.dataset.action)assign(cat(selected),b.dataset.action);});
     function cleanupCafeScene(){clearTimeout(cafeRefillTimer);clearTimeout(cafeDepartTimer);cafeDeparting=null;cafeSeen.clear();}
     function close(){bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;bookMode='shop';bookRoom='bookshop';cleanupCafeScene();cleanupMusselGesture();clearMusselGuestTimer();musselSession=null;overlay.hidden=true;dialog.classList.remove('welcomeDialog','bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','musselRestaurantDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','lighthouseSlotDialog','boathouseDialog','postOfficeDialog','postLetterDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');}
     function show(html){if(dialog.classList.contains('cafeInteriorDialog'))cleanupCafeScene();cleanupMusselGesture();clearMusselGuestTimer();dialog.classList.remove('welcomeDialog','bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','musselRestaurantDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','lighthouseSlotDialog','boathouseDialog','postOfficeDialog','postLetterDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');dialog.innerHTML=html;overlay.hidden=false;}
@@ -2029,7 +2047,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       const button=e.target.closest('button');if(!button)return;
       const d=button.dataset;
       if(d.locationOpen){e.stopPropagation();focusCity(...LOCATION_POINTS[d.locationOpen]);showLocation(d.locationOpen);return;}
-      if(d.locationHome){e.stopPropagation();const owner=locationInfo[d.locationHome].owner;sendToLocation(d.locationHome,owner,owner==='bella'?'walk':'rest');return;}
+      if(d.locationHome){e.stopPropagation();const owner=locationInfo[d.locationHome].owner;sendToLocation(d.locationHome,owner,'rest');return;}
       if(d.locationManage){e.stopPropagation();const owner=locationInfo[d.locationManage]?.owner;if(!owner)return;if(owner==='bella'){selected=owner;close();renderUI();notice('Открыта карточка Беллы.');}else showHomeUpgrades(owner,'location');return;}
       if(d.locationWork){e.stopPropagation();sendToLocation(d.locationWork,locationInfo[d.locationWork].worker,'work');return;}
       if(d.locationVisit){e.stopPropagation();sendToLocation(d.locationVisit,currentVisitor(),'walk');return;}

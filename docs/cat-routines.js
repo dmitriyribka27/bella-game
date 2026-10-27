@@ -20,7 +20,7 @@ export function catRoutinePeriod(minute){
 export function catRoutineWeights(cat,minute){
   const period=catRoutinePeriod(minute);
   const weights={...BASE_WEIGHTS[period]};
-  if(!cat||cat.id==='bella')return {work:0,eat:0,rest:0,play:0,walk:1};
+  if(!cat)return {work:0,eat:0,rest:0,play:0,walk:1};
   // Needs outweigh the clock. The budget and existing work requirements stay intact.
   if(!canStartWork(cat))weights.work=0;
   if(cat.hunger>=82)weights.eat=0;
@@ -32,7 +32,7 @@ export function catRoutineWeights(cat,minute){
 }
 
 export function chooseCatRoutine(cat,minute,random=Math.random){
-  if(!cat||cat.id==='bella')return 'walk';
+  if(!cat)return 'walk';
   if(cat.hunger<MIN_WORK_NEED)return 'eat';
   if(cat.energy<MIN_WORK_NEED)return 'rest';
   if(cat.mood<25)return 'play';

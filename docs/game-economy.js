@@ -1,7 +1,7 @@
 // A deliberately modest town economy: fixed wages, optional treats and small services.
 export const WORK_SHIFT_SECONDS=90;
 export const MIN_WORK_NEED=35;
-export const WORK_WAGES=Object.freeze({kent:5,mia:4,lev:6,citera:4,ryzhiy:5});
+export const WORK_WAGES=Object.freeze({kent:5,mia:4,lev:6,citera:4,ryzhiy:5,bella:5});
 
 export const MANUAL_FEED_COST=4;
 export const MANUAL_FEED_HUNGER=35;
@@ -24,7 +24,7 @@ export function workWage(resident){
 }
 export function buyManualFeed(city,residentId){
   if(!city||!Number.isSafeInteger(city.coins)||!Array.isArray(city.cats))return {ok:false,reason:'invalid'};
-  const resident=city.cats.find(cat=>cat.id===residentId&&cat.id!=='bella');
+  const resident=city.cats.find(cat=>cat.id===residentId&&Object.hasOwn(WORK_WAGES,cat.id));
   if(!resident)return {ok:false,reason:'invalid'};
   if(city.coins<MANUAL_FEED_COST)return {ok:false,reason:'funds'};
   city.coins-=MANUAL_FEED_COST;

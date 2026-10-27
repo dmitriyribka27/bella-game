@@ -12,15 +12,15 @@ const app=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
 test('each cat earns a modest fixed wage after a ninety-second shift',()=>{
   assert.equal(WORK_SHIFT_SECONDS,90);
   assert.equal(MIN_WORK_NEED,35);
-  assert.deepEqual(WORK_WAGES,{kent:5,mia:4,lev:6,citera:4,ryzhiy:5});
+  assert.deepEqual(WORK_WAGES,{kent:5,mia:4,lev:6,citera:4,ryzhiy:5,bella:5});
   for(const [id,wage] of Object.entries(WORK_WAGES)){
     assert.equal(workWage({id,level:100,mood:100}),wage);
     assert.equal(canStartWork({id,hunger:35,energy:35}),true);
     assert.equal(canStartWork({id,hunger:34,energy:100}),false);
     assert.equal(canStartWork({id,hunger:100,energy:34}),false);
   }
-  assert.equal(workWage({id:'bella'}),0);
-  assert.equal(canStartWork({id:'bella',hunger:100,energy:100}),false);
+  assert.equal(workWage({id:'bella'}),5);
+  assert.equal(canStartWork({id:'bella',hunger:100,energy:100}),true);
 });
 
 test('manual feeding spends four coins and automatic basic feeding remains free',()=>{
@@ -30,7 +30,9 @@ test('manual feeding spends four coins and automatic basic feeding remains free'
   assert.equal(city.coins,6);
   assert.equal(city.cats[0].hunger,95);
   assert.equal(city.cats[0].mood,99);
-  assert.deepEqual(buyManualFeed(city,'bella'),{ok:false,reason:'invalid'});
+  assert.deepEqual(buyManualFeed(city,'bella'),{ok:true,cost:4});
+  assert.equal(city.coins,2);
+  assert.equal(city.cats[1].hunger,85);
   city.coins=1;
   assert.deepEqual(buyManualFeed(city,'mia'),{ok:false,reason:'funds'});
   assert.equal(city.coins,1);

@@ -32,11 +32,14 @@ test('real needs override routines and work is never assigned when needs are low
   assert.equal(catRoutineWeights({...healthy,energy:95},14*60).rest,0);
 });
 
-test('random choice is made exactly once and Bella is not auto-assigned',()=>{
+test('random choice is made exactly once and Bella follows the same gentle routine',()=>{
   let calls=0;
   assert.ok(['work','eat','rest','play','walk'].includes(chooseCatRoutine(healthy,12*60,()=>{calls++;return .99;})));
   assert.equal(calls,1);
-  assert.equal(chooseCatRoutine({id:'bella'},23*60,()=>0),'walk');
+  const bella={...healthy,id:'bella'};
+  assert.equal(chooseCatRoutine(bella,23*60,()=>.3),'rest');
+  assert.equal(chooseCatRoutine(bella,14*60,()=>.3),'work');
+  assert.equal(chooseCatRoutine({...bella,hunger:20},14*60,()=>.3),'eat');
 });
 
 test('game consults routine only when an action finishes, leaving manual controls intact',()=>{

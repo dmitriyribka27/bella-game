@@ -76,7 +76,7 @@ const links=Object.fromEntries(Object.keys(NODES).map(k=>[k,[]]));
 for(const [a,b] of pairs){links[a].push(b);links[b].push(a);}
 export const HOME_POINTS={kent:NODES.kent,mia:NODES.mia,lev:NODES.lev,citera:NODES.citera,ryzhiy:NODES.ryzhiy,bella:NODES.bella};
 // Kent now works as mayor in the clock-tower town hall.
-export const WORK_POINTS={kent:NODES.townhall,mia:NODES.observatory,lev:NODES.hospital,citera:NODES.citera,ryzhiy:NODES.cafe,bella:NODES.square};
+export const WORK_POINTS={kent:NODES.townhall,mia:NODES.observatory,lev:NODES.hospital,citera:NODES.citera,ryzhiy:NODES.cafe,bella:NODES.musselRestaurant};
 export const SITE_POINTS={cafe:NODES.cafe,restaurant:NODES.restaurant,musselRestaurant:NODES.musselRestaurant,hospital:NODES.hospital,post:NODES.post,observatory:NODES.observatory,market:NODES.market,greenhouse:NODES.greenhouse,townhall:NODES.townhall};
 export const BUILDING_POINTS={...HOME_POINTS,...SITE_POINTS,townhouse:NODES.townhouse,residence:NODES.residence,lighthouse:NODES.lighthouse,marina:NODES.marina};
 // The gameplay layer has one named touch target for every occupied house,
