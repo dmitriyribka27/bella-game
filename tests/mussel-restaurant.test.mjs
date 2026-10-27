@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
-  MUSSEL_MENU,newMusselRestaurantState,sanitizeMusselRestaurantState,
+  MUSSEL_MENU,MUSSEL_GUEST_BREAK_MS,newMusselRestaurantState,sanitizeMusselRestaurantState,musselGuestFlow,
   nextMusselOrder,newMusselKitchen,addMusselIngredient,setMusselHeat,
   plateMussels,garnishMussels,serveMusselOrder
 } from '../docs/mussel-restaurant.js';
@@ -36,10 +36,13 @@ test('kitchen uses an empty pot, progressive coherent food arrangements and a fu
   const css=readFileSync(new URL('../docs/mussel-restaurant.css',import.meta.url),'utf8');
   assert.match(css,/\.musselBoil span\{/);
   assert.doesNotMatch(css,/\.musselPlateFood\.s1/,'old stacked plate images are gone');
-  assert.match(app,/mussel-restaurant\.css\?v=5/,'new styles bypass older PWA asset cache');
+  assert.match(app,/mussel-restaurant\.css\?v=6/,'new styles bypass older PWA asset cache');
   assert.match(app,/\$\{palette\}\$\{heatControl\}/,'fire slider is outside of the image');
   assert.match(app,/gameAudio\.coinGain\(\);changed\(\);clearTimeout\(saveTimer\);/,'serving bypasses debounced save');
   assert.match(app,/write\(\)\.then\(\(\)=>showMusselSuccess\(result\)\)/,'success screen waits for the saved reward');
+  assert.match(app,/musselGuestRow/,'two adjacent guest tables are shown in the restaurant');
+  assert.match(app,/data-mussel-countdown/,'cooldown after each guest pair has a visible timer');
+  assert.match(app,/mussel-restaurant\.js\?v=2/,'new guest-flow module bypasses old PWA module cache');
 });
 
 test('menu has nine distinct dishes with real ingredient options',()=>{
@@ -88,6 +91,34 @@ test('temperature needs adjustment and retry gives smaller tip',()=>{
   assert.equal(state.last.stars,2);
 });
 
+test('guests arrive in pairs and pause briefly after the second order',()=>{
+  const city={coins:0,musselRestaurant:newMusselRestaurantState()};
+  const start=1700000000000;
+  const finish=(now)=>{
+    const session=newMusselKitchen(nextMusselOrder(city.musselRestaurant));
+    for(const id of MUSSEL_MENU.find(r=>r.id===session.recipeId).ingredients)addMusselIngredient(session,id);
+    setMusselHeat(session,.55);
+    for(let i=0;i<3;i++)plateMussels(session);
+    garnishMussels(session);
+    return {session,result:serveMusselOrder(city,session,now)};
+  };
+  assert.deepEqual(musselGuestFlow(city.musselRestaurant,start),{waiting:false,msLeft:0,table:1,remainingInPair:2});
+  assert.equal(finish(start).result.ok,true);
+  assert.equal(musselGuestFlow(city.musselRestaurant,start+1).table,2);
+  assert.equal(musselGuestFlow(city.musselRestaurant,start+1).waiting,false);
+  assert.equal(finish(start+100).result.ok,true);
+  const balance=city.coins;
+  assert.equal(city.musselRestaurant.nextGuestsAt,start+100+MUSSEL_GUEST_BREAK_MS);
+  assert.equal(musselGuestFlow(city.musselRestaurant,start+1000).waiting,true);
+  assert.equal(musselGuestFlow(city.musselRestaurant,start+1000).msLeft,MUSSEL_GUEST_BREAK_MS-900);
+  assert.equal(finish(start+2000).result.reason,'guests-away');
+  assert.equal(city.coins,balance,'no coins arrive during the break');
+  assert.equal(city.musselRestaurant.served,2);
+  assert.equal(musselGuestFlow(city.musselRestaurant,start+100+MUSSEL_GUEST_BREAK_MS).waiting,false);
+  assert.equal(finish(start+101+MUSSEL_GUEST_BREAK_MS).result.ok,true);
+  assert.equal(musselGuestFlow(city.musselRestaurant,start+MUSSEL_GUEST_BREAK_MS+102).table,2);
+});
+
 test('a stale order can never pay again after a newer order',()=>{
   const city={coins:0,musselRestaurant:newMusselRestaurantState()};
   const order=nextMusselOrder(city.musselRestaurant);
@@ -114,6 +145,7 @@ test('restored restaurant data stays bounded and works with older city saves',()
   assert.deepEqual(sanitizeMusselRestaurantState(undefined),newMusselRestaurantState());
   assert.deepEqual(sanitizeMusselRestaurantState({served:-20,earned:Infinity,bestStars:9,last:{id:'fake'}}),newMusselRestaurantState());
   const state={served:20,earned:180,bestStars:3,last:{id:'classic',stars:3,coins:12}};
-  assert.deepEqual(sanitizeMusselRestaurantState(JSON.parse(JSON.stringify(state))),state);
+  assert.deepEqual(sanitizeMusselRestaurantState(JSON.parse(JSON.stringify(state))),{...state,nextGuestsAt:0});
+  assert.equal(sanitizeMusselRestaurantState({nextGuestsAt:Date.now()+MUSSEL_GUEST_BREAK_MS+60000}).nextGuestsAt,0);
   assert.equal(nextMusselOrder({served:1}).id,'tomato');
 });

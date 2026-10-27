@@ -18,8 +18,11 @@ export const MUSSEL_INGREDIENTS=Object.freeze({
   mushroom:{name:'Грибы',emoji:'🍄'},chili:{name:'Острый перец',emoji:'🌶️'},
   wine:{name:'Белое вино',emoji:'🍾'}
 });
+// Two guests share a seating, then the restaurant has a short real-time pause.
+// A wall-clock deadline survives reloads; no timers or queues are persisted.
+export const MUSSEL_GUEST_BREAK_MS=25000;
 const bound=(v,max)=>Number.isSafeInteger(v)&&v>=0&&v<=max?v:0;
-export function newMusselRestaurantState(){return {served:0,earned:0,bestStars:0,last:null};}
+export function newMusselRestaurantState(){return {served:0,earned:0,bestStars:0,last:null,nextGuestsAt:0};}
 export function sanitizeMusselRestaurantState(input){
   const state=newMusselRestaurantState();
   if(!input||typeof input!=='object')return state;
@@ -29,7 +32,17 @@ export function sanitizeMusselRestaurantState(input){
   if(input.last&&MUSSEL_MENU.some(v=>v.id===input.last.id)&&bound(input.last.stars,3)>0){
     state.last={id:input.last.id,stars:input.last.stars,coins:bound(input.last.coins,24)};
   }
+  // A broken or far-future date must never lock guests out of the restaurant.
+  if(Number.isSafeInteger(input.nextGuestsAt)&&input.nextGuestsAt>Date.now()&&input.nextGuestsAt<=Date.now()+MUSSEL_GUEST_BREAK_MS){
+    state.nextGuestsAt=input.nextGuestsAt;
+  }
   return state;
+}
+export function musselGuestFlow(state,now=Date.now()){
+  const served=bound(state?.served,1000000);
+  const remaining=served>0&&served%2===0&&Number.isSafeInteger(state?.nextGuestsAt)
+    ?Math.max(0,state.nextGuestsAt-now):0;
+  return {waiting:remaining>0,msLeft:remaining,table:served%2+1,remainingInPair:2-served%2};
 }
 export function nextMusselOrder(state){
   const served=bound(state?.served,1000000);
@@ -65,15 +78,17 @@ export function garnishMussels(session){
   session.phase='ready';
   return true;
 }
-export function serveMusselOrder(city,session){
+export function serveMusselOrder(city,session,now=Date.now()){
   const state=city?.musselRestaurant,recipe=MUSSEL_MENU.find(v=>v.id===session?.recipeId);
   if(!state||!recipe||session.phase!=='ready'||session.paid||session.orderNo!==state.served||!Number.isSafeInteger(city.coins)||city.coins<0||city.coins>10000000)return {ok:false,reason:'state'};
+  if(musselGuestFlow(state,now).waiting)return {ok:false,reason:'guests-away'};
   if(!recipe.ingredients.every(id=>session.added?.includes(id))||session.plated!==3||!session.garnished||!Number.isInteger(session.heatAttempts)||session.heatAttempts<1)return {ok:false,reason:'incomplete'};
   const stars=session.heatAttempts===1?3:session.heatAttempts<=3?2:1;
   const tip=stars===3?4:stars===2?2:0;
   const coins=Math.min(recipe.price+tip,10000000-city.coins);
   city.coins+=coins;
   state.served++;
+  state.nextGuestsAt=state.served%2===0?now+MUSSEL_GUEST_BREAK_MS:0;
   state.earned=Math.min(10000000,state.earned+coins);
   state.bestStars=Math.max(state.bestStars,stars);
   state.last={id:recipe.id,stars,coins};

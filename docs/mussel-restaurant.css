@@ -25,6 +25,16 @@
 .musselOrder strong{display:block;font-size:13px;color:#543e36}
 .musselOrder small{display:block;font-size:11px;line-height:1.5;color:#806b5e;margin-top:2px}
 .musselOrder b{font-size:13px;white-space:nowrap;color:#77543d}
+.musselGuestRow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0 7px}
+.musselGuestCard,.dialog button.musselGuestCard,.dialog button.musselGuestCard:first-of-type{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;min-width:0;width:100%;min-height:85px;margin:0;padding:10px 11px;text-align:left;border:1px solid #e6d8c3;border-radius:13px;background:#f5eadb;color:#66554a;box-shadow:none}
+.musselGuestCard small{font-size:10px;font-weight:700;color:#988575}
+.musselGuestCard strong{font-size:14px;line-height:1.15;color:#644b3b}
+.musselGuestCard span{font-size:11px;line-height:1.3;color:#796758}
+.musselGuestCard.active,.dialog button.musselGuestCard.active,.dialog button.musselGuestCard.active:first-of-type{border-color:#e6bb80;background:#fff0d6;box-shadow:0 2px 9px #b0875036}
+.musselGuestCard.served{opacity:.6}
+.musselGuestCard.empty{background:#eeeae2;text-align:center;align-items:center}
+.musselArrivalNote{font-size:12px;text-align:center;color:#756453;margin:9px 2px 4px}
+.musselArrivalNote strong{color:#986342;white-space:nowrap}
 .musselHint{margin:9px 2px;color:#6d6254;font-size:12px;line-height:1.5}
 .dialog .musselAction,.dialog .musselAction:first-of-type{background:#cc7256;color:#fffdf4;margin:8px 0 0;border-radius:13px;font-size:13px;min-height:43px}
 .dialog .musselQuiet,.dialog .musselQuiet:first-of-type{background:#ece6db;color:#6b6055;margin:8px 0 0;border-radius:13px;font-size:12px;min-height:40px}

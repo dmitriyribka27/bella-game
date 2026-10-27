@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Тихая бухта">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
-  <link rel="stylesheet" href="./mussel-restaurant.css?v=5">
+  <link rel="stylesheet" href="./mussel-restaurant.css?v=6">
   <title>Тихая бухта · город Беллы</title>
   <style>
     :root { color-scheme: light; font-family: ui-rounded, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:#273f40; background:#b6d8d0; }
@@ -639,7 +639,7 @@ import {WORK_SHIFT_SECONDS,MIN_WORK_NEED,MANUAL_FEED_COST,HOSPITAL_COST,CAFE_OPE
 import {FAST_FORWARD_MULTIPLIER,toggleTimeSpeed,newGameClock,sanitizeGameClock,advanceGameClock,gameClockDisplay,creditOfflineCoins} from "./game-time.js?v=3";
 import {chooseStoredSave,secondsSince,saveMarker,requestPersistentStorage} from "./save-health.js?v=2";
 import {SLOT_STAKES,SLOT_FREE_BET,SLOT_OUTCOMES,newLighthouseSlotState,sanitizeLighthouseSlotState,spinLighthouseSlots} from "./lighthouse-slots.js?v=1";
-import {MUSSEL_MENU,MUSSEL_INGREDIENTS,newMusselRestaurantState,sanitizeMusselRestaurantState,nextMusselOrder,newMusselKitchen,addMusselIngredient,setMusselHeat,plateMussels,garnishMussels,serveMusselOrder} from "./mussel-restaurant.js?v=1";
+import {MUSSEL_MENU,MUSSEL_INGREDIENTS,newMusselRestaurantState,sanitizeMusselRestaurantState,musselGuestFlow,nextMusselOrder,newMusselKitchen,addMusselIngredient,setMusselHeat,plateMussels,garnishMussels,serveMusselOrder} from "./mussel-restaurant.js?v=2";
 import {catRoutinePeriod,chooseCatRoutine} from "./cat-routines.js?v=1";
 import {createGameAudio} from "./game-audio.js?v=4";
 import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForMinute,readLightingEnabled,saveLightingEnabled} from "./daylight.js?v=2";
@@ -722,7 +722,7 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
     let saveQueue=Promise.resolve(),lastStoredMarker=null,lastWriteStamp=0,saveConflict=false,recoverySnapshot=null;
     let offlineCacheStatus='Подготовка офлайн-копии ещё не проверена.';
     let slotBet=5,slotBusy=false,slotSpinId=0,slotSaveFailed=false,slotRenderedDay=0,slotVisibleBalance=null;
-    let musselSession=null,musselDrag=null,musselHeatValue=20,musselFeedback='';
+    let musselSession=null,musselDrag=null,musselHeatValue=20,musselFeedback='',musselGuestTimer=0;
     function initial(){const visitors=newBookVisitorState();return {version:FORMAT,coins:30,paused:false,savedAt:Date.now(),clock:newGameClock(),lighthouseSlots:newLighthouseSlotState(),musselRestaurant:newMusselRestaurantState(),coffee:{built:false,plan:false,delivery:false,recipe:false,style:null,orders:0,service:newCafeServiceState()},books:{orders:0,nextAt:0,visitors,inventory:newBookInventory(visitors),scenes:[]},memories:newMemoryBook(),observatory:newObservatoryState(),cats:defs.map(d=>({id:d.id,x:d.home[0],y:d.home[1],target:[...d.home],activity:d.id==='bella'?'walk':'work',hunger:80,energy:80,mood:75,xp:0,level:1,phase:0,upgrades:{bed:0,bowl:0,toy:0}}))};}
     function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
     function valid(s){return s&&[1,2,3,4,5,6,7,8,9,10,11,12,13,FORMAT].includes(s.version)&&Number.isFinite(s.coins)&&s.coins>=0&&(s.version<5||s.books&&Number.isInteger(s.books.orders)&&Number.isFinite(s.books.nextAt))&&Array.isArray(s.cats)&&s.cats.length===defs.length&&defs.every(d=>{let c=s.cats.find(x=>x.id===d.id);return c&&[c.x,c.y,c.hunger,c.energy,c.mood,c.xp,c.level].every(Number.isFinite)&&c.upgrades&&['bed','bowl','toy'].every(k=>Number.isInteger(c.upgrades[k])&&c.upgrades[k]>=0&&c.upgrades[k]<=3);});}
@@ -945,18 +945,38 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
       const n=Math.max(0,MUSSEL_MENU.findIndex(recipe=>recipe.id===id));
       return `<span class="musselRecipeSprite ${classes}" style="background-position:${n%3*50}% ${Math.floor(n/3)*50}%" aria-hidden="true"></span>`;
     }
+    function clearMusselGuestTimer(){clearInterval(musselGuestTimer);musselGuestTimer=0;}
+    function startMusselGuestTimer(){
+      clearMusselGuestTimer();
+      musselGuestTimer=setInterval(()=>{
+        const countdown=dialog.querySelector('[data-mussel-countdown]');
+        if(overlay.hidden||!dialog.classList.contains('musselRestaurantDialog')||!countdown){clearMusselGuestTimer();return;}
+        const flow=musselGuestFlow(city.musselRestaurant);
+        if(!flow.waiting){clearMusselGuestTimer();showMusselInterior();return;}
+        countdown.textContent=Math.ceil(flow.msLeft/1000)+' сек';
+      },1000);
+    }
     function showMusselInterior(note=''){
-      const state=city.musselRestaurant,order=nextMusselOrder(state);
+      const state=city.musselRestaurant,flow=musselGuestFlow(state),order=nextMusselOrder(state);
+      const first=flow.table===1?order:nextMusselOrder({...state,served:state.served-1});
+      const second=flow.table===1?nextMusselOrder({...state,served:state.served+1}):order;
+      const guests=flow.waiting?[1,2].map(i=>`<div class="musselGuestCard empty"><small>Столик ${i}</small><strong>🪑 Свободен</strong></div>`).join('')
+        :[first,second].map((guest,i)=>{
+          const served=i===0&&flow.table===2,active=i===flow.table-1,tag=active?'button':'div';
+          return `<${tag} class="musselGuestCard ${served?'served':active?'active':'waiting'}" ${active?'data-mussel-cook':''}><small>Столик ${i+1} · ${served?'обслужен':active?'заказ готов':'ожидает'}</small><strong>${guest.emoji} ${guest.guest}</strong><span>${guest.name}</span></${tag}>`;
+        }).join('');
       show(`<div class="musselTitle"><h2>🦪 Мидийное место</h2><span class="musselStats">Подано: ${state.served} · заработано: ${state.earned} 🪙</span></div>
         <div class="musselScene musselInteriorScene"><img src="./assets/interiors/mussel-restaurant-v1.webp" alt="Мидийное место: Белла готовит на открытой кухне, гости сидят у моря" draggable="false" decoding="async"><div class="musselSteam" aria-hidden="true"><span></span><span></span><span></span></div>
-          <button class="musselSpot" data-mussel-cook aria-label="Подойти к кухне и готовить мидии">🍳</button>
-          <button class="musselSpot" data-mussel-order aria-label="Принять заказ у гостя">💬</button></div>
-        <div class="musselOrder"><span class="musselOrderEmoji">${order.emoji}</span><div><strong>${order.guest} заказывает: ${order.name}</strong><small>«${order.request}»</small></div><b>${order.price}–${order.price+4} 🪙</b></div>
-        ${note?`<p class="musselFeedback" role="status">${note}</p>`:''}<p class="musselHint">Нажми на гостя или на плиту прямо в ресторане. Здесь можно готовить руками, не выбирая ответы на вопросы.</p>
-        <button class="musselAction" data-mussel-cook>🍳 Начать готовить</button><button class="musselQuiet" data-close>Вернуться в город</button>`);
+          ${flow.waiting?'':`<button class="musselSpot" data-mussel-cook aria-label="Подойти к кухне и готовить мидии">🍳</button><button class="musselSpot" data-mussel-order aria-label="Принять заказ у гостя">💬</button>`}</div>
+        <div class="musselGuestRow" aria-label="Гости за соседними столиками">${guests}</div>
+        ${flow.waiting?`<p class="musselArrivalNote" role="status">🌊 Небольшая пауза · следующие гости через <strong data-mussel-countdown>${Math.ceil(flow.msLeft/1000)} сек</strong></p>`:''}
+        ${note?`<p class="musselFeedback" role="status">${note}</p>`:''}
+        ${flow.waiting?'':`<button class="musselAction" data-mussel-cook>🍳 Готовить для ${order.guest}</button>`}<button class="musselQuiet" data-close>Вернуться в город</button>`);
       dialog.classList.add('musselRestaurantDialog');
+      if(flow.waiting)startMusselGuestTimer();
     }
     function showMusselKitchen(){
+      if(musselGuestFlow(city.musselRestaurant).waiting){showMusselInterior();return;}
       const order=nextMusselOrder(city.musselRestaurant);
       if(!musselSession||musselSession.orderNo!==order.number){musselSession=newMusselKitchen(order);musselHeatValue=20;}
       musselFeedback='';renderMusselKitchen();
@@ -997,10 +1017,11 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
     }
     function showMusselSuccess(result){
       const state=city.musselRestaurant,order=MUSSEL_MENU.find(v=>v.id===state.last?.id);
+      const waiting=musselGuestFlow(state).waiting;
       show(`<div class="musselTitle"><h2>🦪 Мидийное место</h2><span class="musselStats">Подано: ${state.served}</span></div>
         <div class="musselScene musselInteriorScene"><img src="./assets/interiors/mussel-restaurant-v1.webp" alt="Уютный зал ресторана у моря" draggable="false"><div class="musselSteam" aria-hidden="true"><span></span><span></span><span></span></div></div>
         <div class="musselResult" role="status">${'⭐'.repeat(result.stars)}<br>${order?.guest||'Гость'} в восторге от ужина!<strong>+${result.coins} 🪙</strong>${result.tip?`Включая чаевые за отличный заказ`:'Спасибо за угощение!'}</div>
-        <button class="musselAction" data-mussel-next>🍋 Принять следующий заказ</button><button class="musselQuiet" data-close>Вернуться в город</button>`);
+        <button class="musselAction" data-mussel-next>${waiting?'🪑 Вернуться в зал ресторана':'🪑 Принять заказ второго гостя'}</button><button class="musselQuiet" data-close>Вернуться в город</button>`);
       dialog.classList.add('musselRestaurantDialog');
     }
     function musselItemAction(kind,id){
@@ -1574,8 +1595,8 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
     function renderUI(){if(!city)return;updateGameClock();const visibleCoins=slotBusy&&slotVisibleBalance!==null?slotVisibleBalance:city.coins;document.getElementById('money').textContent=`🪙 ${visibleCoins}`;const slotWallet=dialog.classList.contains('lighthouseSlotDialog')?dialog.querySelector('[data-slot-wallet]'):null;if(slotWallet)slotWallet.textContent=`🪙 ${visibleCoins}`;document.getElementById('pause').textContent=city.paused?'▶':'Ⅱ';if(selected==='cafe'){renderCafe();return;}let c=cat(selected),d=byId[selected];let bella=c.id==='bella';details.innerHTML=`<div class="row"><div class="avatar">${d.symbol}</div><div><h1>${d.name} <span style="font-size:12px;font-weight:400">${bella?'':`· уровень ${c.level}`}</span></h1><p class="sub">${d.job} · ${activities[c.activity]}</p></div></div><div class="stats">${bella?'<span class="stat">Гуляет и навещает друзей</span>':`<span class="stat">🥣 ${Math.round(c.hunger)}%</span><span class="stat">💤 ${Math.round(c.energy)}%</span><span class="stat">♡ ${Math.round(c.mood)}%</span><span class="stat">✦ ${Math.floor(c.xp)}/${c.level*18} опыта</span>`}</div><div class="actions">${bella?'<button class="action primary" data-action="bella-home">🏡 Дом Беллы</button><button class="action" data-action="cafe">☕ Кофейня</button><button class="action" data-action="focus">Показать на карте</button>':`<button class="action primary" data-action="work">Работать 🪙</button><button class="action" data-action="rest">Отдыхать 💤</button><button class="action" data-action="eat">Кормить 🥣</button><button class="action" data-action="play">Играть 🎭</button><button class="action" data-action="walk">Гулять</button>${c.id==='citera'?'<button class="action primary" data-action="bookshop">📚 Войти в книжную лавку</button>':''}${c.id==='ryzhiy'?'<button class="action primary" data-action="ryzhiy-home">🏡 Войти в дом Рыжего</button>':''}${c.id==='lev'?'<button class="action primary" data-action="lev-home">🏡 Войти в дом Льва</button>':''}${c.id==='kent'?'<button class="action primary" data-action="kent-home">🏡 Войти в дом Кента</button>':''}${c.id==='mia'?'<button class="action primary" data-action="mia-home">🏡 Войти в дом Мии</button>':''}<button class="action" data-action="focus">Показать на карте</button><button class="action primary" data-action="home-upgrades">🏡 Улучшения дома</button>`}</div>`;}
     details.addEventListener('click',e=>{let b=e.target.closest('button');if(!b)return;if(b.dataset.cafe){coffeeAction(b.dataset.cafe);return;}if(b.dataset.action==='cafe'){selected='cafe';renderUI();notice('Помоги жителям открыть кофейню.');return;}if(b.dataset.action==='bookshop')showBookshop();else if(b.dataset.action==='ryzhiy-home')showRyzhiyHome();else if(b.dataset.action==='bella-home')showBellaHome();else if(b.dataset.action==='lev-home')showLevHome();else if(b.dataset.action==='kent-home')showKentHome();else if(b.dataset.action==='mia-home')showMiaHome();else if(b.dataset.action==='home-upgrades')showHomeUpgrades(selected,'resident');else if(b.dataset.action==='focus'){let c=cat(selected);focusCity(c.x,c.y);}else if(b.dataset.action==='work'){const resident=cat(selected);if(!canStartWork(resident)){notice('Для работы нужно не меньше 35% сытости и бодрости.');return;}assign(resident,'work');}else if(b.dataset.action==='eat'){const result=buyManualFeed(city,selected);if(!result.ok){notice('Для вкусного обеда нужно '+MANUAL_FEED_COST+' 🪙. Обычное автоматическое питание остаётся бесплатным.');return;}gameAudio.coinSpend();notice(byId[selected].name+' вкусно поел(а): +35% сытости и +3% настроения.');changed();}else if(b.dataset.action)assign(cat(selected),b.dataset.action);});
     function cleanupCafeScene(){clearTimeout(cafeRefillTimer);clearTimeout(cafeDepartTimer);cafeDeparting=null;cafeSeen.clear();}
-    function close(){bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;bookMode='shop';bookRoom='bookshop';cleanupCafeScene();cleanupMusselGesture();musselSession=null;overlay.hidden=true;dialog.classList.remove('welcomeDialog','bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','musselRestaurantDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','lighthouseSlotDialog','boathouseDialog','postOfficeDialog','postLetterDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');}
-    function show(html){if(dialog.classList.contains('cafeInteriorDialog'))cleanupCafeScene();cleanupMusselGesture();dialog.classList.remove('welcomeDialog','bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','musselRestaurantDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','lighthouseSlotDialog','boathouseDialog','postOfficeDialog','postLetterDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');dialog.innerHTML=html;overlay.hidden=false;}
+    function close(){bookTab='visitors';bookSelected=null;bookSupplier='needed';bookFocused=null;bookShelfFilter='stock';bookSceneSelected=null;bookSaleFlash=null;bookMode='shop';bookRoom='bookshop';cleanupCafeScene();cleanupMusselGesture();clearMusselGuestTimer();musselSession=null;overlay.hidden=true;dialog.classList.remove('welcomeDialog','bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','musselRestaurantDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','lighthouseSlotDialog','boathouseDialog','postOfficeDialog','postLetterDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');}
+    function show(html){if(dialog.classList.contains('cafeInteriorDialog'))cleanupCafeScene();cleanupMusselGesture();clearMusselGuestTimer();dialog.classList.remove('welcomeDialog','bookshop','location','places','cafeInteriorDialog','cafeOpeningDialog','musselRestaurantDialog','ryzhiyHomeDialog','bellaHomeDialog','levHomeDialog','kentHomeDialog','miaHomeDialog','lighthouseDialog','lighthouseSlotDialog','boathouseDialog','postOfficeDialog','postLetterDialog','marketDialog','marketShopDialog','greenhouseDialog','townHallDialog','observatoryDialog','homeUpgradeDialog','homeStoryDialog','familyAlbumDialog');dialog.innerHTML=html;overlay.hidden=false;}
     async function welcomeWasSeen(){
       try{if(db&&await read(WELCOME_KEY))return true;}catch{}
       try{return localStorage.getItem('quiet-bay-welcome-seen')==='yes';}catch{return false;}
