@@ -33,9 +33,9 @@
 .musselSteps span.active{color:#704b30;background:#f1d2a5}
 .musselSteps span.done{color:#406b58;background:#d8e9d8}
 .musselPhaseHint{text-align:center;font-size:12px;font-weight:700;line-height:1.5;color:#6a5546;margin:8px 2px 4px}
-.dialog .musselIngredientHotspot,.dialog .musselIngredientHotspot:first-of-type{position:absolute;z-index:3;margin:0;padding:0;width:clamp(29px,6.5vw,57px);height:clamp(29px,6.5vw,57px);min-height:0;border:2px solid #fff3b2e3;border-radius:50%;background:#f4de8359;color:transparent;box-shadow:0 0 12px #ffdf6b55;transform:translate(-50%,-50%);touch-action:none;animation:musselPulse 2.5s ease-in-out infinite}
+.dialog .musselIngredientHotspot,.dialog .musselIngredientHotspot:first-of-type{position:absolute;z-index:6;margin:0;padding:3px;width:clamp(33px,7.2vw,57px);height:clamp(33px,7.2vw,57px);min-height:0;border:2px solid #fff3b2e3;border-radius:50%;background:#fff0baad;color:#6a4f31;box-shadow:0 0 12px #ffdf6b55,0 2px 5px #452c284d;transform:translate(-50%,-50%);touch-action:none;animation:musselPulse 2.5s ease-in-out infinite}
 .dialog .musselIngredientHotspot.added{pointer-events:none;border-color:#b6ffd2e1;background:#a9ecb847;box-shadow:none;animation:none}
-.musselIngredientHotspot .musselFoodSprite{width:100%;height:100%}
+.musselIngredientHotspot .musselFoodSprite{width:100%;height:100%;border-radius:50%}
 .musselIngredientHotspot.added::after{content:'✓';display:grid;place-items:center;color:#236a4d;font-size:19px;font-weight:900;text-shadow:0 1px #fff5e7}
 .musselIngredientHotspot:focus-visible{outline:3px solid #fbe9a9}
 .musselDrop{position:absolute;z-index:2;border-radius:50%;pointer-events:none;transition:box-shadow .18s,background-color .18s}
@@ -44,7 +44,7 @@
 .musselPlateDrop{left:64%;top:48%;width:30%;height:29%}
 .dialog .musselPlateSource,.dialog .musselPlateSource:first-of-type{position:absolute;left:47.5%;top:54%;width:14%;height:19%;border-radius:50%;transform:translate(-50%,-50%);margin:0;background:#ffc96a0d;border:2px dashed #fff1ae8f;color:#fff8e8;min-height:0;z-index:6;display:grid;place-items:center;touch-action:none}
 .musselPlateSource .musselFoodSprite{width:37%;height:auto}
-.musselPalette{display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0 5px}
+.musselPalette{display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap;width:min(100%,570px);margin:8px auto 5px}
 .dialog .musselIngredientToken,.dialog .musselIngredientToken:first-of-type{width:clamp(63px,16vw,91px);height:65px;min-width:0;min-height:0;margin:0;padding:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border:1px solid #eccfa7;border-radius:11px;background:#fff1d9;color:#5a493e;font-size:10px;font-weight:800;box-shadow:0 3px 6px #ac88582a;touch-action:none}
 .musselIngredientToken .musselFoodSprite{width:42px;height:40px;flex-shrink:0}
 .dialog .musselIngredientToken.added{background:#d8ebdf;border-color:#9fcbb0;opacity:.58}
@@ -54,6 +54,7 @@
 .musselDragGhost .musselFoodSprite{width:48px;height:48px}
 .musselFoodSprite{display:block;aspect-ratio:1;background-image:url('./assets/interiors/mussel-food-atlas-v2.webp');background-size:400% 300%;background-repeat:no-repeat;pointer-events:none;flex-shrink:0}
 .musselDishSprite{display:block;position:absolute;aspect-ratio:1;background-image:url('./assets/interiors/mussel-dishes-atlas-v3.webp');background-size:300% 200%;background-repeat:no-repeat;pointer-events:none;filter:drop-shadow(0 2px 2px #251a1159);animation:musselDishReveal .3s ease-out both}
+.musselRecipeSprite{display:block;position:absolute;aspect-ratio:1;background-image:url('./assets/interiors/mussel-recipes-atlas-v4.webp');background-size:300% 300%;background-repeat:no-repeat;pointer-events:none;filter:drop-shadow(0 2px 2px #251a1159);animation:musselDishReveal .3s ease-out both}
 .musselPotDish{z-index:3;left:47.5%;top:55%;width:13.5%;transform:translate(-50%,-50%)}
 .musselPotDish.remaining-2{scale:.86}
 .musselPotDish.remaining-1{scale:.63}
@@ -84,10 +85,11 @@
 .musselHeatLegend{display:flex;justify-content:space-between;gap:3px;font-size:10px;font-weight:750;color:#88765e}
 .musselHeatLegend span:nth-child(2){color:#548253}
 @keyframes musselFoodAppear{from{opacity:.1;scale:.72}to{opacity:1;scale:1}}
-.musselFeedback{margin:8px 0 0;text-align:center;font-size:12px;font-weight:700;color:#5b7e66;min-height:18px}
+.musselFeedback{margin:7px 0 0;text-align:center;font-size:12px;font-weight:700;color:#5b7e66}
+.musselFeedback:empty{display:none}
 .musselResult{text-align:center;padding:10px 12px;border-radius:14px;background:linear-gradient(145deg,#e5f0da,#fbe9ce);margin:10px 0;font-size:14px;color:#527161;font-weight:800}
 .musselResult strong{display:block;font-size:24px;color:#a76c3a;margin:6px}
 @keyframes musselPulse{50%{box-shadow:0 0 0 9px #f6ddae18,0 0 12px #ffe9aa95}}
 @keyframes musselSteamRise{0%{opacity:0;transform:translateY(30%) scale(.8)}25%{opacity:.52}100%{opacity:0;transform:translateY(-72%) translateX(10%) scale(1.3)}}
-@media(max-width:520px){.dialog.musselRestaurantDialog{padding:9px;border-radius:18px}.musselTitle{gap:4px}.musselOrder{padding:8px;gap:7px}.musselOrder .musselOrderEmoji{font-size:23px}.musselOrder strong{font-size:12px}.musselSteps span{font-size:9px}.dialog .musselSpot[data-mussel-order]{width:38px;height:38px}.dialog .musselSpot[data-mussel-cook]{width:43px;height:43px}}
-@media(prefers-reduced-motion:reduce){.dialog .musselSpot,.dialog .musselIngredientHotspot,.musselSteam span,.musselBoil span,.musselDishSprite,.musselPotAccent{animation:none}}
+@media(max-width:520px){.dialog.musselRestaurantDialog{padding:9px;border-radius:18px}.musselTitle{gap:4px}.musselOrder{padding:8px;gap:7px}.musselOrder .musselOrderEmoji{font-size:23px}.musselOrder strong{font-size:12px}.musselSteps span{font-size:9px}.dialog .musselSpot[data-mussel-order]{width:38px;height:38px}.dialog .musselSpot[data-mussel-cook]{width:43px;height:43px}.musselPalette{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));justify-items:stretch;gap:5px;padding:0 10px}.dialog .musselIngredientToken,.dialog .musselIngredientToken:first-of-type{width:100%;height:57px;padding:1px 3px}.musselIngredientToken .musselFoodSprite{width:36px;height:34px}.musselIngredientToken small{font-size:9px;line-height:1.1;text-align:center}.musselProgress{min-height:14px}.musselSteps{margin:6px 2px 8px}.musselPhaseHint{margin:4px 2px}}
+@media(prefers-reduced-motion:reduce){.dialog .musselSpot,.dialog .musselIngredientHotspot,.musselSteam span,.musselBoil span,.musselDishSprite,.musselRecipeSprite,.musselPotAccent{animation:none}}

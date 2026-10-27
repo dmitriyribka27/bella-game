@@ -10,28 +10,33 @@ import {
 test('all kitchen ingredient hotspots override full-width dialog buttons',()=>{
   const css=readFileSync(new URL('../docs/mussel-restaurant.css',import.meta.url),'utf8');
   assert.match(css,/\.dialog \.musselIngredientHotspot,\.dialog \.musselIngredientHotspot:first-of-type\s*\{/);
-  assert.match(css,/\.dialog \.musselIngredientHotspot[^}]*width:clamp\(29px,6\.5vw,57px\)/);
+  assert.match(css,/\.dialog \.musselIngredientHotspot[^}]*width:clamp\(33px,7\.2vw,57px\)/);
+  assert.match(css,/\.musselPalette\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/,'small screens show every ingredient in wrapped rows');
 });
 
 test('kitchen uses an empty pot, progressive coherent food arrangements and a full-width fire control',()=>{
   const app=readFileSync(new URL('../docs/index.html',import.meta.url),'utf8');
   const worker=readFileSync(new URL('../docs/sw.js',import.meta.url),'utf8');
-  for(const filename of ['mussel-kitchen-empty-v2.webp','mussel-food-atlas-v2.webp','mussel-dishes-atlas-v3.webp']){
+  for(const filename of ['mussel-kitchen-empty-v2.webp','mussel-food-atlas-v2.webp','mussel-dishes-atlas-v3.webp','mussel-recipes-atlas-v4.webp']){
     const asset=readFileSync(new URL('../docs/assets/interiors/'+filename,import.meta.url));
     assert.equal(asset.toString('ascii',0,4),'RIFF');
     assert.equal(asset.toString('ascii',8,12),'WEBP');
     assert.match(worker,new RegExp(filename.replaceAll('.','\\.')));
   }
   assert.match(app,/const potVisible=session\.added\.includes\('mussels'\)/,'empty pot until real mussels are added');
-  assert.match(app,/session\.added\.length>=2\?1:0/,'first mussels differ from simmering mussels');
-  assert.match(app,/const potAccents=session\.plated<3/,'other dragged ingredients appear and clean up after cooking');
+  assert.match(app,/required\.map\(\(id,i\)=>/,'all ingredients get a button on the kitchen scene');
+  assert.match(app,/musselIngredientPositions\[required\.length\]\[i\]/,'even wine, butter and chili have touch targets');
+  assert.match(app,/phase==='ingredients'\?musselDishSprite\(0,0,'musselPotDish'\):musselRecipeSprite\(recipe\.id/,'raw mussels transform into recipe-specific cooked food only after adding all ingredients');
+  assert.match(app,/const potAccents=phase==='ingredients'&&session\.plated<3/,'other dragged ingredients appear while cooking is assembled');
   assert.match(app,/const plateCells=\[\[2,0\],\[0,1\],\[1,1\]\]/,'plate progresses through three unified food compositions');
-  assert.match(app,/session\.garnished\?\[2,1\]/,'the finished garnished dish uses its own unified image');
+  assert.match(app,/session\.garnished\?musselRecipeSprite\(recipe\.id,'musselPlatedDish'\)/,'the finished dish uses its own recipe-specific image');
+  assert.match(app,/Math\.floor\(n\/3\)\*50/,'each of the nine recipes uses a different atlas cell');
+  assert.doesNotMatch(app,/Регулятор теперь внизу|Добавляй продукты — кастрюля/,'verbose cooking hints removed');
   assert.match(app,/class="musselBoil"/,'boiling visual exists during cooking');
   const css=readFileSync(new URL('../docs/mussel-restaurant.css',import.meta.url),'utf8');
   assert.match(css,/\.musselBoil span\{/);
   assert.doesNotMatch(css,/\.musselPlateFood\.s1/,'old stacked plate images are gone');
-  assert.match(app,/mussel-restaurant\.css\?v=4/,'new styles bypass older PWA asset cache');
+  assert.match(app,/mussel-restaurant\.css\?v=5/,'new styles bypass older PWA asset cache');
   assert.match(app,/\$\{palette\}\$\{heatControl\}/,'fire slider is outside of the image');
 });
 
