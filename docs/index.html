@@ -1607,7 +1607,10 @@ import {lightingForClock,lightingForMinute,minuteOfGameDay,nightGlowStrengthForM
         e.stopImmediatePropagation();if(city.paused||!musselSession)return;
         const result=serveMusselOrder(city,musselSession);
         if(!result.ok)return;
-        gameAudio.coinGain();changed();showMusselSuccess(result);return;
+        gameAudio.coinGain();changed();clearTimeout(saveTimer);
+        // Reward becomes visible only once its save has been committed.
+        write().then(()=>showMusselSuccess(result)).catch(()=>{saveWarning();showMusselSuccess(result);});
+        return;
       }
       if(button.dataset.homeStory){e.stopImmediatePropagation();showHomeStory(button.dataset.homeStory);return;}
       if(button.dataset.homeChoice!==undefined){

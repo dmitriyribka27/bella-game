@@ -38,6 +38,8 @@ test('kitchen uses an empty pot, progressive coherent food arrangements and a fu
   assert.doesNotMatch(css,/\.musselPlateFood\.s1/,'old stacked plate images are gone');
   assert.match(app,/mussel-restaurant\.css\?v=5/,'new styles bypass older PWA asset cache');
   assert.match(app,/\$\{palette\}\$\{heatControl\}/,'fire slider is outside of the image');
+  assert.match(app,/gameAudio\.coinGain\(\);changed\(\);clearTimeout\(saveTimer\);/,'serving bypasses debounced save');
+  assert.match(app,/write\(\)\.then\(\(\)=>showMusselSuccess\(result\)\)/,'success screen waits for the saved reward');
 });
 
 test('menu has nine distinct dishes with real ingredient options',()=>{
